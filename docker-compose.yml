@@ -1,0 +1,23 @@
+# Dedicated Postgres for edwt-next. Host port 5433 avoids the 5432 already in
+# use by another project on this machine.
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: edwt-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: edwt
+      POSTGRES_PASSWORD: edwt
+      POSTGRES_DB: edwt
+    ports:
+      - "5433:5432"
+    volumes:
+      - edwt-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U edwt -d edwt"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  edwt-pgdata:

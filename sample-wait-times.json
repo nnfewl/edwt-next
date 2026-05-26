@@ -1,0 +1,2661 @@
+[
+  {
+    "id": "clp033k9o0000qo413bjy9a91",
+    "name": "Vancouver General Hospital",
+    "slug": "VGH",
+    "status": "published",
+    "type": "ed",
+    "address": "920 West 10th Ave, Vancouver, BC, V5Z 1M9",
+    "latitude": 49.262407,
+    "longitude": -123.124461,
+    "website": "https://www.vch.ca/en/location-service/emergency-department-vancouver-general-hospital",
+    "phone": "(604) 875-4111",
+    "description": "Adult hospital.",
+    "audience": "seventeenPlus",
+    "additionalInfo": "",
+    "showAdditionalInfoClosed": false,
+    "additionalInfoClosed": "",
+    "alertShow": false,
+    "alertTitle": "",
+    "alertDescription": "",
+    "open247": true,
+    "operatingHours": {
+      "days": [
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        }
+      ]
+    },
+    "showWaitTimes": true,
+    "showStatus": false,
+    "waitTimeFallback": "open-status",
+    "activityLogId": null,
+    "overrideSchedule": [],
+    "waitTime": {
+      "id": "cmpm809m8618cabsxvuy22mid",
+      "locationId": "clp033k9o0000qo413bjy9a91",
+      "createdAt": "2026-05-26T05:54:33.657Z",
+      "reportId": "cmpm809n9618iabsxgbvsqcov",
+      "waitTimeMinutes": 428,
+      "elosMinutes": 768,
+      "status": "normal"
+    }
+  },
+  {
+    "id": "clp03447z0001qo41ttu19nbt",
+    "name": "BC Children's Hospital",
+    "slug": "BCHBCCHILDREN",
+    "status": "published",
+    "type": "ed",
+    "address": "4480 Oak St., Entrance 55, Vancouver, BC V6H 3V4",
+    "latitude": 49.2454172,
+    "longitude": -123.1235782,
+    "website": "https://www.bcchildrens.ca/clinics-services/emergency-department",
+    "phone": "(604) 875-2345",
+    "description": "Pediatric hospital.",
+    "audience": "sixteenAndUnder",
+    "additionalInfo": "",
+    "showAdditionalInfoClosed": false,
+    "additionalInfoClosed": "",
+    "alertShow": false,
+    "alertTitle": "Wait times not available due to information system issues",
+    "alertDescription": "",
+    "open247": true,
+    "operatingHours": {
+      "days": [
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        }
+      ]
+    },
+    "showWaitTimes": true,
+    "showStatus": false,
+    "waitTimeFallback": "open-status",
+    "activityLogId": null,
+    "overrideSchedule": [],
+    "waitTime": {
+      "id": "cmpm809l46181absxhnozlnsy",
+      "locationId": "clp03447z0001qo41ttu19nbt",
+      "createdAt": "2026-05-26T05:54:33.657Z",
+      "reportId": "cmpm809n9618iabsxgbvsqcov",
+      "waitTimeMinutes": 475,
+      "elosMinutes": 473,
+      "status": "normal"
+    }
+  },
+  {
+    "id": "clp1jhk0f0019qo40rmp9sryp",
+    "name": "Richmond Hospital",
+    "slug": "RHS",
+    "status": "published",
+    "type": "ed",
+    "address": "7000 Westminster Highway, Richmond, BC, V6X 1A2",
+    "latitude": 49.168873,
+    "longitude": -123.146325,
+    "website": "https://www.vch.ca/en/location-service/emergency-department-richmond-hospital",
+    "phone": "(604) 278-9711",
+    "description": "Full service hospital",
+    "audience": "allAges",
+    "additionalInfo": "",
+    "showAdditionalInfoClosed": false,
+    "additionalInfoClosed": "",
+    "alertShow": false,
+    "alertTitle": "",
+    "alertDescription": "",
+    "open247": true,
+    "operatingHours": {
+      "days": [
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        }
+      ]
+    },
+    "showWaitTimes": true,
+    "showStatus": false,
+    "waitTimeFallback": "open-status",
+    "activityLogId": null,
+    "overrideSchedule": [],
+    "waitTime": {
+      "id": "cmpm809m1618aabsxaserbt2d",
+      "locationId": "clp1jhk0f0019qo40rmp9sryp",
+      "createdAt": "2026-05-26T05:54:33.658Z",
+      "reportId": "cmpm809n9618iabsxgbvsqcov",
+      "waitTimeMinutes": 424,
+      "elosMinutes": 590,
+      "status": "normal"
+    }
+  },
+  {
+    "id": "clp1ji98i001aqo409dikn0s1",
+    "name": "St. Paul's Hospital",
+    "slug": "SPH",
+    "status": "published",
+    "type": "ed",
+    "address": "1081 Burrard St, Vancouver, BC, V6Z 1Y6",
+    "latitude": 49.280596,
+    "longitude": -123.129001,
+    "website": "https://www.providencehealthcare.org/hospitals-residences/st-paul's-hospital",
+    "phone": "(604) 682-2344",
+    "description": "Full service hospital.",
+    "audience": "allAges",
+    "additionalInfo": "",
+    "showAdditionalInfoClosed": false,
+    "additionalInfoClosed": "",
+    "alertShow": false,
+    "alertTitle": "",
+    "alertDescription": "",
+    "open247": true,
+    "operatingHours": {
+      "days": [
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        }
+      ]
+    },
+    "showWaitTimes": true,
+    "showStatus": false,
+    "waitTimeFallback": "open-status",
+    "activityLogId": null,
+    "overrideSchedule": [],
+    "waitTime": {
+      "id": "cmpm809m9618dabsx5bp0nqko",
+      "locationId": "clp1ji98i001aqo409dikn0s1",
+      "createdAt": "2026-05-26T05:54:33.657Z",
+      "reportId": "cmpm809n9618iabsxgbvsqcov",
+      "waitTimeMinutes": 160,
+      "elosMinutes": 300,
+      "status": "normal"
+    }
+  },
+  {
+    "id": "clp1jjdg4001bqo40ae31g6ca",
+    "name": "Lions Gate Hospital",
+    "slug": "LGH",
+    "status": "published",
+    "type": "ed",
+    "address": "231 East 15th St, North Vancouver, BC, V7L 2L7",
+    "latitude": 49.321096,
+    "longitude": -123.067796,
+    "website": "https://www.vch.ca/en/location-service/emergency-department-lions-gate-hospital",
+    "phone": "(604) 988-3131",
+    "description": "Full service hospital",
+    "audience": "allAges",
+    "additionalInfo": "",
+    "showAdditionalInfoClosed": false,
+    "additionalInfoClosed": "",
+    "alertShow": false,
+    "alertTitle": "Wait times not available due to information system issues",
+    "alertDescription": "",
+    "open247": true,
+    "operatingHours": {
+      "days": [
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        }
+      ]
+    },
+    "showWaitTimes": true,
+    "showStatus": false,
+    "waitTimeFallback": "open-status",
+    "activityLogId": null,
+    "overrideSchedule": [],
+    "waitTime": {
+      "id": "cmpm809ma618eabsxumx1rpce",
+      "locationId": "clp1jjdg4001bqo40ae31g6ca",
+      "createdAt": "2026-05-26T05:54:33.657Z",
+      "reportId": "cmpm809n9618iabsxgbvsqcov",
+      "waitTimeMinutes": 271,
+      "elosMinutes": 492,
+      "status": "normal"
+    }
+  },
+  {
+    "id": "clp1jmnex001cqo40rdxc7zjg",
+    "name": "Mount Saint Joseph Hospital",
+    "slug": "MSJ",
+    "status": "published",
+    "type": "ed",
+    "address": "3080 Prince Edward St, Vancouver, BC, V5T 3N4",
+    "latitude": 49.257914,
+    "longitude": -123.095204,
+    "website": "https://www.providencehealthcare.org/hospitals-residences/mount-saint-joseph-hospital",
+    "phone": "(604) 874-1141",
+    "description": "Full service hospital.\nHours: 8am to 8pm",
+    "audience": "allAges",
+    "additionalInfo": "Due to increased arrivals after 6PM you can expect long waits. Please consider a closer ED or UPCC.",
+    "showAdditionalInfoClosed": true,
+    "additionalInfoClosed": "",
+    "alertShow": false,
+    "alertTitle": "Due to increased arrivals after 6PM you can expect long waits. Please consider a closer ED or UPCC.",
+    "alertDescription": "",
+    "open247": false,
+    "operatingHours": {
+      "days": [
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        }
+      ]
+    },
+    "showWaitTimes": true,
+    "showStatus": false,
+    "waitTimeFallback": "open-status",
+    "activityLogId": null,
+    "overrideSchedule": [],
+    "waitTime": {
+      "id": "cmpm809lg6187absxifuuws6q",
+      "locationId": "clp1jmnex001cqo40rdxc7zjg",
+      "createdAt": "2026-05-26T05:54:33.657Z",
+      "reportId": "cmpm809n9618iabsxgbvsqcov",
+      "waitTimeMinutes": 23,
+      "elosMinutes": 132,
+      "status": "normal"
+    }
+  },
+  {
+    "id": "clp1qhgyt0000n145eqo1j4v4",
+    "name": "UBC Hospital",
+    "slug": "UBCH",
+    "status": "published",
+    "type": "ed",
+    "address": "2211 Wesbrook Mall, Vancouver, BC, V6T 2B5",
+    "latitude": 49.264067,
+    "longitude": -123.245344,
+    "website": "https://www.vch.ca/en/location-service/emergency-department-ubc-hospital",
+    "phone": "(604) 822-7121",
+    "description": "Hours: 8am to 8pm",
+    "audience": "allAges",
+    "additionalInfo": "Due to increased arrivals after 6PM you can expect long waits. Please consider a closer ED or UPCC.",
+    "showAdditionalInfoClosed": true,
+    "additionalInfoClosed": "",
+    "alertShow": false,
+    "alertTitle": "Due to increased arrivals after 6PM you can expect long waits. Please consider a closer ED or UPCC.",
+    "alertDescription": "",
+    "open247": false,
+    "operatingHours": {
+      "days": [
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        }
+      ]
+    },
+    "showWaitTimes": true,
+    "showStatus": false,
+    "waitTimeFallback": "open-status",
+    "activityLogId": null,
+    "overrideSchedule": [],
+    "waitTime": {
+      "id": "cmpm809l66183absx1lvw9yoj",
+      "locationId": "clp1qhgyt0000n145eqo1j4v4",
+      "createdAt": "2026-05-26T05:54:33.657Z",
+      "reportId": "cmpm809n9618iabsxgbvsqcov",
+      "waitTimeMinutes": 46,
+      "elosMinutes": 243,
+      "status": "normal"
+    }
+  },
+  {
+    "id": "clp1u92c5001rpa42n6eke8bx",
+    "name": "REACH Urgent and Primary Care Centre",
+    "slug": "REACHUPCC",
+    "status": "published",
+    "type": "upcc",
+    "address": "1145 Commercial Drive, Vancouver, BC, V5L 3X3",
+    "latitude": 49.274416,
+    "longitude": -123.069684,
+    "website": "https://www.reachcentre.bc.ca/upcc",
+    "phone": "(604) 216-3138",
+    "description": "Patients will be seen according to urgency. X-ray and lab services available off-site.\nHours: Mon-Sat: 8am to 10pm\nSun: 9am to 5pm",
+    "audience": "allAges",
+    "additionalInfo": "When open call (604) 216-3138 for wait time",
+    "showAdditionalInfoClosed": true,
+    "additionalInfoClosed": "",
+    "alertShow": false,
+    "alertTitle": "",
+    "alertDescription": "",
+    "open247": false,
+    "operatingHours": {
+      "days": [
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 01:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 06:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 06:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 06:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 06:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 06:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 06:00:00 GMT"
+        }
+      ]
+    },
+    "showWaitTimes": false,
+    "showStatus": false,
+    "waitTimeFallback": "contact",
+    "activityLogId": null,
+    "overrideSchedule": [],
+    "waitTime": {}
+  },
+  {
+    "id": "clp1ub99v0026pa42bm3ts3s0",
+    "name": "Northeast Urgent and Primary Care Centre",
+    "slug": "COMNEUPCC",
+    "status": "published",
+    "type": "upcc",
+    "address": "102-2788 E. Hastings St., Vancouver, BC V5K 1Z9",
+    "latitude": 49.281145,
+    "longitude": -123.047057,
+    "website": "https://www.vch.ca/en/location/northeast-urgent-and-primary-care-centre-upcc",
+    "phone": "(604) 675-2599",
+    "description": "X-ray and lab services available off-site.\nHours:\nMon-Sat: 8am to 10pm\nSun: 9am to 5pm",
+    "audience": "allAges",
+    "additionalInfo": "",
+    "showAdditionalInfoClosed": false,
+    "additionalInfoClosed": "",
+    "alertShow": false,
+    "alertTitle": "Wait times not available due to information system issues",
+    "alertDescription": "",
+    "open247": false,
+    "operatingHours": {
+      "days": [
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 01:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 06:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 06:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 06:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 06:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 06:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 06:00:00 GMT"
+        }
+      ]
+    },
+    "showWaitTimes": true,
+    "showStatus": false,
+    "waitTimeFallback": "contact",
+    "activityLogId": null,
+    "overrideSchedule": [],
+    "waitTime": {
+      "id": "cmpm809lx6188absxjmjqbi6x",
+      "locationId": "clp1ub99v0026pa42bm3ts3s0",
+      "createdAt": "2026-05-26T05:54:33.658Z",
+      "reportId": "cmpm809n9618iabsxgbvsqcov",
+      "waitTimeMinutes": null,
+      "elosMinutes": null,
+      "status": "normal"
+    }
+  },
+  {
+    "id": "clp1udh1q002lpa423g8e05pv",
+    "name": "Squamish General Hospital",
+    "slug": "SGHSQUAMISH",
+    "status": "published",
+    "type": "ed",
+    "address": "38140 Behrner Drive, Squamish, BC, V8B 0J3",
+    "latitude": 49.698583,
+    "longitude": -123.140628,
+    "website": "https://www.vch.ca/en/location-service/emergency-department-squamish-general-hospital",
+    "phone": "(604) 892-5211",
+    "description": "Full service hospital.",
+    "audience": "allAges",
+    "additionalInfo": "",
+    "showAdditionalInfoClosed": false,
+    "additionalInfoClosed": "",
+    "alertShow": false,
+    "alertTitle": "",
+    "alertDescription": "",
+    "open247": true,
+    "operatingHours": {
+      "days": [
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        }
+      ]
+    },
+    "showWaitTimes": true,
+    "showStatus": false,
+    "waitTimeFallback": "open-status",
+    "activityLogId": null,
+    "overrideSchedule": [],
+    "waitTime": {
+      "id": "cmpm809l66182absxnfs4emia",
+      "locationId": "clp1udh1q002lpa423g8e05pv",
+      "createdAt": "2026-05-26T05:54:33.657Z",
+      "reportId": "cmpm809n9618iabsxgbvsqcov",
+      "waitTimeMinutes": 126,
+      "elosMinutes": 200,
+      "status": "normal"
+    }
+  },
+  {
+    "id": "clp1uf2tj002tpa42cmalvzzc",
+    "name": "Whistler Health Care Centre",
+    "slug": "WHCWHISTLER",
+    "status": "published",
+    "type": "ed",
+    "address": "4380 Lorimer Road, Whistler, BC, V0N 18B",
+    "latitude": 50.11982,
+    "longitude": -122.955186,
+    "website": "https://www.vch.ca/en/location/whistler-health-care-centre",
+    "phone": "(604) 932-4911",
+    "description": "Emergency department\nHours: 8am to 10pm",
+    "audience": "allAges",
+    "additionalInfo": "",
+    "showAdditionalInfoClosed": true,
+    "additionalInfoClosed": "Call (604) 932-4911 for after hours care",
+    "alertShow": false,
+    "alertTitle": "",
+    "alertDescription": "",
+    "open247": false,
+    "operatingHours": {
+      "days": [
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 06:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 06:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 06:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 06:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 06:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 06:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 06:00:00 GMT"
+        }
+      ]
+    },
+    "showWaitTimes": true,
+    "showStatus": false,
+    "waitTimeFallback": "open-status",
+    "activityLogId": null,
+    "overrideSchedule": [],
+    "waitTime": {
+      "id": "cmpm809mi618fabsx8onop40a",
+      "locationId": "clp1uf2tj002tpa42cmalvzzc",
+      "createdAt": "2026-05-26T05:54:33.657Z",
+      "reportId": "cmpm809n9618iabsxgbvsqcov",
+      "waitTimeMinutes": 24,
+      "elosMinutes": 105,
+      "status": "normal"
+    }
+  },
+  {
+    "id": "clp1ug82t0031pa42pl91w1lx",
+    "name": "Pemberton Health Centre",
+    "slug": "PEMPEMBERTON",
+    "status": "published",
+    "type": "ed",
+    "address": "1403 Portage Road, Pemberton, BC, V0N 2L0",
+    "latitude": 50.321081,
+    "longitude": -122.804414,
+    "website": "https://www.vch.ca/en/location/pemberton-health-centre",
+    "phone": "(604) 894-6939",
+    "description": "Emergency department\nHours: 8:30am to 8:30pm",
+    "audience": "allAges",
+    "additionalInfo": "",
+    "showAdditionalInfoClosed": true,
+    "additionalInfoClosed": "Call (604) 894-6633 for after hours care",
+    "alertShow": false,
+    "alertTitle": "Wait times not available due to information system issues",
+    "alertDescription": "",
+    "open247": false,
+    "operatingHours": {
+      "days": [
+        {
+          "open": "Thu, 01 Jan 1970 16:30:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:30:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:30:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:30:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:30:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:30:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:30:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:30:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:30:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:30:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:30:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:30:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:30:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:30:00 GMT"
+        }
+      ]
+    },
+    "showWaitTimes": true,
+    "showStatus": false,
+    "waitTimeFallback": "open-status",
+    "activityLogId": null,
+    "overrideSchedule": [],
+    "waitTime": {
+      "id": "cmpm809mk618habsx84vsf8ph",
+      "locationId": "clp1ug82t0031pa42pl91w1lx",
+      "createdAt": "2026-05-26T05:54:33.657Z",
+      "reportId": "cmpm809n9618iabsxgbvsqcov",
+      "waitTimeMinutes": null,
+      "elosMinutes": null,
+      "status": "normal"
+    }
+  },
+  {
+    "id": "clp8weced0002p543tviehu5v",
+    "name": "Southeast Urgent and Primary Care Centre",
+    "slug": "COMSEUPCC",
+    "status": "published",
+    "type": "upcc",
+    "address": "5880 Victoria Drive, Vancouver, BC V5P 3W9",
+    "latitude": 49.230575,
+    "longitude": -123.06518,
+    "website": "https://www.vch.ca/en/location/southeast-urgent-and-primary-care-centre",
+    "phone": "(604) 675-3210",
+    "description": "X-ray and lab services available off-site.\nHours: Mon-Sat: 8am to 10pm\nSun: 9am to 5pm",
+    "audience": "allAges",
+    "additionalInfo": "",
+    "showAdditionalInfoClosed": false,
+    "additionalInfoClosed": "",
+    "alertShow": false,
+    "alertTitle": "",
+    "alertDescription": "",
+    "open247": false,
+    "operatingHours": {
+      "days": [
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 01:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 06:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 06:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 06:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 06:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 06:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 06:00:00 GMT"
+        }
+      ]
+    },
+    "showWaitTimes": true,
+    "showStatus": false,
+    "waitTimeFallback": "contact",
+    "activityLogId": null,
+    "overrideSchedule": [],
+    "waitTime": {
+      "id": "cmpm809m16189absxr9eb42wd",
+      "locationId": "clp8weced0002p543tviehu5v",
+      "createdAt": "2026-05-26T05:54:33.658Z",
+      "reportId": "cmpm809n9618iabsxgbvsqcov",
+      "waitTimeMinutes": 24,
+      "elosMinutes": 41,
+      "status": "normal"
+    }
+  },
+  {
+    "id": "clp8wkcch000hp543wvdt87cr",
+    "name": "Burnaby Hospital",
+    "slug": "BH",
+    "status": "published",
+    "type": "ed",
+    "address": "3935 Kincaid Street, Burnaby, BC, V5G 2X6",
+    "latitude": 49.248776,
+    "longitude": -123.016837,
+    "website": "https://www.fraserhealth.ca/Service-Directory/Service-At-Location/E/8/emergency----burnaby-hospital",
+    "phone": "(604) 434-4211",
+    "description": "",
+    "audience": "allAges",
+    "additionalInfo": "",
+    "showAdditionalInfoClosed": false,
+    "additionalInfoClosed": "",
+    "alertShow": false,
+    "alertTitle": "",
+    "alertDescription": "",
+    "open247": true,
+    "operatingHours": {
+      "days": [
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        }
+      ]
+    },
+    "showWaitTimes": true,
+    "showStatus": false,
+    "waitTimeFallback": "open-status",
+    "activityLogId": null,
+    "overrideSchedule": [],
+    "waitTime": {
+      "id": "cmpm7o1v96146absxxkit3e5u",
+      "locationId": "clp8wkcch000hp543wvdt87cr",
+      "createdAt": "2026-05-26T05:45:03.673Z",
+      "reportId": "cmpm7o1xq614fabsx14wmez7m",
+      "waitTimeMinutes": 210,
+      "elosMinutes": null,
+      "status": "normal"
+    }
+  },
+  {
+    "id": "clp8wpahy000ip5437yhg4jv3",
+    "name": "Eagle Ridge Hospital",
+    "slug": "ERH",
+    "status": "published",
+    "type": "ed",
+    "address": "475 Guildford Way, Port Moody, BC, V3H 3W9",
+    "latitude": 49.285359,
+    "longitude": -122.824056,
+    "website": "https://www.fraserhealth.ca/Service-Directory/Service-At-Location/2/4/emergency---eagle-ridge-hospital",
+    "phone": "(604) 461-2022",
+    "description": "",
+    "audience": "allAges",
+    "additionalInfo": "",
+    "showAdditionalInfoClosed": false,
+    "additionalInfoClosed": "",
+    "alertShow": false,
+    "alertTitle": "Unable to display Wait times",
+    "alertDescription": "",
+    "open247": true,
+    "operatingHours": {
+      "days": [
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        }
+      ]
+    },
+    "showWaitTimes": true,
+    "showStatus": false,
+    "waitTimeFallback": "open-status",
+    "activityLogId": null,
+    "overrideSchedule": [],
+    "waitTime": {
+      "id": "cmpm7o1w0614aabsx6n9al479",
+      "locationId": "clp8wpahy000ip5437yhg4jv3",
+      "createdAt": "2026-05-26T05:45:03.673Z",
+      "reportId": "cmpm7o1xq614fabsx14wmez7m",
+      "waitTimeMinutes": 325,
+      "elosMinutes": null,
+      "status": "normal"
+    }
+  },
+  {
+    "id": "clp8wu1f7000jp543uw4ii2tj",
+    "name": "Peace Arch Hospital",
+    "slug": "PAH",
+    "status": "published",
+    "type": "ed",
+    "address": "15521 Russell Avenue, White Rock, BC, V4B 2R4",
+    "latitude": 49.029741,
+    "longitude": -122.793026,
+    "website": "https://www.fraserhealth.ca/Service-Directory/Service-At-Location/6/6/emergency---peace-arch-hospital",
+    "phone": "(604) 531-5512",
+    "description": "",
+    "audience": "allAges",
+    "additionalInfo": "",
+    "showAdditionalInfoClosed": false,
+    "additionalInfoClosed": "",
+    "alertShow": false,
+    "alertTitle": "",
+    "alertDescription": "",
+    "open247": true,
+    "operatingHours": {
+      "days": [
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        }
+      ]
+    },
+    "showWaitTimes": true,
+    "showStatus": false,
+    "waitTimeFallback": "open-status",
+    "activityLogId": null,
+    "overrideSchedule": [],
+    "waitTime": {
+      "id": "cmpm7o1vo6147absx31ge3xax",
+      "locationId": "clp8wu1f7000jp543uw4ii2tj",
+      "createdAt": "2026-05-26T05:45:03.673Z",
+      "reportId": "cmpm7o1xq614fabsx14wmez7m",
+      "waitTimeMinutes": 334,
+      "elosMinutes": null,
+      "status": "normal"
+    }
+  },
+  {
+    "id": "clp8wvsqq000kp5438qb8hs6k",
+    "name": "Ridge Meadows Hospital",
+    "slug": "RMH",
+    "status": "published",
+    "type": "ed",
+    "address": "11666 Laity Street, Maple Ridge, BC, V2X 7G5",
+    "latitude": 49.215317,
+    "longitude": -122.630106,
+    "website": "https://www.fraserhealth.ca/Service-Directory/Service-At-Location/5/7/emergency---ridge-meadows-hospital",
+    "phone": "(604) 463-4111",
+    "description": "",
+    "audience": "allAges",
+    "additionalInfo": "",
+    "showAdditionalInfoClosed": false,
+    "additionalInfoClosed": "",
+    "alertShow": false,
+    "alertTitle": "",
+    "alertDescription": "",
+    "open247": true,
+    "operatingHours": {
+      "days": [
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        }
+      ]
+    },
+    "showWaitTimes": true,
+    "showStatus": false,
+    "waitTimeFallback": "open-status",
+    "activityLogId": null,
+    "overrideSchedule": [],
+    "waitTime": {
+      "id": "cmpm7o1w8614babsxkhzx7tkm",
+      "locationId": "clp8wvsqq000kp5438qb8hs6k",
+      "createdAt": "2026-05-26T05:45:03.673Z",
+      "reportId": "cmpm7o1xq614fabsx14wmez7m",
+      "waitTimeMinutes": 211,
+      "elosMinutes": null,
+      "status": "normal"
+    }
+  },
+  {
+    "id": "clp8wyd27000lp543w3jczxmw",
+    "name": "Royal Columbian Hospital",
+    "slug": "RCH",
+    "status": "published",
+    "type": "ed",
+    "address": "330 East Columbia Street, New Westminster, BC, V3L 3W7",
+    "latitude": 49.226603,
+    "longitude": -122.892266,
+    "website": "https://www.fraserhealth.ca/Service-Directory/Service-At-Location/D/E/emergency---royal-columbian-hospital",
+    "phone": "(604) 520-4253",
+    "description": "",
+    "audience": "allAges",
+    "additionalInfo": "",
+    "showAdditionalInfoClosed": false,
+    "additionalInfoClosed": "",
+    "alertShow": false,
+    "alertTitle": "Unable to display wait times",
+    "alertDescription": "",
+    "open247": true,
+    "operatingHours": {
+      "days": [
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        }
+      ]
+    },
+    "showWaitTimes": true,
+    "showStatus": false,
+    "waitTimeFallback": "open-status",
+    "activityLogId": null,
+    "overrideSchedule": [],
+    "waitTime": {
+      "id": "cmpm7o1s06143absx7mhzxlv9",
+      "locationId": "clp8wyd27000lp543w3jczxmw",
+      "createdAt": "2026-05-26T05:45:03.673Z",
+      "reportId": "cmpm7o1xq614fabsx14wmez7m",
+      "waitTimeMinutes": 426,
+      "elosMinutes": null,
+      "status": "normal"
+    }
+  },
+  {
+    "id": "clp8xavwr000np543qere28rd",
+    "name": "Edmonds UPCC",
+    "slug": "EdmondsUPCC",
+    "status": "published",
+    "type": "upcc",
+    "address": "Unit 201, 7315 Edmonds St, Burnaby, BC V3N 1A7",
+    "latitude": 49.218947,
+    "longitude": -122.951261,
+    "website": "https://www.fraserhealth.ca/Service-Directory/Service-At-Location/9/D/urgent-primary-care-centre---edmonds",
+    "phone": "(604) 519-3787",
+    "description": "Patients will be seen according to urgency.\nHours:\nMon-Fri: 5pm to 9pm\nSat: 2pm to 8pm\nSun: 12pm to 6pm\nTo speak with a Fraser Health Virtual Care clinician now: 1-800-314-0999 10am to 10pm, seven days a week.",
+    "audience": "allAges",
+    "additionalInfo": "Urgent Care Services: Monday to Friday 5pm - 9pm, Saturday 2pm - 8pm & Sunday 12pm - 6pm",
+    "showAdditionalInfoClosed": false,
+    "additionalInfoClosed": "",
+    "alertShow": false,
+    "alertTitle": "",
+    "alertDescription": "",
+    "open247": false,
+    "operatingHours": {
+      "days": [
+        {
+          "open": "Thu, 01 Jan 1970 20:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 02:00:00 GMT"
+        },
+        {
+          "open": "Fri, 02 Jan 1970 01:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 05:00:00 GMT"
+        },
+        {
+          "open": "Fri, 02 Jan 1970 01:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 05:00:00 GMT"
+        },
+        {
+          "open": "Fri, 02 Jan 1970 01:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 05:00:00 GMT"
+        },
+        {
+          "open": "Fri, 02 Jan 1970 01:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 05:00:00 GMT"
+        },
+        {
+          "open": "Fri, 02 Jan 1970 01:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 05:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 22:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        }
+      ]
+    },
+    "showWaitTimes": false,
+    "showStatus": false,
+    "waitTimeFallback": "open-status",
+    "activityLogId": null,
+    "overrideSchedule": [],
+    "waitTime": {}
+  },
+  {
+    "id": "clp8xdt66000op543a5c8j4i0",
+    "name": "Metrotown UPCC",
+    "slug": "MTUPCC",
+    "status": "published",
+    "type": "upcc",
+    "address": "Unit 102 - 4555 Kingsway, Burnaby, BC V5H 4T8",
+    "latitude": 49.230061,
+    "longitude": -123.002786,
+    "website": "https://www.fraserhealth.ca/Service-Directory/Service-At-Location/D/7/metrotown-urgent-and-primary-care-centre",
+    "phone": "(604) 451-4888",
+    "description": "Patients will be seen according to urgency.\nHours: 9am to 8pm\nTo speak with a Fraser Health Virtual Care clinician now: 1-800-314-0999 10am to 10pm, seven days a week.",
+    "audience": "allAges",
+    "additionalInfo": "Urgent Care Services: 9am to 8pm 7 days/week",
+    "showAdditionalInfoClosed": false,
+    "additionalInfoClosed": "",
+    "alertShow": false,
+    "alertTitle": "",
+    "alertDescription": "",
+    "open247": false,
+    "operatingHours": {
+      "days": [
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        }
+      ]
+    },
+    "showWaitTimes": false,
+    "showStatus": false,
+    "waitTimeFallback": "open-status",
+    "activityLogId": null,
+    "overrideSchedule": [],
+    "waitTime": {}
+  },
+  {
+    "id": "clp8xhmqg000pp543gdin4eiy",
+    "name": "Port Moody UPCC",
+    "slug": "TRIUPCC",
+    "status": "published",
+    "type": "upcc",
+    "address": "3105 Murray St, Port Moody, BC V3H 1X3",
+    "latitude": 49.2784156,
+    "longitude": -122.8400973,
+    "website": "https://www.fraserhealth.ca/Service-Directory/Service-At-Location/F/9/urgent-and-primary-care-centre---port-moody",
+    "phone": "(604) 469-3123",
+    "description": "Patients will be seen according to urgency.\nHours: 9am to 8pm\nTo speak with a Fraser Health Virtual Care clinician now: 1-800-314-0999 10am to 10pm, seven days a week.",
+    "audience": "allAges",
+    "additionalInfo": "Urgent Care Services: 9am to 8pm 7 days/week",
+    "showAdditionalInfoClosed": false,
+    "additionalInfoClosed": "",
+    "alertShow": false,
+    "alertTitle": "",
+    "alertDescription": "",
+    "open247": false,
+    "operatingHours": {
+      "days": [
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        }
+      ]
+    },
+    "showWaitTimes": false,
+    "showStatus": false,
+    "waitTimeFallback": "open-status",
+    "activityLogId": null,
+    "overrideSchedule": [],
+    "waitTime": {}
+  },
+  {
+    "id": "clp8xlc3o000qp5437vsrvf0v",
+    "name": "Surrey Newton UPCC",
+    "slug": "NEWUPCC",
+    "status": "published",
+    "type": "upcc",
+    "address": "6830 King George Blvd, Surrey, BC V3W 4Z9",
+    "latitude": 49.126539,
+    "longitude": -122.845132,
+    "website": "https://www.fraserhealth.ca/Service-Directory/Service-At-Location/0/1/urgent-and-primary-care-centre---surrey-newton",
+    "phone": "(604) 572-2625",
+    "description": "Patients will be seen according to urgency.\nHours: Mon-Fri: 2pm to 9pm\nSat-Sun: 9am to 9pm\nTo speak with a Fraser Health Virtual Care clinician now: 1-800-314-0999 10am to 10pm, seven days a week.",
+    "audience": "allAges",
+    "additionalInfo": "Urgent Care Services: Monday to Friday 2pm - 9pm & Saturday, Sunday 9am - 9pm",
+    "showAdditionalInfoClosed": false,
+    "additionalInfoClosed": "",
+    "alertShow": false,
+    "alertTitle": "",
+    "alertDescription": "",
+    "open247": false,
+    "operatingHours": {
+      "days": [
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 05:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 22:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 05:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 22:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 05:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 22:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 05:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 22:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 05:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 22:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 05:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 05:00:00 GMT"
+        }
+      ]
+    },
+    "showWaitTimes": false,
+    "showStatus": false,
+    "waitTimeFallback": "open-status",
+    "activityLogId": null,
+    "overrideSchedule": [],
+    "waitTime": {}
+  },
+  {
+    "id": "clp8xpsx6000rp543j0dhevvj",
+    "name": "Surrey Whalley UPCC",
+    "slug": "SUPCC_SUR",
+    "status": "published",
+    "type": "upcc",
+    "address": "9639 137a St Unit G2, Surrey, BC V3T 0M1",
+    "latitude": 49.177995,
+    "longitude": -122.842549,
+    "website": "https://www.fraserhealth.ca/Service-Directory/Service-At-Location/E/3/urgent-primary-care-centre---surrey",
+    "phone": "(604) 572-2610",
+    "description": "Patients will be seen according to urgency.\nHours: 9am to 9pm\nTo speak with a Fraser Health Virtual Care clinician now: 1-800-314-0999 10am to 10pm, seven days a week.",
+    "audience": "allAges",
+    "additionalInfo": "Urgent Care Services: 9am to 9pm 7 days/week",
+    "showAdditionalInfoClosed": false,
+    "additionalInfoClosed": "",
+    "alertShow": false,
+    "alertTitle": "",
+    "alertDescription": "",
+    "open247": false,
+    "operatingHours": {
+      "days": [
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 05:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 05:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 05:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 05:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 05:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 05:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 05:00:00 GMT"
+        }
+      ]
+    },
+    "showWaitTimes": false,
+    "showStatus": false,
+    "waitTimeFallback": "open-status",
+    "activityLogId": null,
+    "overrideSchedule": [],
+    "waitTime": {}
+  },
+  {
+    "id": "clp8xuydi000sp54370z8b274",
+    "name": "Sechelt Hospital",
+    "slug": "SSHSECHELT",
+    "status": "published",
+    "type": "ed",
+    "address": "5544 Sunshine Coast Highway, Sechelt, BC V0N 3A0",
+    "latitude": 49.47538,
+    "longitude": -123.749473,
+    "website": "https://www.vch.ca/en/location-service/emergency-department-sechelt-shishalh-hospital",
+    "phone": "(604) 885-2224",
+    "description": "Full service hospital",
+    "audience": "allAges",
+    "additionalInfo": "",
+    "showAdditionalInfoClosed": false,
+    "additionalInfoClosed": "",
+    "alertShow": false,
+    "alertTitle": "",
+    "alertDescription": "",
+    "open247": true,
+    "operatingHours": {
+      "days": [
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        }
+      ]
+    },
+    "showWaitTimes": true,
+    "showStatus": false,
+    "waitTimeFallback": "open-status",
+    "activityLogId": null,
+    "overrideSchedule": [],
+    "waitTime": {
+      "id": "cmpm809mk618gabsx1m29dw41",
+      "locationId": "clp8xuydi000sp54370z8b274",
+      "createdAt": "2026-05-26T05:54:33.657Z",
+      "reportId": "cmpm809n9618iabsxgbvsqcov",
+      "waitTimeMinutes": 202,
+      "elosMinutes": 547,
+      "status": "normal"
+    }
+  },
+  {
+    "id": "clp8xzmxm000tp5434t92c0r5",
+    "name": "qathet General Hospital",
+    "slug": "QGHQATHET",
+    "status": "published",
+    "type": "ed",
+    "address": "5000 Joyce Avenue, Powell River, BC V8A 5R3",
+    "latitude": 49.850835,
+    "longitude": -124.518373,
+    "website": "https://www.vch.ca/en/location-service/emergency-department-qathet-general-hospital",
+    "phone": "(604) 485-3211",
+    "description": "Full service hospital",
+    "audience": "allAges",
+    "additionalInfo": "",
+    "showAdditionalInfoClosed": false,
+    "additionalInfoClosed": "",
+    "alertShow": true,
+    "alertTitle": "Site Impact",
+    "alertDescription": "On October 18th, qathet General Hospital will move to a new electronic health records system to enhance patient care. Emergency Department wait times may temporarily increase in the weeks following this transition as physicians and staff adjust to using the new system. Thank you for your patience.",
+    "open247": true,
+    "operatingHours": {
+      "days": [
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": "Thu, 01 Jan 1970 15:30:00 GMT",
+          "close": "Fri, 02 Jan 1970 00:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 15:30:00 GMT",
+          "close": "Fri, 02 Jan 1970 00:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 15:30:00 GMT",
+          "close": "Fri, 02 Jan 1970 00:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 15:30:00 GMT",
+          "close": "Fri, 02 Jan 1970 00:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 15:30:00 GMT",
+          "close": "Fri, 02 Jan 1970 00:00:00 GMT"
+        },
+        {
+          "open": null,
+          "close": null
+        }
+      ]
+    },
+    "showWaitTimes": true,
+    "showStatus": false,
+    "waitTimeFallback": "open-status",
+    "activityLogId": null,
+    "overrideSchedule": [],
+    "waitTime": {
+      "id": "cmpm809lc6185absxebi17q60",
+      "locationId": "clp8xzmxm000tp5434t92c0r5",
+      "createdAt": "2026-05-26T05:54:33.657Z",
+      "reportId": "cmpm809n9618iabsxgbvsqcov",
+      "waitTimeMinutes": 185,
+      "elosMinutes": 256,
+      "status": "normal"
+    }
+  },
+  {
+    "id": "clp8y4dz0000up543mwjn2cyc",
+    "name": "North Vancouver Centre Urgent and Primary Care Centre",
+    "slug": "COMNVCUPCC",
+    "status": "published",
+    "type": "upcc",
+    "address": "221 West Esplanade, Suite 200, 2nd Floor, North Vancouver, BC V7M 3J3",
+    "latitude": 49.31233,
+    "longitude": -123.083585,
+    "website": "https://www.vch.ca/en/location/north-vancouver-urgent-and-primary-care-centre",
+    "phone": "(604) 973-1600",
+    "description": "X-ray services available on-site. Lab services available off-site.\nHours:\nMon-Sat: 8am to 10pm\nSun: 9am to 5pm",
+    "audience": "allAges",
+    "additionalInfo": "",
+    "showAdditionalInfoClosed": false,
+    "additionalInfoClosed": "",
+    "alertShow": false,
+    "alertTitle": "Wait times not available due to information system issues",
+    "alertDescription": "",
+    "open247": false,
+    "operatingHours": {
+      "days": [
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 01:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 06:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 06:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 06:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 06:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 06:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 06:00:00 GMT"
+        }
+      ]
+    },
+    "showWaitTimes": true,
+    "showStatus": false,
+    "waitTimeFallback": "contact",
+    "activityLogId": null,
+    "overrideSchedule": [],
+    "waitTime": {
+      "id": "cmpm809l36180absx4em7ubkg",
+      "locationId": "clp8y4dz0000up543mwjn2cyc",
+      "createdAt": "2026-05-26T05:54:33.658Z",
+      "reportId": "cmpm809n9618iabsxgbvsqcov",
+      "waitTimeMinutes": null,
+      "elosMinutes": null,
+      "status": "normal"
+    }
+  },
+  {
+    "id": "clp8y92nn000vp543pelqkbgw",
+    "name": "Delta Hospital",
+    "slug": "DH",
+    "status": "published",
+    "type": "ed",
+    "address": "5800 Mountain View Blvd, Delta BC, V4K 3V6",
+    "latitude": 49.085866,
+    "longitude": -123.061768,
+    "website": "https://www.fraserhealth.ca/Service-Directory/Service-At-Location/8/7/emergency---delta-hospital",
+    "phone": "(604) 946-1121",
+    "description": "",
+    "audience": "allAges",
+    "additionalInfo": "",
+    "showAdditionalInfoClosed": false,
+    "additionalInfoClosed": "",
+    "alertShow": false,
+    "alertTitle": "",
+    "alertDescription": "",
+    "open247": true,
+    "operatingHours": {
+      "days": [
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        }
+      ]
+    },
+    "showWaitTimes": true,
+    "showStatus": false,
+    "waitTimeFallback": "open-status",
+    "activityLogId": null,
+    "overrideSchedule": [],
+    "waitTime": {
+      "id": "cmpm7o1w9614cabsxf88d68ow",
+      "locationId": "clp8y92nn000vp543pelqkbgw",
+      "createdAt": "2026-05-26T05:45:03.673Z",
+      "reportId": "cmpm7o1xq614fabsx14wmez7m",
+      "waitTimeMinutes": 226,
+      "elosMinutes": null,
+      "status": "normal"
+    }
+  },
+  {
+    "id": "clp8yb75j000wp5437cdmn5pr",
+    "name": "Abbotsford Regional Hospital",
+    "slug": "ARH",
+    "status": "published",
+    "type": "ed",
+    "address": "32900 Marshall Road, Abbotsford, BC, V2S 0C2",
+    "latitude": 49.036955,
+    "longitude": -122.312559,
+    "website": "https://www.fraserhealth.ca/Service-Directory/Service-At-Location/E/2/emergency---abbotsford-regional-hospital",
+    "phone": "(604) 851-4700",
+    "description": "",
+    "audience": "allAges",
+    "additionalInfo": "",
+    "showAdditionalInfoClosed": false,
+    "additionalInfoClosed": "",
+    "alertShow": false,
+    "alertTitle": "",
+    "alertDescription": "",
+    "open247": true,
+    "operatingHours": {
+      "days": [
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        }
+      ]
+    },
+    "showWaitTimes": true,
+    "showStatus": false,
+    "waitTimeFallback": "open-status",
+    "activityLogId": null,
+    "overrideSchedule": [],
+    "waitTime": {
+      "id": "cmpm7o1uv6144absxv8q1vgrp",
+      "locationId": "clp8yb75j000wp5437cdmn5pr",
+      "createdAt": "2026-05-26T05:45:03.673Z",
+      "reportId": "cmpm7o1xq614fabsx14wmez7m",
+      "waitTimeMinutes": 300,
+      "elosMinutes": null,
+      "status": "normal"
+    }
+  },
+  {
+    "id": "clp8ych5p000xp543839122fj",
+    "name": "Chilliwack General Hospital",
+    "slug": "CGH",
+    "status": "published",
+    "type": "ed",
+    "address": "45600 Menholm Road, Chilliwack, BC, V2P 1P7",
+    "latitude": 49.166735,
+    "longitude": -121.963847,
+    "website": "https://www.fraserhealth.ca/Service-Directory/Service-At-Location/E/3/emergency---chilliwack-general-hospital",
+    "phone": "(604) 795-4141",
+    "description": "",
+    "audience": "allAges",
+    "additionalInfo": "",
+    "showAdditionalInfoClosed": false,
+    "additionalInfoClosed": "",
+    "alertShow": false,
+    "alertTitle": "",
+    "alertDescription": "",
+    "open247": true,
+    "operatingHours": {
+      "days": [
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        }
+      ]
+    },
+    "showWaitTimes": true,
+    "showStatus": false,
+    "waitTimeFallback": "open-status",
+    "activityLogId": null,
+    "overrideSchedule": [],
+    "waitTime": {
+      "id": "cmpm7o1vs6148absxfumsmpn8",
+      "locationId": "clp8ych5p000xp543839122fj",
+      "createdAt": "2026-05-26T05:45:03.673Z",
+      "reportId": "cmpm7o1xq614fabsx14wmez7m",
+      "waitTimeMinutes": 235,
+      "elosMinutes": null,
+      "status": "normal"
+    }
+  },
+  {
+    "id": "clp8yds7a000yp543g2gsgbix",
+    "name": "Langley Memorial Hospital",
+    "slug": "LMH",
+    "status": "published",
+    "type": "ed",
+    "address": "22051 Fraser Highway, Langley, BC, V4H 4H4",
+    "latitude": 49.094869,
+    "longitude": -122.612407,
+    "website": "https://www.fraserhealth.ca/Service-Directory/Service-At-Location/D/5/emergency---langley-memorial-hospital",
+    "phone": "(604) 514-6000",
+    "description": "",
+    "audience": "allAges",
+    "additionalInfo": "",
+    "showAdditionalInfoClosed": false,
+    "additionalInfoClosed": "",
+    "alertShow": false,
+    "alertTitle": "",
+    "alertDescription": "",
+    "open247": true,
+    "operatingHours": {
+      "days": [
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        }
+      ]
+    },
+    "showWaitTimes": true,
+    "showStatus": false,
+    "waitTimeFallback": "open-status",
+    "activityLogId": null,
+    "overrideSchedule": [],
+    "waitTime": {
+      "id": "cmpm7o1vw6149absx04cy545w",
+      "locationId": "clp8yds7a000yp543g2gsgbix",
+      "createdAt": "2026-05-26T05:45:03.673Z",
+      "reportId": "cmpm7o1xq614fabsx14wmez7m",
+      "waitTimeMinutes": 311,
+      "elosMinutes": null,
+      "status": "normal"
+    }
+  },
+  {
+    "id": "clp8yge40000zp543gdj9z2zk",
+    "name": "Abbotsford UPCC",
+    "slug": "ABBUPCC",
+    "status": "published",
+    "type": "upcc",
+    "address": "2692 Clearbrook Rd, Abbotsford BC V2Y 4N8",
+    "latitude": 49.050858,
+    "longitude": -122.337022,
+    "website": "https://www.fraserhealth.ca/Service-Directory/Service-At-Location/E/7/urgent-and-primary-care-centre---abbotsford",
+    "phone": "(604) 870-3325",
+    "description": "Patients will be seen according to urgency.\nHours: \nMon - Sun: 9am to 8pm. \nTo speak with a Fraser Health Virtual Care clinician now: 1-800-314-0999 10am to 10pm, seven days a week.",
+    "audience": "allAges",
+    "additionalInfo": "Urgent Care Services: Monday to Sunday 9am - 8pm",
+    "showAdditionalInfoClosed": false,
+    "additionalInfoClosed": "",
+    "alertShow": false,
+    "alertTitle": "",
+    "alertDescription": "",
+    "open247": false,
+    "operatingHours": {
+      "days": [
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        }
+      ]
+    },
+    "showWaitTimes": false,
+    "showStatus": false,
+    "waitTimeFallback": "open-status",
+    "activityLogId": null,
+    "overrideSchedule": [],
+    "waitTime": {}
+  },
+  {
+    "id": "clp8yjbql0010p543h8pa02z3",
+    "name": "Ridge Meadows UPCC",
+    "slug": "RMUPCC",
+    "status": "published",
+    "type": "upcc",
+    "address": "121-11900 Haney Place, Maple Ridge, BC V2X 8R9",
+    "latitude": 49.21798,
+    "longitude": -122.5999987,
+    "website": "https://www.fraserhealth.ca/Service-Directory/Service-At-Location/F/C/urgent-primary-care-centre---ridge-meadows",
+    "phone": "(604) 476-4650",
+    "description": "Patients will be seen according to urgency.\nHours: 9am to 8pm\nTo speak with a Fraser Health Virtual Care clinician now: 1-800-314-0999 10am to 10pm, seven days a week.",
+    "audience": "allAges",
+    "additionalInfo": "Urgent Care Services: 9am to 8pm 7 days/week",
+    "showAdditionalInfoClosed": false,
+    "additionalInfoClosed": "",
+    "alertShow": false,
+    "alertTitle": "",
+    "alertDescription": "Patients will be seen according to urgency.\nHours: 9am to 8pm\nTo speak with a Fraser Health Virtual Care clinician now: 1-800-314-0999 10am to 10pm, seven days a week.",
+    "open247": false,
+    "operatingHours": {
+      "days": [
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        }
+      ]
+    },
+    "showWaitTimes": false,
+    "showStatus": false,
+    "waitTimeFallback": "open-status",
+    "activityLogId": null,
+    "overrideSchedule": [],
+    "waitTime": {}
+  },
+  {
+    "id": "clpkg5qm40000pq41pihmlb48",
+    "name": "Richmond City Centre Urgent and Primary Care Centre",
+    "slug": "COMRCCUPCC",
+    "status": "published",
+    "type": "upcc",
+    "address": "Unit 110 - 4671 No. 3 Road, Richmond, BC V6X 2C3",
+    "latitude": 49.182207,
+    "longitude": -123.1362665,
+    "website": "https://www.vch.ca/en/location/richmond-city-centre-urgent-and-primary-care-centre",
+    "phone": "(604) 675-2768",
+    "description": "X-ray services available on-site. Lab services available off-site.\nHours: Mon-Sat: 8am to 10pm\nSun: 9am to 5pm",
+    "audience": "allAges",
+    "additionalInfo": "",
+    "showAdditionalInfoClosed": false,
+    "additionalInfoClosed": "",
+    "alertShow": false,
+    "alertTitle": "",
+    "alertDescription": "",
+    "open247": false,
+    "operatingHours": {
+      "days": [
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 01:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 06:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 06:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 06:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 06:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 06:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 06:00:00 GMT"
+        }
+      ]
+    },
+    "showWaitTimes": true,
+    "showStatus": false,
+    "waitTimeFallback": "contact",
+    "activityLogId": null,
+    "overrideSchedule": [],
+    "waitTime": {
+      "id": "cmpm809m1618babsxedtf8osf",
+      "locationId": "clpkg5qm40000pq41pihmlb48",
+      "createdAt": "2026-05-26T05:54:33.658Z",
+      "reportId": "cmpm809n9618iabsxgbvsqcov",
+      "waitTimeMinutes": null,
+      "elosMinutes": null,
+      "status": "normal"
+    }
+  },
+  {
+    "id": "cls0uvadt9asfmo47yvw8sqvf",
+    "name": "Surrey Memorial Hospital Adult",
+    "slug": "SMH-A",
+    "status": "published",
+    "type": "ed",
+    "address": "13750 96th Avenue, Surrey, BC, V3V 1Z2",
+    "latitude": 49.176531,
+    "longitude": -122.841399,
+    "website": "https://www.fraserhealth.ca/Service-Directory/Service-At-Location/5/9/emergency---surrey-memorial-hospital",
+    "phone": "(604) 581-2211",
+    "description": "",
+    "audience": "seventeenPlus",
+    "additionalInfo": "",
+    "showAdditionalInfoClosed": false,
+    "additionalInfoClosed": "",
+    "alertShow": false,
+    "alertTitle": "",
+    "alertDescription": "",
+    "open247": true,
+    "operatingHours": {
+      "days": [
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        }
+      ]
+    },
+    "showWaitTimes": true,
+    "showStatus": false,
+    "waitTimeFallback": "open-status",
+    "activityLogId": null,
+    "overrideSchedule": [],
+    "waitTime": {
+      "id": "cmpm7o1v56145absxypq09isu",
+      "locationId": "cls0uvadt9asfmo47yvw8sqvf",
+      "createdAt": "2026-05-26T05:45:03.663Z",
+      "reportId": "cmpm7o1xq614fabsx14wmez7m",
+      "waitTimeMinutes": 428,
+      "elosMinutes": null,
+      "status": "normal"
+    }
+  },
+  {
+    "id": "cls0uxgp69asgmo479vh3p9kf",
+    "name": "Surrey Memorial Hospital Pediatrics",
+    "slug": "SMH-P",
+    "status": "published",
+    "type": "ed",
+    "address": "13750 96th Avenue, Surrey, BC, V3V 1Z2",
+    "latitude": 49.1755,
+    "longitude": -122.843,
+    "website": "https://www.fraserhealth.ca/Service-Directory/Service-At-Location/5/9/emergency---surrey-memorial-hospital",
+    "phone": "(604) 581-2211",
+    "description": "",
+    "audience": "sixteenAndUnder",
+    "additionalInfo": "",
+    "showAdditionalInfoClosed": false,
+    "additionalInfoClosed": "",
+    "alertShow": false,
+    "alertTitle": "Unable to display wait times",
+    "alertDescription": "",
+    "open247": true,
+    "operatingHours": {
+      "days": [
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        },
+        {
+          "open": null,
+          "close": null
+        }
+      ]
+    },
+    "showWaitTimes": true,
+    "showStatus": false,
+    "waitTimeFallback": "open-status",
+    "activityLogId": null,
+    "overrideSchedule": [],
+    "waitTime": {
+      "id": "cmpm7o1rt6142absx9sk557mk",
+      "locationId": "cls0uxgp69asgmo479vh3p9kf",
+      "createdAt": "2026-05-26T05:45:03.664Z",
+      "reportId": "cmpm7o1xq614fabsx14wmez7m",
+      "waitTimeMinutes": 183,
+      "elosMinutes": null,
+      "status": "normal"
+    }
+  },
+  {
+    "id": "clubmk6pw417ut64umefmtq5o",
+    "name": "Richmond East Urgent and Primary Care Centre",
+    "slug": "COMREUPCC",
+    "status": "published",
+    "type": "upcc",
+    "address": "#95 - 10551 Shellbridge Way, Richmond, BC V6X 2W9",
+    "latitude": 49.1870948,
+    "longitude": -123.1077176,
+    "website": "https://www.vch.ca/en/location/richmond-east-urgent-and-primary-care-centre-upcc",
+    "phone": "(604) 244-5560",
+    "description": "X-ray services available on-site. Lab services available off-site.\nHours: Mon - Sat: 8am \u2013 10pm\nSun: 9am to 5pm",
+    "audience": "allAges",
+    "additionalInfo": "",
+    "showAdditionalInfoClosed": false,
+    "additionalInfoClosed": "",
+    "alertShow": false,
+    "alertTitle": "Wait times not available due to information system issues",
+    "alertDescription": "",
+    "open247": false,
+    "operatingHours": {
+      "days": [
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 01:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 06:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 06:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 06:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 06:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 06:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 06:00:00 GMT"
+        }
+      ]
+    },
+    "showWaitTimes": true,
+    "showStatus": false,
+    "waitTimeFallback": "contact",
+    "activityLogId": null,
+    "overrideSchedule": [],
+    "waitTime": {
+      "id": "cmpm809lb6184absxeuhdziq5",
+      "locationId": "clubmk6pw417ut64umefmtq5o",
+      "createdAt": "2026-05-26T05:54:33.657Z",
+      "reportId": "cmpm809n9618iabsxgbvsqcov",
+      "waitTimeMinutes": null,
+      "elosMinutes": null,
+      "status": "normal"
+    }
+  },
+  {
+    "id": "clwzle062002a6niqpawb81di",
+    "name": "Chilliwack UPCC",
+    "slug": "CHIUPCC",
+    "status": "published",
+    "type": "upcc",
+    "address": "#104-7955 Evans Road, Chilliwack, BC V2R 5R7",
+    "latitude": 49.1460087,
+    "longitude": -121.9807703,
+    "website": "https://www.fraserhealth.ca/Service-Directory/Service-At-Location/8/3/Urgent-and-Primary-Care-Centre---Chilliwack",
+    "phone": "(778) 704-6006",
+    "description": "Patients will be seen according to urgency.\nHours: \nMon-Fri: 12 noon pm to 8pm\nSat-Sun & Stat Holidays: 9am to 8pm\nTo speak with a Fraser Health Virtual Care clinician now: 1-800-314-0999 10am to 10pm, seven days a week.",
+    "audience": "allAges",
+    "additionalInfo": "Urgent Care Services: Monday to Friday 12 noon - 8pm & Saturday, Sunday Stat 9am - 8pm",
+    "showAdditionalInfoClosed": false,
+    "additionalInfoClosed": "",
+    "alertShow": false,
+    "alertTitle": "",
+    "alertDescription": "",
+    "open247": false,
+    "operatingHours": {
+      "days": [
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 20:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 20:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 20:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 20:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 20:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        }
+      ]
+    },
+    "showWaitTimes": false,
+    "showStatus": false,
+    "waitTimeFallback": "open-status",
+    "activityLogId": null,
+    "overrideSchedule": [],
+    "waitTime": {}
+  },
+  {
+    "id": "clwzli44z003g6niqeamxklp5",
+    "name": "Langley UPCC",
+    "slug": "LANUPCC",
+    "status": "published",
+    "type": "upcc",
+    "address": "#202-20434 64th Ave, Langley, BC V2Y 1N4",
+    "latitude": 49.1050027,
+    "longitude": -122.6522436,
+    "website": "https://www.fraserhealth.ca/Service-Directory/Service-At-Location/F/4/urgent-and-primary-care-centre-langley",
+    "phone": "(604) 514-7477",
+    "description": "Patients will be seen according to urgency.\nHours:  9am to 8pm daily\n\nTo speak with a Fraser Health Virtual Care clinician now: 1-800-314-0999 10am to 10pm, seven days a week.",
+    "audience": "allAges",
+    "additionalInfo": "Urgent Care Services: 9am to 8pm daily",
+    "showAdditionalInfoClosed": false,
+    "additionalInfoClosed": "",
+    "alertShow": false,
+    "alertTitle": "",
+    "alertDescription": "",
+    "open247": false,
+    "operatingHours": {
+      "days": [
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        }
+      ]
+    },
+    "showWaitTimes": false,
+    "showStatus": false,
+    "waitTimeFallback": "open-status",
+    "activityLogId": null,
+    "overrideSchedule": [],
+    "waitTime": {}
+  },
+  {
+    "id": "clwzljuh2003h6niq6zx8vujr",
+    "name": "Mission UPCC",
+    "slug": "MISUPCC",
+    "status": "published",
+    "type": "upcc",
+    "address": "#304\u201332555 London Avenue, Mission, BC V0M 1H0",
+    "latitude": 49.1302205,
+    "longitude": -122.3181252,
+    "website": "https://www.fraserhealth.ca/Service-Directory/Service-At-Location/3/D/Urgent-and-Primary-Care-Centre---Mission",
+    "phone": "(604) 814-5648",
+    "description": "Patients will be seen according to urgency.\nHours: 9am to 8pm\nTo speak with a Fraser Health Virtual Care clinician now: 1-800-314-0999 10am to 10pm, seven days a week.",
+    "audience": "allAges",
+    "additionalInfo": "Urgent Care Services: 9am to 8pm 7 days/week",
+    "showAdditionalInfoClosed": false,
+    "additionalInfoClosed": "",
+    "alertShow": false,
+    "alertTitle": "",
+    "alertDescription": "",
+    "open247": false,
+    "operatingHours": {
+      "days": [
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 04:00:00 GMT"
+        }
+      ]
+    },
+    "showWaitTimes": false,
+    "showStatus": false,
+    "waitTimeFallback": "open-status",
+    "activityLogId": null,
+    "overrideSchedule": [],
+    "waitTime": {}
+  },
+  {
+    "id": "cm41nasze2389zotbsny3bzk6",
+    "name": "Vancouver City Centre Urgent and Primary Care Centre",
+    "slug": "COMVCCUPCC",
+    "status": "published",
+    "type": "upcc",
+    "address": "188 Nelson Street, Vancouver, BC, V6B 1A9",
+    "latitude": 49.27579444052,
+    "longitude": -123.1180550115052,
+    "website": "https://www.vch.ca/en/location/vancouver-city-centre-urgent-primary-care-centre",
+    "phone": "(604) 416-1811",
+    "description": "X-ray services available on-site. Lab services available off-site.\nHours:\nMon-Sat: 8am to 10pm\nSun: 9am to 5pm",
+    "audience": "allAges",
+    "additionalInfo": "",
+    "showAdditionalInfoClosed": false,
+    "additionalInfoClosed": "",
+    "alertShow": false,
+    "alertTitle": "",
+    "alertDescription": "",
+    "open247": false,
+    "operatingHours": {
+      "days": [
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 01:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 06:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 06:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 06:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 06:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 06:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 06:00:00 GMT"
+        }
+      ]
+    },
+    "showWaitTimes": true,
+    "showStatus": false,
+    "waitTimeFallback": "contact",
+    "activityLogId": null,
+    "overrideSchedule": [],
+    "waitTime": {
+      "id": "cmpm809l3617zabsx97mpg0x3",
+      "locationId": "cm41nasze2389zotbsny3bzk6",
+      "createdAt": "2026-05-26T05:54:33.657Z",
+      "reportId": "cmpm809n9618iabsxgbvsqcov",
+      "waitTimeMinutes": null,
+      "elosMinutes": null,
+      "status": "normal"
+    }
+  },
+  {
+    "id": "cmndrvl7425a48bf5cjc3mtwm",
+    "name": "UBC Urgent and Primary Care Centre",
+    "slug": "COMUBCUPCC",
+    "status": "published",
+    "type": "upcc",
+    "address": "6165 Agronomy Road, Vancouver BC V6T 1Z3",
+    "latitude": 49.2617,
+    "longitude": -123.24611,
+    "website": "https://www.vch.ca/UBC-UPCC",
+    "phone": "236-466-6196",
+    "description": "UBC UPCC has X-ray services available on-site. \nLab services available off-site. \nHours: \nMon - Sat: 8am \u2013 10pm \nSun: 9am to 5pm",
+    "audience": "allAges",
+    "additionalInfo": "Due to high patient volumes, we may stop accepting patients prior to closing.",
+    "showAdditionalInfoClosed": true,
+    "additionalInfoClosed": "",
+    "alertShow": false,
+    "alertTitle": "",
+    "alertDescription": "",
+    "open247": false,
+    "operatingHours": {
+      "days": [
+        {
+          "open": "Thu, 01 Jan 1970 17:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 01:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 06:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 06:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 06:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 06:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 06:00:00 GMT"
+        },
+        {
+          "open": "Thu, 01 Jan 1970 16:00:00 GMT",
+          "close": "Fri, 02 Jan 1970 06:00:00 GMT"
+        }
+      ]
+    },
+    "showWaitTimes": true,
+    "showStatus": false,
+    "waitTimeFallback": "open-status",
+    "activityLogId": "cmnryer5z6j638bf5i9lb7j5o",
+    "overrideSchedule": [],
+    "waitTime": {
+      "id": "cmpm809lc6186absxz8p3pvnr",
+      "locationId": "cmndrvl7425a48bf5cjc3mtwm",
+      "createdAt": "2026-05-26T05:54:33.657Z",
+      "reportId": "cmpm809n9618iabsxgbvsqcov",
+      "waitTimeMinutes": null,
+      "elosMinutes": null,
+      "status": "normal"
+    }
+  }
+]
