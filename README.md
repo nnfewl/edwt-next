@@ -1,36 +1,96 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# edwt-next
 
-## Getting Started
+A rebuild of the BC emergency-department wait-times site
+([edwaittimes.ca](https://www.edwaittimes.ca/)), built **data-first**: before any
+UI, it stands up an ingestion pipeline that captures wait-time history into Postgres
+for later analytics (heat maps, trends, time-series).
 
-First, run the development server:
+> Status: **Phase 1 — ingestion pipeline.** The Next.js app is scaffolded but the
+> frontend is not built yet.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## How it works
+
+The public site exposes one public, unauthenticated, CORS-open endpoint:
+
+```
+GET https://www.edwaittimes.ca/api/wait-times  →  Location[]   (~41 facilities)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Each facility carries a `waitTime` object (`waitTimeMinutes`, `elosMinutes`,
+`status`, `reportId`, `createdAt`). Reports refresh roughly every minute. A poller
+fetches this on an interval and persists it:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```
+edwaittimes.ca/api/wait-times
+        │  conditional GET (ETag) every POLL_INTERVAL_MS
+        ▼
+  src/lib/edwt.ts        fetch + zod validation
+        ▼
+  src/ingest/poll.ts     archive raw → upsert locations → insert readings (dedup)
+        ▼
+  PostgreSQL (Drizzle)   locations · wait_time_readings · raw_polls
+        ▲
+  src/ingest/worker.ts   interval loop (+ --once mode)
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Data model
 
-## Learn More
+| Table | Purpose |
+|-------|---------|
+| `locations` | Facility metadata (name, type, address, lat/long, hours…), upserted each poll. |
+| `wait_time_readings` | Fact table — one row per distinct report per facility. Unique `(location_id, report_id)` dedups, so polling aggressively never stores duplicates. |
+| `raw_polls` | Full JSON payload of every poll (TOAST-compressed, ~12 KB each) — insurance against schema drift and the source for reprocessing. |
 
-To learn more about Next.js, take a look at the following resources:
+Schema lives in [`src/db/schema.ts`](src/db/schema.ts).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Quick start
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Requires Node 20+, pnpm, and Docker.
 
-## Deploy on Vercel
+```bash
+pnpm install
+cp .env.example .env          # defaults work for local dev
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+pnpm db:up                    # Postgres 17 in Docker on host port 5433
+pnpm db:migrate               # apply schema
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+pnpm ingest:once              # single poll (sanity check)
+pnpm ingest                   # long-running poller (every POLL_INTERVAL_MS)
+```
+
+## Configuration (`.env`)
+
+| Var | Default | Notes |
+|-----|---------|-------|
+| `DATABASE_URL` | `postgres://edwt:edwt@localhost:5433/edwt` | Port 5433 avoids a common 5432 clash. |
+| `EDWT_SOURCE_URL` | `https://www.edwaittimes.ca/api/wait-times` | Upstream feed. |
+| `POLL_INTERVAL_MS` | `60000` | Source refreshes ~every minute; 60s captures essentially every report. |
+
+## Scripts
+
+| Script | Action |
+|--------|--------|
+| `pnpm db:up` / `db:down` | Start / stop the Postgres container. |
+| `pnpm db:generate` | Generate a Drizzle migration from the schema. |
+| `pnpm db:migrate` | Apply migrations. |
+| `pnpm db:studio` | Open Drizzle Studio. |
+| `pnpm ingest` | Run the long-running poller. |
+| `pnpm ingest:once` | Single poll then exit (good for cron). |
+
+For continuous collection, run `pnpm ingest` under a process manager, or schedule
+`pnpm ingest:once` every minute via cron.
+
+## Roadmap
+
+- **Phase 2:** point a `getWaitTimes()` data-access layer at Postgres (latest reading
+  per facility).
+- **Phase 3:** UI — map + Mapbox geocoding + distance sort + facility cards; then
+  analytics views (heat maps / trend charts), optionally via TimescaleDB rollups.
+
+## Tech
+
+Next.js 16 (App Router) · TypeScript · Tailwind 4 · Drizzle ORM · PostgreSQL ·
+postgres.js · zod · pnpm.
+
+`sample-wait-times.json` is a captured 41-facility snapshot, kept as a fixture and
+shape reference.
