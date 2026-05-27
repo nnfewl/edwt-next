@@ -43,3 +43,7 @@ supabase/.temp/
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# go worker (service/)
+/service/bin/
+/service/coverage.out
