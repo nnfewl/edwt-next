@@ -1,0 +1,101 @@
+---
+# Build edwtd locally, then deploy + (re)start it on the VPS under systemd.
+#
+#   cp inventory.example.ini inventory.ini   # set your VPS host
+#   cp vars.example.yml vars.yml             # fill in secrets (then: ansible-vault encrypt vars.yml)
+#   ansible-playbook -i inventory.ini playbook.yml [--ask-vault-pass]
+
+- name: Build edwtd binary (control node)
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tags: [build]
+  tasks:
+    - name: make build
+      ansible.builtin.command:
+        cmd: make build
+        chdir: "{{ playbook_dir }}/../.."
+      changed_when: true
+
+- name: Deploy edwtd to the VPS
+  hosts: edwt
+  become: true
+  gather_facts: true
+  vars_files:
+    - vars.yml
+  tasks:
+    - name: Required settings are present
+      ansible.builtin.assert:
+        that:
+          - edwtd_database_url is defined and edwtd_database_url | length > 0
+          - edwtd_r2_account_id | default('') | length > 0
+          - edwtd_r2_bucket | default('') | length > 0
+        fail_msg: "Set edwtd_database_url and the R2_* vars in vars.yml"
+
+    - name: System group
+      ansible.builtin.group:
+        name: edwtd
+        system: true
+
+    - name: System user
+      ansible.builtin.user:
+        name: edwtd
+        group: edwtd
+        system: true
+        create_home: false
+        shell: /usr/sbin/nologin
+
+    - name: Install binary
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../../bin/edwtd"
+        dest: /usr/local/bin/edwtd
+        mode: "0755"
+        owner: root
+        group: root
+      notify: Restart edwtd
+
+    - name: Config directory
+      ansible.builtin.file:
+        path: /etc/edwtd
+        state: directory
+        owner: root
+        group: edwtd
+        mode: "0750"
+
+    - name: Environment file
+      ansible.builtin.template:
+        src: edwtd.env.j2
+        dest: /etc/edwtd/edwtd.env
+        owner: root
+        group: edwtd
+        mode: "0640"
+      no_log: true
+      notify: Restart edwtd
+
+    - name: systemd unit
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../edwtd.service"
+        dest: /etc/systemd/system/edwtd.service
+        mode: "0644"
+        owner: root
+        group: root
+      notify:
+        - Reload systemd
+        - Restart edwtd
+
+    - name: Enable and start
+      ansible.builtin.systemd_service:
+        name: edwtd
+        enabled: true
+        state: started
+        daemon_reload: true
+
+  handlers:
+    - name: Reload systemd
+      ansible.builtin.systemd_service:
+        daemon_reload: true
+
+    - name: Restart edwtd
+      ansible.builtin.systemd_service:
+        name: edwtd
+        state: restarted

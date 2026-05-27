@@ -8,19 +8,22 @@ for later analytics (heat maps, trends, time-series).
 > Status: **Phase 1 — ingestion pipeline.** Running in production on Supabase; the
 > Next.js frontend is scaffolded but not built yet.
 
-## Two ways to run
+## Where it runs
 
-The same ingestion logic runs in either environment — pick per need, both are supported:
+The same ingestion logic runs in any of these — pick per need, all are supported:
 
 | Mode | Where ingest runs | Database | Use for |
 |------|-------------------|----------|---------|
 | **Local** | Node poller (`src/ingest/worker.ts`) on your machine | Postgres 17 in Docker | dev, debugging, full raw archive, offline work |
 | **Cloud** | Supabase Edge Function, triggered by `pg_cron` every 60s | Supabase managed Postgres | always-on production collection |
+| **Worker** | Go worker (`service/`) on an always-on host | Supabase (second writer) + Cloudflare R2 (raw) | durable raw archive + write-path redundancy |
 
 Cloud is the live source of truth; local stays fully functional for development and
-as a self-contained fallback. The shared poll logic lives in
-[`src/ingest/poll.ts`](src/ingest/poll.ts) and the Deno port in
-[`supabase/functions/ingest/index.ts`](supabase/functions/ingest/index.ts).
+as a self-contained fallback. The Go **worker** runs elsewhere as a *second writer*
+alongside the Edge Function and is the only piece that archives the raw payload (to
+R2). The shared poll logic lives in [`src/ingest/poll.ts`](src/ingest/poll.ts), the
+Deno port in [`supabase/functions/ingest/index.ts`](supabase/functions/ingest/index.ts),
+and the Go port in [`service/`](service/).
 
 ## How it works
 
@@ -116,6 +119,56 @@ npx supabase functions deploy ingest
 is drafted in [`docs/plans/retention-rollup.md`](docs/plans/retention-rollup.md) —
 not yet applied.
 
+## Collector worker (Go, `service/`)
+
+A standalone Go binary (`edwtd`) that runs on an always-on host (a VPS, etc.),
+separate from Supabase. It does two things every poll: archive the raw payload to
+**Cloudflare R2** (gzipped, content-addressed — this is the raw history the cloud DB
+no longer keeps), and upsert `locations` + `wait_time_readings` into Supabase as a
+**second writer**. Writes are idempotent (`ON CONFLICT`), so it runs concurrently
+with the Edge Function without duplicating rows. It exposes Prometheus `/metrics`,
+`/healthz`, `/readyz`, and `/api/status`. Full design:
+[`docs/plans/go-collector-service.md`](docs/plans/go-collector-service.md).
+
+```bash
+cd service
+make build           # → bin/edwtd (stripped, ~24 MB static binary)
+make test            # vet + unit tests; `make help` lists all targets
+```
+
+**Run it under systemd** (recommended; templates in [`service/deploy/`](service/deploy/)):
+
+```bash
+sudo useradd --system --no-create-home --shell /usr/sbin/nologin edwtd
+sudo install -m 0755 bin/edwtd /usr/local/bin/edwtd
+sudo install -d -m 0750 /etc/edwtd
+sudo install -m 0600 deploy/edwtd.env.example /etc/edwtd/edwtd.env   # then edit secrets
+sudo install -m 0644 deploy/edwtd.service /etc/systemd/system/edwtd.service
+sudo systemctl daemon-reload
+sudo systemctl enable --now edwtd            # start now + on boot
+journalctl -u edwtd -f                        # logs (slog JSON)
+```
+
+`Restart=always` survives crashes, `enable` survives reboots, and `edwtd` handles
+`SIGTERM` so `systemctl restart` is graceful. Run a **single** instance. CI builds
+and tests the worker on every push touching `service/**`.
+
+For a repeatable VPS deploy, an **Ansible** playbook in
+[`service/deploy/ansible/`](service/deploy/ansible/) builds the binary locally and
+provisions the user, env, unit, and service in one command (re-running it is the
+update path).
+
+### Worker configuration (`/etc/edwtd/edwtd.env`)
+
+| Var | Default | Notes |
+|-----|---------|-------|
+| `DATABASE_URL` | — | Supabase **direct** connection (`:5432`). Required when `EDWT_WRITE_DB=true`. |
+| `EDWT_WRITE_DB` | `true` | Second-writer DB path; `false` = archive-only (debugging). |
+| `R2_ACCOUNT_ID` / `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` / `R2_BUCKET` | — | Cloudflare R2; archiving is disabled if unset. |
+| `EDWT_HTTP_ADDR` | `:8080` | Metrics / health listen address. |
+| `EDWT_READY_MAX_STALENESS` | `3m` | `/readyz` fails if the last archive is older than this. |
+| `EDWT_SOURCE_URL` / `POLL_INTERVAL_MS` | feed / `60000` | Shared with the other modes. |
+
 ## Configuration
 
 ### Local (`.env`)
@@ -142,6 +195,7 @@ Function reads its Supabase URL + service-role key from auto-injected env at run
 | `pnpm ingest` | Run the long-running local poller. |
 | `pnpm ingest:once` | Single poll then exit (good for cron). |
 | `npx supabase functions deploy ingest` | Deploy/update the cloud Edge Function. |
+| `make -C service build` / `test` / `ci` | Build / test the Go collector worker. |
 
 ## Roadmap
 
@@ -153,7 +207,8 @@ Function reads its Supabase URL + service-role key from auto-injected env at run
 ## Tech
 
 Next.js 16 (App Router) · TypeScript · Tailwind 4 · Drizzle ORM · PostgreSQL ·
-postgres.js · zod · pnpm · Supabase (Edge Functions + pg_cron).
+postgres.js · zod · pnpm · Supabase (Edge Functions + pg_cron) · Go worker
+(pgx · aws-sdk-go-v2 → Cloudflare R2 · Prometheus).
 
 `sample-wait-times.json` is a captured 41-facility snapshot, kept as a fixture and
 shape reference.

@@ -1,0 +1,44 @@
+# edwt-next collector worker — systemd unit.
+#
+# Install:
+#   sudo useradd --system --no-create-home --shell /usr/sbin/nologin edwtd
+#   sudo install -m 0755 bin/edwtd /usr/local/bin/edwtd
+#   sudo install -d -m 0750 /etc/edwtd
+#   sudo install -m 0600 deploy/edwtd.env.example /etc/edwtd/edwtd.env   # then edit secrets
+#   sudo install -m 0644 deploy/edwtd.service /etc/systemd/system/edwtd.service
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now edwtd
+#   journalctl -u edwtd -f
+
+[Unit]
+Description=edwt-next collector worker (edwtd)
+Documentation=https://github.com/nnfewl/edwt-next/blob/master/docs/plans/go-collector-service.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=edwtd
+EnvironmentFile=/etc/edwtd/edwtd.env
+ExecStart=/usr/local/bin/edwtd
+
+# edwtd shuts down gracefully on SIGTERM; give it room before SIGKILL.
+KillSignal=SIGTERM
+TimeoutStopSec=15
+
+# Keep it running across crashes and reboots.
+Restart=always
+RestartSec=5
+
+# Light hardening — the worker only needs network + its env file.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6
+RestrictNamespaces=true
+
+[Install]
+WantedBy=multi-user.target

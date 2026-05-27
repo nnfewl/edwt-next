@@ -1,0 +1,17 @@
+---
+# Copy to vars.yml (gitignored) and fill in. For secrets, encrypt it:
+#   ansible-vault encrypt vars.yml   (then run the playbook with --ask-vault-pass)
+
+# --- non-secret ---
+edwtd_source_url: "https://www.edwaittimes.ca/api/wait-times"
+edwtd_poll_interval_ms: 60000
+edwtd_write_db: true
+edwtd_http_addr: ":8080"
+edwtd_ready_max_staleness: "3m"
+edwtd_r2_bucket: "edwt-raw"
+
+# --- secrets (do not commit unencrypted) ---
+edwtd_database_url: "postgres://postgres:PASSWORD@db.YOUR_REF.supabase.co:5432/postgres?sslmode=require"
+edwtd_r2_account_id: ""
+edwtd_r2_access_key_id: ""
+edwtd_r2_secret_access_key: ""

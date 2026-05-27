@@ -47,3 +47,7 @@ next-env.d.ts
 # go worker (service/)
 /service/bin/
 /service/coverage.out
+
+# ansible deploy (real inventory + secrets)
+/service/deploy/ansible/inventory.ini
+/service/deploy/ansible/vars.yml
