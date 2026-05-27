@@ -105,6 +105,43 @@ type Pinger interface {
 	Ping(ctx context.Context) error
 }
 
+// Component is the health of one named subsystem.
+type Component struct {
+	Name    string
+	Healthy bool
+	Detail  string
+}
+
+// Evaluator computes component health from the worker's live state. It is the
+// single source of truth shared by /api/status and the incident.io reconciler.
+type Evaluator struct {
+	Status         *Status
+	DB             Pinger // nil when not writing to a DB
+	MaxStaleness   time.Duration
+	ArchiveEnabled bool
+}
+
+// Evaluate returns the current health of each component.
+func (e Evaluator) Evaluate(ctx context.Context) []Component {
+	upstream := e.Status.sourceOK.Load()
+
+	la := e.Status.lastArchive()
+	archive := !e.ArchiveEnabled || (!la.IsZero() && time.Since(la) <= e.MaxStaleness)
+
+	db := true
+	if e.DB != nil {
+		dctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+		defer cancel()
+		db = e.DB.Ping(dctx) == nil
+	}
+
+	return []Component{
+		{Name: "upstream", Healthy: upstream, Detail: "edwaittimes feed fetch"},
+		{Name: "archive", Healthy: archive, Detail: "R2 archive freshness"},
+		{Name: "database", Healthy: db, Detail: "Supabase connectivity"},
+	}
+}
+
 // ServerDeps wires the metrics/health/status HTTP server.
 type ServerDeps struct {
 	Addr           string
@@ -152,29 +189,28 @@ func NewServer(d ServerDeps) *http.Server {
 	return &http.Server{Addr: d.Addr, Handler: mux}
 }
 
+func (d ServerDeps) evaluator() Evaluator {
+	return Evaluator{
+		Status:         d.Status,
+		DB:             d.DB,
+		MaxStaleness:   d.MaxStaleness,
+		ArchiveEnabled: d.ArchiveEnabled,
+	}
+}
+
 func (d ServerDeps) statusView() map[string]any {
-	comp := func(ok bool) string {
-		if ok {
-			return "operational"
+	components := map[string]string{}
+	for _, c := range d.evaluator().Evaluate(context.Background()) {
+		if c.Healthy {
+			components[c.Name] = "operational"
+		} else {
+			components[c.Name] = "major_outage"
 		}
-		return "major_outage"
 	}
-	dbOK := true
-	if d.DB != nil {
-		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-		defer cancel()
-		dbOK = d.DB.Ping(ctx) == nil
-	}
-	la := d.Status.lastArchive()
-	archiveFresh := !d.ArchiveEnabled || (!la.IsZero() && time.Since(la) <= d.MaxStaleness)
 	return map[string]any{
-		"components": map[string]string{
-			"upstream": comp(d.Status.sourceOK.Load()),
-			"archive":  comp(archiveFresh),
-			"database": comp(dbOK),
-		},
+		"components":     components,
 		"last_poll":      timeStr(d.Status.lastPoll()),
-		"last_archive":   timeStr(la),
+		"last_archive":   timeStr(d.Status.lastArchive()),
 		"uptime_seconds": int(time.Since(d.Status.startedAt).Seconds()),
 	}
 }

@@ -2,10 +2,13 @@
 
 > Status: **Core implemented** in [`service/`](../../service/) — poller, R2 archive,
 > Supabase second-writer, Prometheus metrics, `/healthz`, `/readyz`, `/api/status`,
-> graceful shutdown, unit tests, Dockerfile, systemd + Ansible deploy.
+> graceful shutdown, unit tests, Dockerfile, systemd + Ansible deploy. Status-page
+> integration now targets **incident.io** (HTTP alert source) instead of Atlassian
+> Statuspage — a reconciler is implemented; see the POC in
+> [`statuspage-poc.md`](statuspage-poc.md). The Atlassian section below is superseded.
 > **Still pending:** the read **query API** (`/api/wait-times`, `/api/locations`,
-> `/api/locations/{slug}/history`, `/api/stats`), the **Atlassian Statuspage**
-> reconciler, and the **Prometheus/Grafana** docker-compose stack.
+> `/api/locations/{slug}/history`, `/api/stats`) and the **Prometheus/Grafana**
+> docker-compose stack.
 
 ## Context
 

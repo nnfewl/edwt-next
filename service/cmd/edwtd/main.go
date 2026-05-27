@@ -17,6 +17,7 @@ import (
 
 	"github.com/nnfewl/edwt-next/service/internal/archive"
 	"github.com/nnfewl/edwt-next/service/internal/config"
+	"github.com/nnfewl/edwt-next/service/internal/notify"
 	"github.com/nnfewl/edwt-next/service/internal/obs"
 	"github.com/nnfewl/edwt-next/service/internal/poller"
 	"github.com/nnfewl/edwt-next/service/internal/store"
@@ -80,6 +81,19 @@ func main() {
 		MaxStaleness:   cfg.ReadyMaxStaleness,
 		ArchiveEnabled: arch != nil,
 	})
+
+	// incident.io status push (optional) — evaluates the same component health
+	// as /api/status and fires/resolves alerts on transitions.
+	if cfg.IncidentIO.Enabled() {
+		rec := notify.NewReconciler(
+			obs.Evaluator{Status: status, DB: pinger, MaxStaleness: cfg.ReadyMaxStaleness, ArchiveEnabled: arch != nil},
+			notify.NewIncidentIO(cfg.IncidentIO.URL(), cfg.IncidentIO.Token),
+			cfg.IncidentIO.ReconcileInterval,
+			log,
+		)
+		go rec.Run(ctx)
+		log.Info("incident.io reconciler enabled", "interval", cfg.IncidentIO.ReconcileInterval)
+	}
 
 	go func() {
 		log.Info("http listening", "addr", cfg.HTTPAddr)

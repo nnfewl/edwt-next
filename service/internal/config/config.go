@@ -17,6 +17,24 @@ type Config struct {
 	HTTPAddr          string        // metrics/health/api listen addr
 	ReadyMaxStaleness time.Duration // /readyz fails if last archive older than this
 	R2                R2Config
+	IncidentIO        IncidentIOConfig
+}
+
+// IncidentIOConfig drives the incident.io HTTP alert-source integration.
+type IncidentIOConfig struct {
+	AlertSourceID     string        // the {config_id} in the alert-source URL
+	Token             string        // alert-source bearer token
+	ReconcileInterval time.Duration // how often to evaluate + push transitions
+}
+
+// Enabled reports whether the incident.io push is configured.
+func (c IncidentIOConfig) Enabled() bool {
+	return c.AlertSourceID != "" && c.Token != ""
+}
+
+// URL is the alert-events endpoint for the configured source.
+func (c IncidentIOConfig) URL() string {
+	return "https://api.incident.io/v2/alert_events/http/" + c.AlertSourceID
 }
 
 // R2Config holds Cloudflare R2 (S3-compatible) credentials and target bucket.
@@ -50,6 +68,11 @@ func Load() (Config, error) {
 			AccessKeyID:     os.Getenv("R2_ACCESS_KEY_ID"),
 			SecretAccessKey: os.Getenv("R2_SECRET_ACCESS_KEY"),
 			Bucket:          os.Getenv("R2_BUCKET"),
+		},
+		IncidentIO: IncidentIOConfig{
+			AlertSourceID:     os.Getenv("INCIDENTIO_ALERT_SOURCE_ID"),
+			Token:             os.Getenv("INCIDENTIO_ALERT_TOKEN"),
+			ReconcileInterval: envDuration("INCIDENTIO_RECONCILE_INTERVAL", 60*time.Second),
 		},
 	}
 
