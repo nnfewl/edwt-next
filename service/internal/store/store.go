@@ -81,19 +81,21 @@ func (s *Store) Write(ctx context.Context, items []edwt.Location, now time.Time)
 	defer tx.Rollback(ctx)
 
 	// locations — one batched round trip of upserts.
-	locBatch := &pgx.Batch{}
-	for _, it := range items {
-		locBatch.Queue(locUpsertSQL, locArgs(it, now)...)
-	}
-	lbr := tx.SendBatch(ctx, locBatch)
-	for range items {
-		if _, err := lbr.Exec(); err != nil {
-			lbr.Close()
+	if len(items) > 0 {
+		locBatch := &pgx.Batch{}
+		for _, it := range items {
+			locBatch.Queue(locUpsertSQL, locArgs(it, now)...)
+		}
+		lbr := tx.SendBatch(ctx, locBatch)
+		for range items {
+			if _, err := lbr.Exec(); err != nil {
+				lbr.Close()
+				return WriteResult{}, err
+			}
+		}
+		if err := lbr.Close(); err != nil {
 			return WriteResult{}, err
 		}
-	}
-	if err := lbr.Close(); err != nil {
-		return WriteResult{}, err
 	}
 
 	// readings — only facilities reporting a reportId; RETURNING id lets us
@@ -104,26 +106,28 @@ func (s *Store) Write(ctx context.Context, items []edwt.Location, now time.Time)
 			withWT = append(withWT, it)
 		}
 	}
-	rBatch := &pgx.Batch{}
-	for _, it := range withWT {
-		rBatch.Queue(readingInsertSQL, readingArgs(it)...)
-	}
-	rbr := tx.SendBatch(ctx, rBatch)
 	newReadings := 0
-	for range withWT {
-		var id int64
-		switch err := rbr.QueryRow().Scan(&id); {
-		case err == nil:
-			newReadings++
-		case errors.Is(err, pgx.ErrNoRows):
-			// conflict — this report was already stored (by us or the Edge Function)
-		default:
-			rbr.Close()
+	if len(withWT) > 0 {
+		rBatch := &pgx.Batch{}
+		for _, it := range withWT {
+			rBatch.Queue(readingInsertSQL, readingArgs(it)...)
+		}
+		rbr := tx.SendBatch(ctx, rBatch)
+		for range withWT {
+			var id int64
+			switch err := rbr.QueryRow().Scan(&id); {
+			case err == nil:
+				newReadings++
+			case errors.Is(err, pgx.ErrNoRows):
+				// conflict — this report was already stored (by us or the Edge Function)
+			default:
+				rbr.Close()
+				return WriteResult{}, err
+			}
+		}
+		if err := rbr.Close(); err != nil {
 			return WriteResult{}, err
 		}
-	}
-	if err := rbr.Close(); err != nil {
-		return WriteResult{}, err
 	}
 
 	if err := tx.Commit(ctx); err != nil {

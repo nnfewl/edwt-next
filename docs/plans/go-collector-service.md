@@ -1,6 +1,11 @@
 # Plan: Go worker (raw archiver to R2 + redundant writer + observability + status page)
 
-> Status: **DRAFT — not yet approved.** Saved for review before implementation.
+> Status: **Core implemented** in [`service/`](../../service/) — poller, R2 archive,
+> Supabase second-writer, Prometheus metrics, `/healthz`, `/readyz`, `/api/status`,
+> graceful shutdown, unit tests, Dockerfile, systemd + Ansible deploy.
+> **Still pending:** the read **query API** (`/api/wait-times`, `/api/locations`,
+> `/api/locations/{slug}/history`, `/api/stats`), the **Atlassian Statuspage**
+> reconciler, and the **Prometheus/Grafana** docker-compose stack.
 
 ## Context
 
