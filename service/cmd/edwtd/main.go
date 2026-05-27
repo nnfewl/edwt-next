@@ -1,0 +1,101 @@
+// Command edwtd is the edwt-next collector worker: it archives raw feed
+// payloads to Cloudflare R2 and writes wait-time data to Postgres (a second
+// writer alongside the Supabase Edge Function), exposing Prometheus metrics
+// and health endpoints.
+package main
+
+import (
+	"context"
+	"log/slog"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
+
+	"github.com/nnfewl/edwt-next/service/internal/archive"
+	"github.com/nnfewl/edwt-next/service/internal/config"
+	"github.com/nnfewl/edwt-next/service/internal/obs"
+	"github.com/nnfewl/edwt-next/service/internal/poller"
+	"github.com/nnfewl/edwt-next/service/internal/store"
+)
+
+func main() {
+	log := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+
+	cfg, err := config.Load()
+	if err != nil {
+		log.Error("config", "err", err)
+		os.Exit(1)
+	}
+
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	reg := prometheus.NewRegistry()
+	metrics := obs.NewMetrics(reg)
+	status := obs.NewStatus()
+
+	// R2 archiver — the worker's primary job. Expected in production; if unset
+	// the worker still runs (e.g. DB-only debugging) but logs a warning.
+	var arch poller.Archiver
+	if cfg.R2.Enabled() {
+		a, err := archive.New(ctx, cfg.R2)
+		if err != nil {
+			log.Error("r2 init", "err", err)
+			os.Exit(1)
+		}
+		arch = a
+		log.Info("r2 archiver enabled", "bucket", cfg.R2.Bucket)
+	} else {
+		log.Warn("R2 not configured — archiving disabled")
+	}
+
+	// Postgres second writer (default on; EDWT_WRITE_DB=false for archive-only).
+	var db poller.DBWriter
+	var pinger obs.Pinger
+	if cfg.WriteDB {
+		st, err := store.New(ctx, cfg.DatabaseURL)
+		if err != nil {
+			log.Error("db connect", "err", err)
+			os.Exit(1)
+		}
+		defer st.Close()
+		db = st
+		pinger = st
+		log.Info("db second-writer enabled")
+	} else {
+		log.Warn("EDWT_WRITE_DB=false — DB writes disabled (archive-only)")
+	}
+
+	p := poller.New(cfg.SourceURL, &http.Client{Timeout: 30 * time.Second}, arch, db, metrics, status, log)
+
+	srv := obs.NewServer(obs.ServerDeps{
+		Addr:           cfg.HTTPAddr,
+		Registry:       reg,
+		Status:         status,
+		DB:             pinger,
+		MaxStaleness:   cfg.ReadyMaxStaleness,
+		ArchiveEnabled: arch != nil,
+	})
+
+	go func() {
+		log.Info("http listening", "addr", cfg.HTTPAddr)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Error("http server", "err", err)
+			stop()
+		}
+	}()
+
+	go p.Run(ctx, cfg.PollInterval)
+
+	<-ctx.Done()
+	log.Info("shutting down")
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		log.Error("http shutdown", "err", err)
+	}
+}
