@@ -41,10 +41,18 @@ func (r *Reconciler) tick(ctx context.Context) {
 			continue
 		}
 
+		// Public-facing label for incident.io's Component attribute and the
+		// alert title. Falls back to Name when callers (e.g. tests) leave
+		// DisplayName empty.
+		displayName := c.DisplayName
+		if displayName == "" {
+			displayName = c.Name
+		}
+
 		ev := AlertEvent{
 			DeduplicationKey: "edwt-" + c.Name,
-			Title:            "edwt collector: " + c.Name,
-			Metadata:         map[string]any{"component": c.Name},
+			Title:            "edwt collector: " + displayName,
+			Metadata:         map[string]any{"component": displayName},
 		}
 		if c.Healthy {
 			ev.Status = "resolved"

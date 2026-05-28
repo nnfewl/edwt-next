@@ -1,0 +1,927 @@
+"use client";
+
+import Link from "next/link";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faBars,
+  faChartLine,
+  faCheck,
+  faChevronDown,
+  faCircleInfo,
+  faClock,
+  faDiamondTurnRight,
+  faHospital,
+  faList,
+  faLocationDot,
+  faMapLocationDot,
+  faPhone,
+  faStar,
+  faStethoscope,
+  faTriangleExclamation,
+  faUsers,
+  faXmark,
+  type IconDefinition,
+} from "@fortawesome/free-solid-svg-icons";
+import {
+  type Facility,
+  type HistoryPoint,
+  historyFor,
+  severityFor,
+  severityLabel,
+} from "./data";
+import "./styles.css";
+
+/* ───────── icons ─────────────────────────────────────────────────────────── */
+
+type IconName =
+  | "pin"
+  | "phone"
+  | "info"
+  | "clock"
+  | "users"
+  | "stethoscope"
+  | "directions"
+  | "map"
+  | "list"
+  | "trendUp"
+  | "x"
+  | "star"
+  | "warning"
+  | "bars"
+  | "hospital"
+  | "check"
+  | "chevronDown";
+
+const ICONS: Record<IconName, IconDefinition> = {
+  pin: faLocationDot,
+  phone: faPhone,
+  info: faCircleInfo,
+  clock: faClock,
+  users: faUsers,
+  stethoscope: faStethoscope,
+  directions: faDiamondTurnRight,
+  map: faMapLocationDot,
+  list: faList,
+  trendUp: faChartLine,
+  x: faXmark,
+  star: faStar,
+  warning: faTriangleExclamation,
+  bars: faBars,
+  hospital: faHospital,
+  check: faCheck,
+  chevronDown: faChevronDown,
+};
+
+const Icon = ({
+  name,
+  size = 16,
+}: {
+  name: IconName;
+  size?: number;
+  stroke?: number;
+}) => (
+  <FontAwesomeIcon
+    icon={ICONS[name]}
+    width={size}
+    height={size}
+    aria-hidden="true"
+  />
+);
+
+/* ───────── ambient wave (pressure curve as card background) ──────────────── */
+
+const WaveBackground = ({
+  f,
+  height = 110,
+  intensity = 0.9,
+}: {
+  f: Facility;
+  height?: number;
+  intensity?: number;
+}) => {
+  if (f.waitMin == null) return null;
+  const hist = historyFor(f);
+  if (!hist.length) return null;
+
+  const W = 1000;
+  const H = height;
+  const maxVal = Math.max(
+    240,
+    Math.max(...hist.map((p) => p.min)) * 1.1,
+  );
+
+  const x = (i: number) => (i / (hist.length - 1)) * W;
+  const amp = (v: number) =>
+    H * (0.3 + 0.6 * (Math.min(v, maxVal) / maxVal));
+  const baseline = H * 0.55;
+  const y = (v: number) => baseline + (H - baseline - amp(v) / 2);
+
+  // Catmull–Rom smoothing so the curve reads as breath, not jitter.
+  const buildPath = (offsetY: number, scale: number) => {
+    const pts: [number, number][] = hist.map((p: HistoryPoint, i: number) => [
+      x(i),
+      y(p.min) + offsetY - (1 - scale) * 14,
+    ]);
+    let d = `M ${pts[0][0]} ${pts[0][1]}`;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[i - 1] || pts[i];
+      const p1 = pts[i];
+      const p2 = pts[i + 1];
+      const p3 = pts[i + 2] || p2;
+      const c1x = p1[0] + (p2[0] - p0[0]) / 6;
+      const c1y = p1[1] + (p2[1] - p0[1]) / 6;
+      const c2x = p2[0] - (p3[0] - p1[0]) / 6;
+      const c2y = p2[1] - (p3[1] - p1[1]) / 6;
+      d += ` C ${c1x} ${c1y}, ${c2x} ${c2y}, ${p2[0]} ${p2[1]}`;
+    }
+    return { line: d, area: `${d} L ${W} ${H} L 0 ${H} Z` };
+  };
+
+  const back = buildPath(8, 0.85);
+  const front = buildPath(0, 1);
+
+  const sev = severityFor(f.waitMin);
+  const palette = {
+    short: { c: "var(--green)", op: 0.1 },
+    medium: { c: "var(--amber)", op: 0.12 },
+    long: { c: "var(--red)", op: 0.13 },
+    closed: { c: "var(--muted)", op: 0.06 },
+  }[sev];
+
+  const gid = `wave-${f.id}`;
+
+  return (
+    <svg
+      className="wave-bg"
+      viewBox={`0 0 ${W} ${H}`}
+      preserveAspectRatio="none"
+      aria-hidden="true"
+      style={{
+        position: "absolute",
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: "100%",
+        height: H,
+        pointerEvents: "none",
+        opacity: intensity,
+      }}
+    >
+      <defs>
+        <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={palette.c} stopOpacity={palette.op * 1.4} />
+          <stop offset="100%" stopColor={palette.c} stopOpacity={0} />
+        </linearGradient>
+        <linearGradient id={`${gid}-front`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={palette.c} stopOpacity={palette.op * 2} />
+          <stop offset="100%" stopColor={palette.c} stopOpacity={0.02} />
+        </linearGradient>
+      </defs>
+      <path d={back.area} fill={`url(#${gid})`} />
+      <path d={front.area} fill={`url(#${gid}-front)`} />
+      <path
+        d={front.line}
+        fill="none"
+        stroke={palette.c}
+        strokeWidth={1.2}
+        strokeOpacity={0.45}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+};
+
+/* ───────── topbar ────────────────────────────────────────────────────────── */
+
+const TopBar = ({ active }: { active: "list" | "map" }) => (
+  <header className="topbar">
+    <div className="topbar-inner">
+      <Link href="/" className="wordmark">
+        <span className="dot" aria-hidden="true"><Icon name="hospital" size={14} /></span>
+        <span>
+          EDWT
+          <small>Lower Mainland · BC</small>
+        </span>
+      </Link>
+      <nav className="nav-tabs" aria-label="Primary">
+        <Link href="/" className={active === "list" ? "active" : ""}>
+          <Icon name="list" size={14} /> Facilities
+        </Link>
+        <Link href="/map" className={active === "map" ? "active" : ""}>
+          <Icon name="map" size={14} /> Map
+        </Link>
+        <Link href="/admin">
+          <Icon name="trendUp" size={14} /> Analytics
+        </Link>
+      </nav>
+      <details className="mobile-menu">
+        <summary aria-label="Open page menu">
+          <Icon name="bars" size={18} />
+        </summary>
+        <div className="mobile-menu-panel">
+          <Link href="/" className={active === "list" ? "active" : ""}>
+            <Icon name="list" size={15} /> Facilities
+          </Link>
+          <Link href="/map" className={active === "map" ? "active" : ""}>
+            <Icon name="map" size={15} /> Map
+          </Link>
+          <Link href="/admin">
+            <Icon name="trendUp" size={15} /> Analytics
+          </Link>
+        </div>
+      </details>
+      <div className="topbar-spacer" />
+      <div className="live-pill">
+        <span className="live-dot" aria-hidden="true" />
+        Live · updated 2 min ago
+      </div>
+    </div>
+  </header>
+);
+
+/* ───────── facility card ─────────────────────────────────────────────────── */
+
+const FacilityCard = ({
+  f,
+  onSelect,
+}: {
+  f: Facility;
+  onSelect: (f: Facility) => void;
+}) => {
+  const sev = severityFor(f.waitMin);
+  const sevLabel = severityLabel(f.waitMin);
+  const isEm = f.type === "Emergency";
+  const hoursLabel = f.hours.replace(/^Open\s*[·-]?\s*/i, "");
+
+  return (
+    <article className="facility" data-severity={sev}>
+      <WaveBackground f={f} height={110} intensity={0.9} />
+      <div className="left">
+        <div className="badges">
+          <span className={`badge ${isEm ? "emergency" : "upcc"}`}>
+            <span className="bdot" />
+            {isEm ? "Emergency" : "UPCC"}
+          </span>
+          {f.open ? (
+            <span className="badge open">
+              <span className="bdot" />
+              Open · {hoursLabel}
+            </span>
+          ) : (
+            <span className="badge closed">
+              <span className="bdot" />
+              {f.hours}
+            </span>
+          )}
+          <span className="badge">{f.audience}</span>
+        </div>
+
+        <h3 className="name">
+          {f.name}
+          <span className="sub">· {f.subtitle}</span>
+        </h3>
+
+        <div className="meta-row">
+          <span className="distance-pill" aria-label={`${f.distanceKm} km away`}>
+            <Icon name="pin" size={11} />
+            {f.distanceKm} km away
+          </span>
+          <span className="m address-line">
+            {f.address}
+          </span>
+          {f.open && (
+            <>
+              {f.inWaitingRoom > 0 && (
+                <span className="m">
+                  <Icon name="users" size={14} />
+                  {f.inWaitingRoom} waiting
+                </span>
+              )}
+              {f.physiciansOnDuty > 0 && (
+                <span className="m">
+                  <Icon name="stethoscope" size={14} />
+                  {f.physiciansOnDuty} on duty
+                </span>
+              )}
+            </>
+          )}
+        </div>
+
+        <div className="actions">
+          <a
+            className="action-btn primary"
+            href={mapFacilityUrl(f, true)}
+            aria-label={`Directions to ${f.name}`}
+            title="Directions"
+          >
+            <Icon name="directions" size={14} /> <span className="action-label">Directions</span>
+          </a>
+          <a className="action-btn" href={`tel:${f.phone}`} aria-label={`Call ${f.name}`} title="Call">
+            <Icon name="phone" size={14} /> <span className="action-label">Call</span>
+          </a>
+          <button className="action-btn" type="button" onClick={() => onSelect(f)} aria-label={`Details for ${f.name}`} title="Details">
+            <Icon name="info" size={14} /> <span className="action-label">Details</span>
+          </button>
+        </div>
+      </div>
+
+      <div className="wait" data-sev={sev}>
+        <div className="wait-num">{f.waitText}</div>
+        <div className="wait-label">
+          <span className="sev-dot" />
+          {sevLabel}
+        </div>
+        <div className="updated">Updated {f.lastUpdated}</div>
+      </div>
+    </article>
+  );
+};
+
+/* ───────── details drawer ────────────────────────────────────────────────── */
+
+const DetailsDrawer = ({
+  f,
+  onClose,
+}: {
+  f: Facility | null;
+  onClose: () => void;
+}) => {
+  useEffect(() => {
+    if (!f) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [f, onClose]);
+
+  if (!f) return null;
+  const sev = severityFor(f.waitMin);
+  const stopBubble = (e: React.MouseEvent) => e.stopPropagation();
+  const waitInline: CSSProperties = {
+    alignItems: "flex-start",
+    textAlign: "left",
+    margin: "14px 0 22px",
+    paddingBottom: 22,
+    borderBottom: "1px solid var(--line)",
+  };
+  return (
+    <div className="drawer-scrim" onClick={onClose}>
+      <aside
+        className="drawer-panel"
+        onClick={stopBubble}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="facility-details-title"
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+          }}
+        >
+          <span className={`badge ${f.type === "Emergency" ? "emergency" : "upcc"}`}>
+            <span className="bdot" />
+            {f.type === "Emergency" ? "Emergency" : "UPCC"}
+          </span>
+          <button className="icon-btn" type="button" onClick={onClose} aria-label="Close">
+            <Icon name="x" size={16} />
+          </button>
+        </div>
+        <h2 className="drawer-title" id="facility-details-title">{f.name}</h2>
+        <div className="drawer-sub">
+          {f.subtitle} · {f.audience}
+        </div>
+
+        <div className="wait" data-sev={sev} style={waitInline}>
+          <div className="wait-num" style={{ fontSize: 80 }}>
+            {f.waitText}
+          </div>
+          <div className="wait-label">
+            <span className="sev-dot" />
+            {severityLabel(f.waitMin)} · updated {f.lastUpdated}
+          </div>
+        </div>
+
+        <h4 className="drawer-section-label">What to expect</h4>
+        <p className="drawer-text">
+          {f.open ? (
+            <>
+              The reported wait is the latest published wait-time reading for this facility. Sicker patients are seen first, so the live wait can change quickly.
+              {f.inWaitingRoom > 0 && (
+                <> Right now there are <b>{f.inWaitingRoom} people</b> in the waiting room.</>
+              )}
+            </>
+          ) : (
+            <>This facility is currently closed. It will reopen at the next scheduled time.</>
+          )}
+        </p>
+
+        <h4 className="drawer-section-label">Address</h4>
+        <p className="drawer-text">{f.address}</p>
+
+        <h4 className="drawer-section-label">Hours</h4>
+        <p className="drawer-text" style={{ marginBottom: 22 }}>
+          {f.hours}
+        </p>
+
+        <div style={{ display: "flex", gap: 8 }}>
+          <a
+            className="action-btn primary"
+            href={mapFacilityUrl(f, true)}
+            style={{ flex: 1, justifyContent: "center" }}
+            aria-label={`Directions to ${f.name}`}
+            title="Directions"
+          >
+            <Icon name="directions" size={14} /> <span className="action-label">Directions</span>
+          </a>
+          <a
+            className="action-btn"
+            href={`tel:${f.phone}`}
+            style={{ flex: 1, justifyContent: "center" }}
+            aria-label={`Call ${f.name} at ${f.phone}`}
+            title={`Call ${f.phone}`}
+          >
+            <Icon name="phone" size={14} /> <span className="action-label">Call {f.phone}</span>
+          </a>
+        </div>
+      </aside>
+    </div>
+  );
+};
+
+/* ───────── page ──────────────────────────────────────────────────────────── */
+
+const FILTERS = [
+  { id: "all", label: "All facilities" },
+  { id: "emergency", label: "Emergency" },
+  { id: "upcc", label: "Walk-in / UPCC" },
+  { id: "pediatric", label: "Pediatric" },
+  { id: "open", label: "Open now" },
+] as const;
+
+type FilterId = (typeof FILTERS)[number]["id"];
+
+const SORTS = [
+  { id: "wait", label: "Shortest wait", shortLabel: "Wait", icon: "clock", description: "Prioritize sites reporting the lowest current wait." },
+  { id: "distance", label: "Closest first", shortLabel: "Near", icon: "pin", description: "Show the nearest open facilities first." },
+  { id: "name", label: "Name A-Z", shortLabel: "A-Z", icon: "list", description: "Browse facilities alphabetically." },
+] as const;
+
+type SortId = (typeof SORTS)[number]["id"];
+
+function filterMatch(f: Facility, id: FilterId): boolean {
+  switch (id) {
+    case "all":
+      return true;
+    case "emergency":
+      return f.type === "Emergency";
+    case "upcc":
+      return f.type === "UPCC";
+    case "pediatric":
+      return /16 and under|pediatric/i.test(f.audience) || /pediatric/i.test(f.subtitle);
+    case "open":
+      return f.open;
+  }
+}
+
+function mapFacilityUrl(f: Facility, route = false): string {
+  const params = new URLSearchParams({ facility: f.id });
+  if (route) params.set("route", "1");
+  return `/map?${params.toString()}`;
+}
+
+function sortFacilities(arr: Facility[], by: SortId): Facility[] {
+  const copy = [...arr];
+  if (by === "wait") {
+    copy.sort((a, b) => {
+      if (a.waitMin == null && b.waitMin == null) return 0;
+      if (a.waitMin == null) return 1;
+      if (b.waitMin == null) return -1;
+      return a.waitMin - b.waitMin;
+    });
+  } else if (by === "distance") {
+    copy.sort((a, b) => a.distanceKm - b.distanceKm);
+  } else if (by === "name") {
+    copy.sort((a, b) => a.name.localeCompare(b.name));
+  }
+  return copy;
+}
+
+function fmtMins(m: number): string {
+  const h = Math.floor(m / 60);
+  const mm = m % 60;
+  return h ? `${h}h ${mm}m` : `${mm}m`;
+}
+
+export function ERNowPageClient({ facilities }: { facilities: Facility[] }): ReactNode {
+  const [filter, setFilter] = useState<FilterId>("all");
+  const [sort, setSort] = useState<SortId>("wait");
+  const [sortSheetOpen, setSortSheetOpen] = useState(false);
+  const [selected, setSelected] = useState<Facility | null>(null);
+  const [locationText, setLocationText] = useState(
+    "Watson Drive, Surrey · using your location",
+  );
+  // Time is rendered client-side to avoid an SSR/CSR mismatch on the hero meta.
+  const [now, setNow] = useState<Date | null>(null);
+
+  // Render the clock client-only to dodge SSR mismatch; tick on a 1-min cadence.
+  // The first read is deferred via setTimeout so the effect body itself never
+  // calls setState synchronously (lint: react-hooks/set-state-in-effect).
+  useEffect(() => {
+    const tick = () => setNow(new Date());
+    const first = setTimeout(tick, 0);
+    const id = setInterval(tick, 60_000);
+    return () => {
+      clearTimeout(first);
+      clearInterval(id);
+    };
+  }, []);
+
+  const activeSort = SORTS.find((s) => s.id === sort) ?? SORTS[0];
+
+  useEffect(() => {
+    if (!sortSheetOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setSortSheetOpen(false);
+    };
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [sortSheetOpen]);
+
+  const filtered = useMemo(() => {
+    const matched = facilities.filter((f) => filterMatch(f, filter));
+    return sortFacilities(matched, sort);
+  }, [facilities, filter, sort]);
+
+  const counts = useMemo(() => {
+    const c: Record<FilterId, number> = {
+      all: 0,
+      emergency: 0,
+      upcc: 0,
+      pediatric: 0,
+      open: 0,
+    };
+    for (const { id } of FILTERS) {
+      c[id] = facilities.filter((f) => filterMatch(f, id)).length;
+    }
+    return c;
+  }, [facilities]);
+
+  const openFacilities = facilities.filter((f) => f.open);
+  const shortest = openFacilities.reduce(
+    (a, b) => ((b.waitMin ?? Infinity) < (a.waitMin ?? Infinity) ? b : a),
+    openFacilities[0],
+  );
+  const closestOpen = [...openFacilities].sort((a, b) => a.distanceKm - b.distanceKm)[0];
+  const avgWait = Math.round(
+    openFacilities.reduce((s, f) => s + (f.waitMin ?? 0), 0) /
+      Math.max(1, openFacilities.length),
+  );
+
+  return (
+    <div className="er-now-root">
+      <TopBar active="list" />
+      <main className="page">
+        {/* Hero */}
+        <section className="hero">
+          <div>
+            <h1>
+              Find the <em>shortest</em>{" "}
+              <br />
+              ED wait near you.
+            </h1>
+            <p className="hero-sub">
+              Live wait times for emergency departments and walk-in clinics from the live EDWT feed. Updated every few minutes.
+            </p>
+          </div>
+          <div className="hero-meta">
+            <div className="locator">
+              <span className="pin" aria-hidden="true">
+                <Icon name="pin" size={18} />
+              </span>
+              <div className="loc-body">
+                <div className="loc-label">Your location</div>
+                <div className="loc-addr">{locationText}</div>
+              </div>
+              <button
+                className="change"
+                type="button"
+                onClick={() => {
+                  const next = window.prompt("Enter a different address:", "Watson Drive, Surrey");
+                  if (next?.trim()) setLocationText(next.trim());
+                }}
+              >
+                Change
+              </button>
+            </div>
+            {now && (
+              <div style={{ display: "flex", gap: 8 }}>
+                <span>
+                  {now.toLocaleDateString(undefined, {
+                    weekday: "long",
+                    month: "long",
+                    day: "numeric",
+                  })}
+                </span>
+                <span>·</span>
+                <span>
+                  {now.toLocaleTimeString([], {
+                    hour: "numeric",
+                    minute: "2-digit",
+                  })}
+                </span>
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* Emergency banner */}
+        <div className="info-banner" role="alert">
+          <span className="ico"><Icon name="warning" size={13} /></span>
+          <div className="b-body">
+            <strong>If this is a life-threatening emergency, call 9-1-1.</strong>{" "}
+            Chest pain, severe bleeding, stroke symptoms, or difficulty breathing
+            need immediate care. For non-urgent health advice, dial{" "}
+            <a href="tel:811">8-1-1</a> to reach a registered nurse 24/7.
+          </div>
+        </div>
+
+        {/* Stats */}
+        <div className="stats">
+          <div className="stat">
+            <div className="stat-label">Shortest wait</div>
+            <div className="stat-value">{fmtMins(shortest.waitMin ?? 0)}</div>
+            <div className="stat-trend down">
+              {shortest.name.split(" ").slice(0, 2).join(" ")} · {shortest.subtitle}
+            </div>
+          </div>
+          <div className="stat">
+            <div className="stat-label">Closest open</div>
+            <div className="stat-value">
+              {closestOpen.distanceKm}
+              <span className="unit">km</span>
+            </div>
+            <div className="stat-trend">
+              {closestOpen.name.split(" ").slice(0, 2).join(" ")}
+            </div>
+          </div>
+          <div className="stat">
+            <div className="stat-label">Average wait today</div>
+            <div className="stat-value">{fmtMins(avgWait)}</div>
+            <div className="stat-trend up">
+              <Icon name="trendUp" size={12} /> 18m vs. yesterday
+            </div>
+          </div>
+          <div className="stat">
+            <div className="stat-label">Open right now</div>
+            <div className="stat-value">
+              {openFacilities.length}
+              <span className="unit">/ {facilities.length}</span>
+            </div>
+            <div className="stat-trend">facilities reporting</div>
+          </div>
+        </div>
+
+        {/* Recommended pick */}
+        <div className="best-pick">
+          <WaveBackground f={shortest} height={120} intensity={0.35} />
+          <div>
+            <span className="pick-eyebrow">
+              <Icon name="star" size={11} stroke={2} />
+              Recommended for you
+            </span>
+            <h2 className="pick-name">
+              {shortest.name} · {shortest.subtitle}
+            </h2>
+            <p className="pick-reason">
+              Shortest reported wait among open facilities near you — about a{" "}
+              {fmtMins(shortest.waitMin ?? 0)} expected wait with{" "}
+              {shortest.inWaitingRoom} people in the waiting room. ~
+              {shortest.distanceKm} km from your location.
+            </p>
+            <div className="pick-meta">
+              <span>
+                <Icon name="clock" size={13} /> {shortest.hours}
+              </span>
+              <span>
+                <Icon name="users" size={13} /> {shortest.audience}
+              </span>
+              {shortest.physiciansOnDuty > 0 && (
+                <span>
+                  <Icon name="stethoscope" size={13} /> {shortest.physiciansOnDuty}{" "}
+                  clinicians on duty
+                </span>
+              )}
+            </div>
+            <div className="actions" style={{ marginTop: 20 }}>
+              <a
+                className="action-btn primary"
+                href={mapFacilityUrl(shortest, true)}
+                aria-label={`Directions to ${shortest.name}`}
+                title="Directions"
+              >
+                <Icon name="directions" size={14} /> <span className="action-label">Directions</span>
+              </a>
+              <button
+                className="action-btn"
+                type="button"
+                onClick={() => setSelected(shortest)}
+                aria-label={`Full details for ${shortest.name}`}
+                title="Full details"
+              >
+                <Icon name="info" size={14} /> <span className="action-label">Full details</span>
+              </button>
+            </div>
+          </div>
+          <div className="wait" data-sev={severityFor(shortest.waitMin)}>
+            <div className="wait-num">{shortest.waitText}</div>
+            <div className="wait-label">
+              <span className="sev-dot" />
+              {severityLabel(shortest.waitMin)}
+            </div>
+            <div className="updated">Updated {shortest.lastUpdated}</div>
+          </div>
+        </div>
+
+        {/* Filter toolbar */}
+        <div className="toolbar">
+          <div className="chip-row" role="group" aria-label="Facility filters">
+            {FILTERS.map((f) => (
+              <button
+                key={f.id}
+                className={`chip ${filter === f.id ? "active" : ""}`}
+                type="button"
+                aria-pressed={filter === f.id}
+                onClick={() => setFilter(f.id)}
+              >
+                {f.label}
+                <span className="count">{counts[f.id]}</span>
+              </button>
+            ))}
+          </div>
+          <div className="spacer-flex" />
+          <div className="sort-control" role="group" aria-label="Sort facilities">
+            <span className="sort-label">Sort</span>
+            <div className="sort-options">
+              {SORTS.map((s) => (
+                <button
+                  key={s.id}
+                  className={`sort-option ${sort === s.id ? "active" : ""}`}
+                  type="button"
+                  aria-pressed={sort === s.id}
+                  aria-label={s.label}
+                  title={s.label}
+                  onClick={() => setSort(s.id)}
+                >
+                  <Icon name={s.icon} size={13} />
+                  <span>{s.shortLabel}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+          <button
+            className="sort-trigger"
+            type="button"
+            aria-haspopup="dialog"
+            aria-expanded={sortSheetOpen}
+            onClick={() => setSortSheetOpen(true)}
+          >
+            <span className="sort-trigger-icon"><Icon name={activeSort.icon} size={14} /></span>
+            <span>
+              <small>Sorted by</small>
+              <strong>{activeSort.label}</strong>
+            </span>
+            <Icon name="chevronDown" size={12} />
+          </button>
+        </div>
+
+        {sortSheetOpen && (
+          <div className="sort-sheet-scrim" role="presentation" onClick={() => setSortSheetOpen(false)}>
+            <section
+              className="sort-sheet"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="sort-sheet-title"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="sort-sheet-handle" aria-hidden="true" />
+              <div className="sort-sheet-head">
+                <div>
+                  <p>Sort facilities</p>
+                  <h2 id="sort-sheet-title">Choose list order</h2>
+                </div>
+                <button type="button" className="sort-sheet-close" aria-label="Close sort options" onClick={() => setSortSheetOpen(false)}>
+                  <Icon name="x" size={15} />
+                </button>
+              </div>
+              <div className="sort-sheet-options">
+                {SORTS.map((s) => (
+                  <button
+                    key={s.id}
+                    className={`sort-sheet-option ${sort === s.id ? "active" : ""}`}
+                    type="button"
+                    aria-pressed={sort === s.id}
+                    onClick={() => {
+                      setSort(s.id);
+                      setSortSheetOpen(false);
+                    }}
+                  >
+                    <span className="sort-sheet-option-icon"><Icon name={s.icon} size={16} /></span>
+                    <span className="sort-sheet-option-copy">
+                      <strong>{s.label}</strong>
+                      <small>{s.description}</small>
+                    </span>
+                    {sort === s.id && <Icon name="check" size={15} />}
+                  </button>
+                ))}
+              </div>
+            </section>
+          </div>
+        )}
+
+        {/* List */}
+        <div className="facility-list">
+          {filtered.map((f) => (
+            <FacilityCard key={f.id} f={f} onSelect={setSelected} />
+          ))}
+          {filtered.length === 0 && (
+            <div
+              style={{
+                padding: 48,
+                textAlign: "center",
+                color: "var(--muted)",
+                border: "1px dashed var(--line)",
+                borderRadius: "var(--radius)",
+              }}
+            >
+              No facilities match this filter.
+              <button className="empty-reset" type="button" onClick={() => setFilter("all")}>
+                Show all facilities
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Advice */}
+        <section className="advice-grid">
+          <div className="advice-card">
+            <div className="a-num">01</div>
+            <h3>Not sure where to go?</h3>
+            <p>
+              Call 8-1-1 to talk with a registered nurse 24/7. They can help you
+              decide whether you need the ED, a clinic, or self-care at home.
+            </p>
+            <a href="tel:811">Call 8-1-1 →</a>
+          </div>
+          <div className="advice-card">
+            <div className="a-num">02</div>
+            <h3>How wait time is measured</h3>
+            <p>
+              Wait time is the duration for 9 out of 10 patients to be seen by a
+              physician — not the full visit length. Sicker patients are seen
+              first.
+            </p>
+            <a href="#how-it-works">Learn more →</a>
+          </div>
+          <div className="advice-card">
+            <div className="a-num">03</div>
+            <h3>What to bring</h3>
+            <p>
+              Bring your BC Services Card, a list of medications, and something
+              to keep you occupied. Eat and drink lightly unless told otherwise.
+            </p>
+            <a href="#prepare">See full checklist →</a>
+          </div>
+        </section>
+
+        <p className="footnote">
+          Wait times are estimates only and update every few minutes. If your
+          condition worsens while waiting, tell the triage nurse. This site is an
+          independent demo and not affiliated with any health authority.
+        </p>
+      </main>
+
+      <DetailsDrawer f={selected} onClose={() => setSelected(null)} />
+    </div>
+  );
+}

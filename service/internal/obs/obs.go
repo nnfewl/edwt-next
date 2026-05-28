@@ -76,6 +76,7 @@ type Status struct {
 	lastPollUnix    atomic.Int64
 	lastArchiveUnix atomic.Int64
 	sourceOK        atomic.Bool
+	sourcePolled    atomic.Bool // set true on the first MarkSource (success or fail)
 }
 
 // NewStatus returns a Status with the start time set to now.
@@ -87,8 +88,17 @@ func (s *Status) MarkPoll() { s.lastPollUnix.Store(time.Now().Unix()) }
 // MarkArchive records a successful archive at the current time.
 func (s *Status) MarkArchive() { s.lastArchiveUnix.Store(time.Now().Unix()) }
 
-// MarkSource records whether the last upstream fetch succeeded.
-func (s *Status) MarkSource(ok bool) { s.sourceOK.Store(ok) }
+// MarkSource records whether the last upstream fetch succeeded. The first call
+// also flips sourcePolled, so the evaluator can distinguish "we haven't
+// attempted a poll yet" from "the last attempt failed".
+func (s *Status) MarkSource(ok bool) {
+	s.sourceOK.Store(ok)
+	s.sourcePolled.Store(true)
+}
+
+// SourcePolled reports whether at least one upstream fetch has been attempted.
+// Used by the evaluator to suppress phantom-unhealthy state on a fresh start.
+func (s *Status) SourcePolled() bool { return s.sourcePolled.Load() }
 
 func (s *Status) lastArchive() time.Time { return unixOrZero(s.lastArchiveUnix.Load()) }
 func (s *Status) lastPoll() time.Time    { return unixOrZero(s.lastPollUnix.Load()) }
@@ -106,10 +116,16 @@ type Pinger interface {
 }
 
 // Component is the health of one named subsystem.
+//
+// Name is the internal slug (used in dedup keys, metrics, logs).
+// DisplayName is the public-facing label that matches the status-page
+// component on status.edwt.ca, so incident.io can auto-link alerts to
+// the right dot. When DisplayName is empty, callers fall back to Name.
 type Component struct {
-	Name    string
-	Healthy bool
-	Detail  string
+	Name        string
+	Healthy     bool
+	Detail      string
+	DisplayName string
 }
 
 // Evaluator computes component health from the worker's live state. It is the
@@ -123,10 +139,18 @@ type Evaluator struct {
 
 // Evaluate returns the current health of each component.
 func (e Evaluator) Evaluate(ctx context.Context) []Component {
-	upstream := e.Status.sourceOK.Load()
+	// Treat upstream as healthy until the first poll has been attempted, so a
+	// fresh restart doesn't fire a phantom `firing` on the reconciler's first
+	// tick (sourceOK defaults to false). Once MarkSource has been called even
+	// once, sourceOK reflects reality.
+	upstream := e.Status.sourceOK.Load() || !e.Status.SourcePolled()
 
+	// Cold-start window: until the first poll has been attempted, the archive
+	// hasn't had a chance to write either, so its empty lastArchive isn't a
+	// real signal. After SourcePolled flips, the freshness check kicks in.
 	la := e.Status.lastArchive()
-	archive := !e.ArchiveEnabled || (!la.IsZero() && time.Since(la) <= e.MaxStaleness)
+	archive := !e.ArchiveEnabled || !e.Status.SourcePolled() ||
+		(!la.IsZero() && time.Since(la) <= e.MaxStaleness)
 
 	db := true
 	if e.DB != nil {
@@ -136,9 +160,9 @@ func (e Evaluator) Evaluate(ctx context.Context) []Component {
 	}
 
 	return []Component{
-		{Name: "upstream", Healthy: upstream, Detail: "edwaittimes feed fetch"},
-		{Name: "archive", Healthy: archive, Detail: "R2 archive freshness"},
-		{Name: "database", Healthy: db, Detail: "Supabase connectivity"},
+		{Name: "upstream", DisplayName: "Data source", Healthy: upstream, Detail: "edwaittimes feed fetch"},
+		{Name: "archive", DisplayName: "Data archive", Healthy: archive, Detail: "R2 archive freshness"},
+		{Name: "database", DisplayName: "Database", Healthy: db, Detail: "Supabase connectivity"},
 	}
 }
 

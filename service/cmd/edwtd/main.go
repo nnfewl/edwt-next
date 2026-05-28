@@ -39,19 +39,26 @@ func main() {
 	metrics := obs.NewMetrics(reg)
 	status := obs.NewStatus()
 
-	// R2 archiver — the worker's primary job. Expected in production; if unset
-	// the worker still runs (e.g. DB-only debugging) but logs a warning.
-	var arch poller.Archiver
+	// Archiver: local disk is the primary (always on, source of truth). R2 is
+	// best-effort on top — failures are logged, never block the poll cycle.
+	disk, err := archive.NewDisk(cfg.ArchiveDir)
+	if err != nil {
+		log.Error("disk archive init", "dir", cfg.ArchiveDir, "err", err)
+		os.Exit(1)
+	}
+	log.Info("disk archiver enabled", "dir", disk.Root())
+
+	var arch poller.Archiver = disk
 	if cfg.R2.Enabled() {
-		a, err := archive.New(ctx, cfg.R2)
+		r2, err := archive.New(ctx, cfg.R2)
 		if err != nil {
 			log.Error("r2 init", "err", err)
 			os.Exit(1)
 		}
-		arch = a
-		log.Info("r2 archiver enabled", "bucket", cfg.R2.Bucket)
+		arch = archive.NewComposite(disk, r2, log)
+		log.Info("r2 archiver enabled (best-effort)", "bucket", cfg.R2.Bucket)
 	} else {
-		log.Warn("R2 not configured — archiving disabled")
+		log.Warn("R2 not configured — disk-only archiving")
 	}
 
 	// Postgres second writer (default on; EDWT_WRITE_DB=false for archive-only).

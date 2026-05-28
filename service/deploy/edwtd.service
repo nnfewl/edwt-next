@@ -22,6 +22,12 @@ User=edwtd
 EnvironmentFile=/etc/edwtd/edwtd.env
 ExecStart=/usr/local/bin/edwtd
 
+# systemd creates /var/lib/edwtd (mode 0750, owned by edwtd) — the default
+# EDWT_ARCHIVE_DIR=/var/lib/edwtd/archive lives here, and ProtectSystem=strict
+# still permits writes inside the StateDirectory.
+StateDirectory=edwtd
+StateDirectoryMode=0750
+
 # edwtd shuts down gracefully on SIGTERM; give it room before SIGKILL.
 KillSignal=SIGTERM
 TimeoutStopSec=15

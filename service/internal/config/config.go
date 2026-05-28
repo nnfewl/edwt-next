@@ -16,6 +16,7 @@ type Config struct {
 	WriteDB           bool          // second-writer DB path (default true)
 	HTTPAddr          string        // metrics/health/api listen addr
 	ReadyMaxStaleness time.Duration // /readyz fails if last archive older than this
+	ArchiveDir        string        // local-disk archive root (always on; R2 is best-effort on top)
 	R2                R2Config
 	IncidentIO        IncidentIOConfig
 }
@@ -63,6 +64,7 @@ func Load() (Config, error) {
 		WriteDB:           envBool("EDWT_WRITE_DB", true),
 		HTTPAddr:          envOr("EDWT_HTTP_ADDR", ":8080"),
 		ReadyMaxStaleness: envDuration("EDWT_READY_MAX_STALENESS", 3*time.Minute),
+		ArchiveDir:        envOr("EDWT_ARCHIVE_DIR", "./archive"),
 		R2: R2Config{
 			AccountID:       os.Getenv("R2_ACCOUNT_ID"),
 			AccessKeyID:     os.Getenv("R2_ACCESS_KEY_ID"),
