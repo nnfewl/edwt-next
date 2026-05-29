@@ -16,7 +16,8 @@
     "ingest:once": "node --env-file=.env --import tsx src/ingest/worker.ts --once",
     "dev:local": "next dev",
     "dev:prod": "node scripts/with-env.cjs .env.prod next dev",
-    "build:prod": "node scripts/with-env.cjs .env.prod next build"
+    "build:prod": "node scripts/with-env.cjs .env.prod next build",
+    "start:prod": "node scripts/with-env.cjs .env.prod next start"
   },
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^7.2.0",

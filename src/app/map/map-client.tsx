@@ -21,27 +21,28 @@ type RouteState = {
   originLabel: string;
 } | null;
 
-// CARTO basemap tiles + OpenStreetMap data — attribution is mandatory per both
-// licenses, so the Map constructor below keeps `attributionControl` enabled.
+// CARTO Positron keeps the clinical map quieter than Voyager while preserving
+// required CARTO/OpenStreetMap attribution. The visible control is compacted in
+// the map init below so it doesn't read as a banner.
 // NOTE: `router.project-osrm.org` is OSRM's public demo and is NOT suitable for
 // production traffic; replace with a self-hosted OSRM, Maptiler, or Mapbox
 // directions endpoint before any real launch.
 const mapStyle: maplibregl.StyleSpecification = {
   version: 8,
   sources: {
-    cartoVoyager: {
+    cartoPositron: {
       type: "raster",
-      tiles: ["https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png"],
+      tiles: ["https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png"],
       tileSize: 256,
       attribution:
-        '© <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a> · © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors',
+        '© <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a> · © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>',
     },
   },
   layers: [
     {
-      id: "carto-voyager",
+      id: "carto-positron",
       type: "raster",
-      source: "cartoVoyager",
+      source: "cartoPositron",
     },
   ],
 };
@@ -134,6 +135,7 @@ export function MapClient({
         style: mapStyle,
         center: VANCOUVER_CENTER,
         zoom: 10.2,
+        attributionControl: false,
       });
     } catch {
       const fallbackTimer = window.setTimeout(() => {
@@ -141,7 +143,8 @@ export function MapClient({
       }, 0);
       return () => window.clearTimeout(fallbackTimer);
     }
-    map.current.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "top-right");
+    map.current.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+    map.current.addControl(new maplibregl.AttributionControl({ compact: true }), "bottom-right");
     const markerStore = markers.current;
 
     const bounds = new maplibregl.LngLatBounds();
