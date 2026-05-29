@@ -5,8 +5,9 @@ A rebuild of the BC emergency-department wait-times site
 UI, it stands up an ingestion pipeline that captures wait-time history into Postgres
 for later analytics (heat maps, trends, time-series).
 
-> Status: **Phase 1 — ingestion pipeline.** Running in production on Supabase; the
-> Next.js frontend is scaffolded but not built yet.
+> Status: **Ingestion in production; frontend built.** The pipeline runs on Supabase,
+> and the Next.js app — public facilities list, map, and analytics dashboard — reads
+> live readings from it.
 
 ## Where it runs
 
@@ -41,19 +42,21 @@ polling aggressively never stores duplicates):
 ```
             edwaittimes.ca/api/wait-times
                        │
-        ┌──────────────┴───────────────┐
+        ┌──────────────┴────────────────┐
    LOCAL│                               │CLOUD
         ▼                               ▼
  src/ingest/worker.ts            pg_cron (every 60s)
- interval loop (+ --once)          → pg_net → Edge Function
+ interval loop (+ --once)        → pg_net → Edge Function
         │                               │
         ▼                               ▼
  src/ingest/poll.ts            supabase/functions/ingest/index.ts
  conditional GET (ETag)         stateless fetch (no ETag)
         │                               │
         └───────────────┬───────────────┘
+                        │
                         ▼
         archive raw* → upsert locations → insert readings (dedup)
+                        │
                         ▼
               PostgreSQL (Drizzle)
         *raw_polls: local only — see Data model
@@ -71,6 +74,29 @@ Schema lives in [`src/db/schema.ts`](src/db/schema.ts). `raw_polls` is intention
 **not** kept on Supabase (storage cap); the cloud Edge Function skips it. Because of
 this, run `drizzle-kit migrate` (not `push`) against Supabase — `push` would try to
 recreate `raw_polls`.
+
+## Frontend
+
+The Next.js App Router app reads the latest reading per facility (plus a short wait
+history) straight from Postgres and renders three routes behind a shared top nav:
+
+| Route | Page | Notes |
+|-------|------|-------|
+| `/` | Public facilities list | Mobile-first: severity-coloured live waits, distance sort + type filters, a recommended pick, and a details drawer. Location via IP approximation with an opt-in GPS override. |
+| `/map` | Facility map | MapLibre GL basemap with wait markers/clusters and a bottom-sheet panel on mobile. |
+| `/admin` | Analytics dashboard | Nivo charts over the reading history (trends, heat maps). |
+
+The data-access layer [`src/app/facilities-db.ts`](src/app/facilities-db.ts) projects
+`locations` + `wait_time_readings` (plus a windowed wait history) into the `Facility`
+shape the components consume; [`src/app/data.ts`](src/app/data.ts) defines that shape
+and a mock list for offline/dev. Pages are `force-dynamic` and re-read on an interval
+([`auto-refresh.tsx`](src/app/auto-refresh.tsx)), fanned through a 30 s in-process
+cache so multiple open tabs collapse to a single query.
+
+```bash
+pnpm dev                      # local DB via .env
+pnpm dev:prod                 # against the cloud DB via .env.prod
+```
 
 ## Quick start (local)
 
@@ -199,16 +225,18 @@ Function reads its Supabase URL + service-role key from auto-injected env at run
 
 ## Roadmap
 
-- **Phase 2:** point a `getWaitTimes()` data-access layer at Postgres (latest reading
-  per facility), served on Vercel via the Supabase transaction pooler.
-- **Phase 3:** UI — map + Mapbox geocoding + distance sort + facility cards; then
-  analytics views (heat maps / trend charts) backed by the hourly rollup.
+- **Done:** data-access layer over Postgres (latest reading per facility + history);
+  facilities list, MapLibre map, and analytics dashboard.
+- **Next:** hourly rollup + retention to keep the cloud DB under its storage cap as
+  readings grow ([`docs/plans/retention-rollup.md`](docs/plans/retention-rollup.md));
+  deeper analytics (heat maps / longer-range trends) backed by that rollup.
 
 ## Tech
 
-Next.js 16 (App Router) · TypeScript · Tailwind 4 · Drizzle ORM · PostgreSQL ·
-postgres.js · zod · pnpm · Supabase (Edge Functions + pg_cron) · Go worker
-(pgx · aws-sdk-go-v2 → Cloudflare R2 · Prometheus).
+Next.js 16 (App Router) · React 19 · TypeScript · Tailwind 4 · MapLibre GL · Nivo
+charts · Font Awesome · Vercel Analytics · Drizzle ORM · PostgreSQL · postgres.js ·
+zod · pnpm · Supabase (Edge Functions + pg_cron) · Go worker (pgx · aws-sdk-go-v2 →
+Cloudflare R2 · Prometheus).
 
 `sample-wait-times.json` is a captured 41-facility snapshot, kept as a fixture and
 shape reference.
