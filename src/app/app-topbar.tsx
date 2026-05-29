@@ -5,7 +5,7 @@ import { useRef } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faBars, faChartLine, faHospital, faList, faMapLocationDot } from "@fortawesome/free-solid-svg-icons";
 
-type AppTopBarActive = "list" | "map";
+type AppTopBarActive = "list" | "map" | "analytics";
 
 export function AppTopBar({ active }: { active: AppTopBarActive }) {
   const menuRef = useRef<HTMLDetailsElement>(null);
@@ -28,7 +28,7 @@ export function AppTopBar({ active }: { active: AppTopBarActive }) {
           <Link href="/map" className={active === "map" ? "active" : ""}>
             <FontAwesomeIcon icon={faMapLocationDot} aria-hidden="true" /> Map
           </Link>
-          <Link href="/admin">
+          <Link href="/analytics" className={active === "analytics" ? "active" : ""}>
             <FontAwesomeIcon icon={faChartLine} aria-hidden="true" /> Analytics
           </Link>
         </nav>
@@ -44,7 +44,7 @@ export function AppTopBar({ active }: { active: AppTopBarActive }) {
             <Link href="/map" className={active === "map" ? "active" : ""} onClick={closeMenu}>
               <FontAwesomeIcon icon={faMapLocationDot} aria-hidden="true" /> Map
             </Link>
-            <Link href="/admin" onClick={closeMenu}>
+            <Link href="/analytics" className={active === "analytics" ? "active" : ""} onClick={closeMenu}>
               <FontAwesomeIcon icon={faChartLine} aria-hidden="true" /> Analytics
             </Link>
           </div>

@@ -238,12 +238,12 @@ const FacilityCard = ({
 
         <div className="meta-row">
           <span className="subtitle-meta">{f.subtitle}</span>
-          <span className="distance-pill" aria-label={`${f.distanceKm} km away`}>
-            <Icon name="pin" size={11} />
-            {f.distanceKm} km away
-          </span>
-          <span className="m address-line">
-            {f.address}
+          <span className="location-line">
+            <span className="m address-line">{f.address}</span>
+            <span className="distance-note" aria-label={`${f.distanceKm} km away`}>
+              <Icon name="pin" size={12} />
+              {f.distanceKm} km
+            </span>
           </span>
           {f.open && (
             <>

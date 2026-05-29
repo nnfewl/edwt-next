@@ -2506,16 +2506,44 @@
 }
 
 /* Facility type ("Emergency Department" etc.) reads as a caption in the meta
-   line alongside distance — keeps the bold name as the sole title. */
+   line — keeps the bold name as the sole title. */
 .er-now-root .facility .meta-row .subtitle-meta {
+  display: block;
+  flex: 0 0 100%;
+  width: 100%;
   color: var(--ink-2);
   font-weight: 650;
+  line-height: 1.25;
 }
-.er-now-root .facility .meta-row .subtitle-meta::after {
-  content: "·";
-  margin-left: 10px;
-  color: var(--muted);
-  font-weight: 400;
+/* Distance: flat metric (pin icon + km), sits next to the address — not a pill. */
+.er-now-root .facility .meta-row .distance-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--teal-ink);
+  font-weight: 700;
+  white-space: nowrap;
+}
+.er-now-root .facility .meta-row .distance-note svg {
+  color: var(--teal);
+}
+/* Keep address + distance on one line: address truncates, distance stays put. */
+.er-now-root .facility .meta-row .location-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+}
+.er-now-root .facility .location-line .address-line {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.er-now-root .facility .location-line .distance-note {
+  flex: 0 0 auto;
 }
 
 .er-now-root .wave-bg {
@@ -2858,27 +2886,42 @@
     white-space: normal;
   }
   .er-now-root .facility .meta-row {
-    gap: 4px 12px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
     font-size: 13px;
     color: var(--muted);
   }
-  /* Distance stays; address / waiting / on-duty move to the drawer */
-  .er-now-root .facility .meta-row .m {
+  /* Show address and distance below the facility type; waiting / on-duty move to the drawer. */
+  .er-now-root .facility .meta-row .m:not(.address-line) {
     display: none;
   }
-  .er-now-root .facility .distance-pill {
-    order: 0;
-    padding: 0;
-    border: 0;
-    border-radius: 0;
-    background: transparent;
-    box-shadow: none;
-    color: var(--muted);
-    font-size: 13px;
-    font-weight: 700;
+  .er-now-root .facility .meta-row .location-line {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    width: 100%;
+    min-width: 0;
   }
-  .er-now-root .facility .distance-pill svg {
+  .er-now-root .facility .distance-note {
+    flex: 0 0 auto;
+    color: var(--teal-ink);
+    font-size: 12px;
+    font-weight: 750;
+  }
+  .er-now-root .facility .distance-note svg {
+    color: var(--teal);
+  }
+  .er-now-root .facility .meta-row .subtitle-meta {
+    display: block;
+    width: 100%;
     color: var(--muted);
+    font-weight: 650;
+    line-height: 1.25;
+  }
+  .er-now-root .facility .meta-row .subtitle-meta::after {
+    content: none;
   }
 
   /* Compact icon actions on the row — the icons are self-explanatory, so no
