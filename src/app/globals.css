@@ -85,16 +85,45 @@ body {
 }
 
 .app-nav-tabs {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 4px;
   padding: 4px;
+  isolation: isolate;
   background: var(--bg-2, #eef2f7);
   border: 1px solid var(--line, #e2e8f0);
   border-radius: 999px;
 }
 
+.app-nav-indicator {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 0;
+  z-index: 0;
+  border-radius: 999px;
+  background: var(--ink, #17201d);
+  box-shadow: 0 1px 2px rgba(23, 32, 29, 0.08);
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform, width;
+}
+
+.app-nav-indicator.is-ready {
+  opacity: 1;
+}
+
+.app-nav-indicator.is-animated {
+  transition:
+    transform 280ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    width 280ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 120ms ease;
+}
+
 .app-nav-tabs a {
+  position: relative;
+  z-index: 1;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -106,6 +135,11 @@ body {
   font-weight: 600;
   line-height: 1;
   white-space: nowrap;
+  transition: color 180ms ease;
+}
+
+.app-nav-tabs a:hover {
+  color: var(--ink, #17201d);
 }
 
 .app-nav-tabs a svg {
@@ -114,8 +148,11 @@ body {
 }
 
 .app-nav-tabs a.active {
-  background: var(--ink, #17201d);
   color: var(--bg, #f8fafc);
+}
+
+.app-nav-tabs:has(a:hover) a.active:not(:hover) {
+  color: color-mix(in oklab, var(--bg, #f8fafc) 86%, var(--ink-2, #37413d));
 }
 
 .app-topbar-spacer {
@@ -149,6 +186,13 @@ body {
   0%,
   100% { opacity: 1; }
   50% { opacity: 0.4; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-nav-indicator.is-animated,
+  .app-nav-tabs a {
+    transition: none;
+  }
 }
 
 .app-mobile-menu {

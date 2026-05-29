@@ -658,27 +658,27 @@ function TypeComparison({ rows }: { rows: TypeSummary[] }) {
       <div className="analytics-section-head">
         <p className="analytics-eyebrow">Care type</p>
         <h2>ED vs UPCC</h2>
-        <p>Median and p90 stay separate so tail pressure does not disappear inside an average.</p>
+        <p>Median wait time and P90 wait time stay separate so tail pressure does not disappear inside an average.</p>
       </div>
       <div className="analytics-type-bars">
         {rows.map((row) => (
           <div className="analytics-type-row" key={row.type}>
             <div className="analytics-type-row-head">
               <TypePill type={row.type} />
-              <span>median {fmtWait(row.median_wait)} / p90 {fmtWait(row.p90_wait)}</span>
+              <span>Median wait time {fmtWait(row.median_wait)} / P90 wait time {fmtWait(row.p90_wait)}</span>
             </div>
-            <div className="analytics-bar-track" aria-label={`${typeLabel(row.type)} median ${fmtWait(row.median_wait)}`}>
+            <div className="analytics-bar-track" aria-label={`${typeLabel(row.type)} median wait time ${fmtWait(row.median_wait)}`}>
               <span className="analytics-bar-fill analytics-bar-median" style={{ width: `${Math.max(((row.median_wait ?? 0) / max) * 100, 2)}%` }} />
             </div>
-            <div className="analytics-bar-track" aria-label={`${typeLabel(row.type)} p90 ${fmtWait(row.p90_wait)}`}>
+            <div className="analytics-bar-track" aria-label={`${typeLabel(row.type)} P90 wait time ${fmtWait(row.p90_wait)}`}>
               <span className="analytics-bar-fill analytics-bar-p90" style={{ width: `${Math.max(((row.p90_wait ?? 0) / max) * 100, 2)}%` }} />
             </div>
           </div>
         ))}
       </div>
       <div className="analytics-legend-inline">
-        <span><i className="analytics-dot analytics-dot-median" />median</span>
-        <span><i className="analytics-dot analytics-dot-p90" />p90</span>
+        <span><i className="analytics-dot analytics-dot-median" />Median wait time</span>
+        <span><i className="analytics-dot analytics-dot-p90" />P90 wait time</span>
       </div>
     </section>
   );
@@ -760,8 +760,8 @@ export default async function AnalyticsPage() {
         </section>
 
         <section className="analytics-metrics" aria-label="Analytics summary">
-          <MetricCard label="Facilities tracked" value={fmtNumber(locationCount)} detail={`${quality?.locations_with_readings ?? 0} locations produced wait readings`} tone="teal" />
-          <MetricCard label="Readings captured" value={fmtNumber(readings)} detail={`${percent(quality?.with_wait_minutes ?? 0, quality?.readings ?? 0)} include wait minutes`} tone="green" />
+          <MetricCard label="Facilities tracked" value={fmtNumber(locationCount)} detail={`${quality?.locations_with_readings ?? 0} locations produced wait-time readings`} tone="teal" />
+          <MetricCard label="Readings captured" value={fmtNumber(readings)} detail={`${percent(quality?.with_wait_minutes ?? 0, quality?.readings ?? 0)} include wait-time minutes`} tone="green" />
           <MetricCard label="Poll archive" value={fmtNumber(polls)} detail={data.pollCadence?.polls ? `Median cadence ${fmtNumber(data.pollCadence.median_seconds_between_polls, 1)} seconds` : "Archive table not present"} tone="amber" />
           <MetricCard label="Freshness" value={`${fmtNumber(data.freshness?.median_minutes_source_lag, 1)}m`} detail={`P95 source lag ${fmtNumber(data.freshness?.p95_minutes_source_lag, 1)} minutes`} tone="coral" />
         </section>
@@ -771,31 +771,31 @@ export default async function AnalyticsPage() {
             <div className="analytics-section-head">
               <p className="analytics-eyebrow">Executive readout</p>
               <h2>What needs attention now</h2>
-              <p>Fast scan of current pressure, sustained averages, and structural data gaps.</p>
+              <p>Fast scan of current wait-time pressure, sustained averages, and structural data gaps.</p>
             </div>
             <div className="analytics-insight-grid">
               <InsightCard
                 label="Current highest pressure"
                 value={latestCurrent?.name ?? "n/a"}
-                detail={`Latest wait ${fmtWait(latestCurrent?.wait_time_minutes)} at ${fmtDate(latestCurrent?.observed_at)} PT`}
+                detail={`Latest wait time ${fmtWait(latestCurrent?.wait_time_minutes)} at ${fmtDate(latestCurrent?.observed_at)} PT`}
                 tone="coral"
               />
               <InsightCard
                 label="Highest sustained average"
                 value={highestAvg?.name ?? "n/a"}
-                detail={`Average ${fmtWait(highestAvg?.avg_wait)}, median ${fmtWait(highestAvg?.median_wait)}`}
+                detail={`Average wait time ${fmtWait(highestAvg?.avg_wait)}, median wait time ${fmtWait(highestAvg?.median_wait)}`}
                 tone="teal"
               />
               <InsightCard
                 label="ED access gap"
-                value={edPremium == null ? "n/a" : `${fmtWait(edPremium)} longer median`}
-                detail={`ED median ${fmtWait(ed?.median_wait)} vs UPCC median ${fmtWait(upcc?.median_wait)}`}
+                value={edPremium == null ? "n/a" : `${fmtWait(edPremium)} longer median wait time`}
+                detail={`ED median wait time ${fmtWait(ed?.median_wait)} vs UPCC median wait time ${fmtWait(upcc?.median_wait)}`}
                 tone="amber"
               />
               <InsightCard
                 label="Coverage note"
-                value={`${data.noReadings.length} no-wait locations`}
-                detail="Most are configured with wait times hidden, so treat this as product state rather than missing telemetry."
+                value={`${data.noReadings.length} locations without wait-time readings`}
+                detail="Most are configured with wait-time display hidden, so treat this as product state rather than missing telemetry."
                 tone="green"
               />
             </div>
@@ -851,10 +851,10 @@ export default async function AnalyticsPage() {
         />
 
         <section className="analytics-table-grid">
-          <DataTable title="Current pressure" subtitle="Latest reading per facility, sorted by wait time.">
+          <DataTable title="Current wait-time pressure" subtitle="Latest reading per facility, sorted by wait time.">
             <table>
               <thead>
-                <tr><th>Facility</th><th>Type</th><th>Wait</th><th>ELOS</th><th>Observed</th></tr>
+                <tr><th>Facility</th><th>Type</th><th>Wait time</th><th>Estimated length of stay</th><th>Observed</th></tr>
               </thead>
               <tbody>
                 {data.current.slice(0, 12).map((row) => (
@@ -870,11 +870,11 @@ export default async function AnalyticsPage() {
             </table>
           </DataTable>
 
-          <DataTable title="Above-baseline signals" subtitle="Current wait versus each site's own short history.">
+          <DataTable title="Above-baseline signals" subtitle="Current wait time versus each site's own short history.">
             {data.alerts.length ? (
               <table>
                 <thead>
-                  <tr><th>Facility</th><th>Current</th><th>Avg</th><th>Delta</th><th>Z</th></tr>
+                  <tr><th>Facility</th><th>Current wait time</th><th>Average wait time</th><th>Delta from average</th><th>Z-score</th></tr>
                 </thead>
                 <tbody>
                   {data.alerts.map((row) => (
@@ -893,10 +893,10 @@ export default async function AnalyticsPage() {
         </section>
 
         <section className="analytics-table-grid">
-          <DataTable title="Sustained high waits" subtitle="Facilities with at least 50 readings, ranked by average wait.">
+          <DataTable title="Sustained high wait times" subtitle="Facilities with at least 50 readings, ranked by average wait time.">
             <table>
               <thead>
-                <tr><th>Facility</th><th>Avg</th><th>Median</th><th>P90</th><th>Max</th></tr>
+                <tr><th>Facility</th><th>Average wait time</th><th>Median wait time</th><th>P90 wait time</th><th>Max wait time</th></tr>
               </thead>
               <tbody>
                 {data.highestAverage.map((row) => (
@@ -915,7 +915,7 @@ export default async function AnalyticsPage() {
           <DataTable title="Volatility" subtitle="High standard deviation means the facility swings more than its peers.">
             <table>
               <thead>
-                <tr><th>Facility</th><th>Std dev</th><th>Avg</th><th>Median</th><th>Readings</th></tr>
+                <tr><th>Facility</th><th>Standard deviation</th><th>Average wait time</th><th>Median wait time</th><th>Readings</th></tr>
               </thead>
               <tbody>
                 {data.mostVolatile.map((row) => (
@@ -934,9 +934,9 @@ export default async function AnalyticsPage() {
 
         <section className="analytics-method-grid" aria-label="Analytics notes">
           {[
-            ["Median and p90 first", "Averages are useful, but medians and p90s are better for public pressure and tail-risk decisions."],
-            ["Baseline per site", "Each facility has its own normal range, so alerts compare current waits to that site's own history."],
-            ["Separate structural gaps", "Locations with hidden wait times should be shown as product state, not confused with broken telemetry."],
+            ["Median wait time and P90 wait time first", "Average wait time is useful, but median wait time and P90 wait time are better for public pressure and tail-risk decisions."],
+            ["Baseline per site", "Each facility has its own normal range, so alerts compare current wait times to that site's own history."],
+            ["Separate structural gaps", "Locations with hidden wait-time display should be shown as product state, not confused with broken telemetry."],
           ].map(([title, body]) => (
             <article key={title}>
               <h3>{title}</h3>
@@ -945,11 +945,11 @@ export default async function AnalyticsPage() {
           ))}
         </section>
 
-        <DataTable title="Locations without wait readings" subtitle="Useful for data quality checks and product-state audits.">
+        <DataTable title="Locations without wait-time readings" subtitle="Useful for data quality checks and product-state audits.">
           {data.noReadings.length ? (
             <table>
               <thead>
-                <tr><th>Facility</th><th>Type</th><th>Show wait times</th><th>Fallback</th></tr>
+                <tr><th>Facility</th><th>Type</th><th>Show wait times</th><th>Fallback wait-time text</th></tr>
               </thead>
               <tbody>
                 {data.noReadings.map((row) => (
@@ -962,7 +962,7 @@ export default async function AnalyticsPage() {
                 ))}
               </tbody>
             </table>
-          ) : <EmptyFallback>Every tracked location has at least one wait reading.</EmptyFallback>}
+          ) : <EmptyFallback>Every tracked location has at least one wait-time reading.</EmptyFallback>}
         </DataTable>
       </main>
     </div>

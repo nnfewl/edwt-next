@@ -1,10 +1,8 @@
 "use client";
 
-import type { ReactNode } from "react";
-import { ResponsiveBar } from "@nivo/bar";
-import { ResponsiveHeatMap } from "@nivo/heatmap";
-import { ResponsiveLine } from "@nivo/line";
-import { ResponsiveScatterPlot } from "@nivo/scatterplot";
+import { useEffect, useMemo, useRef, type ReactNode } from "react";
+import Chart from "chart.js/auto";
+import type { ChartConfiguration, ChartType, Plugin } from "chart.js";
 
 type MaybeNumber = number | null;
 
@@ -69,6 +67,10 @@ type Props = {
   coverage: CoveragePoint[];
 };
 
+type XYDatum = { x: number; y: number };
+type BubbleDatum = { x: number; y: number; r: number; name: string; readings: number; type: string };
+type HeatmapDatum = { x: number; y: number; v: MaybeNumber; name: string; hour: number };
+
 const colors = {
   ink: "#1a1d1b",
   ink2: "#3b403d",
@@ -77,40 +79,15 @@ const colors = {
   grid: "#edf1f5",
   surface: "#ffffff",
   teal: "#0f766e",
-  tealSoft: "#dff3ef",
   green: "#16a34a",
   sky: "#38bdf8",
+  cyan: "#0e7490",
   amber: "#d97706",
   coral: "#dc6d55",
   rose: "#be123c",
   red: "#991b1b",
-  blue: "#2563eb",
-  violet: "#7c3aed",
 };
 
-const theme = {
-  background: "transparent",
-  fontFamily: "var(--font-manrope), Manrope, system-ui, sans-serif",
-  text: { fill: colors.muted, fontSize: 12 },
-  axis: {
-    domain: { line: { stroke: "transparent" } },
-    ticks: { line: { stroke: "transparent" }, text: { fill: colors.muted, fontSize: 11 } },
-    legend: { text: { fill: colors.ink2, fontSize: 12, fontWeight: 700 } },
-  },
-  grid: { line: { stroke: colors.grid, strokeDasharray: "4 5" } },
-  legends: { text: { fill: colors.ink2, fontSize: 12 } },
-  labels: { text: { fontWeight: 700 } },
-  tooltip: {
-    container: {
-      background: colors.surface,
-      color: colors.ink,
-      borderRadius: 10,
-      boxShadow: "0 18px 44px rgba(26, 29, 27, 0.14)",
-      border: `1px solid ${colors.line}`,
-      fontSize: 12,
-    },
-  },
-};
 
 function hourLabel(hour: number) {
   const suffix = hour < 12 ? "a" : "p";
@@ -163,6 +140,17 @@ function pressureColor(wait: MaybeNumber | undefined) {
   return colors.sky;
 }
 
+function heatColor(value: MaybeNumber | undefined) {
+  if (value === null || value === undefined) return "#f3f4f1";
+  if (value >= 360) return "#8f2f2b";
+  if (value >= 300) return "#b94a45";
+  if (value >= 240) return "#d66d5b";
+  if (value >= 180) return "#e89b73";
+  if (value >= 120) return "#e9c78d";
+  if (value >= 60) return "#b8ddd4";
+  return "#e4f2ef";
+}
+
 function facilityShortName(name: string) {
   return name
     .replace(" Hospital", "")
@@ -176,6 +164,48 @@ function sparseTicks<T>(items: T[], desired = 6) {
   const step = Math.max(1, Math.ceil(unique.length / desired));
   return unique.filter((_, index) => index % step === 0);
 }
+
+const fontFamily = "var(--font-manrope), Manrope, system-ui, sans-serif";
+
+const basePlugins = {
+  legend: {
+    labels: {
+      boxWidth: 9,
+      boxHeight: 9,
+      color: colors.ink2,
+      font: { family: fontFamily, size: 12, weight: 700 },
+      usePointStyle: true,
+    },
+  },
+  tooltip: {
+    backgroundColor: colors.surface,
+    borderColor: colors.line,
+    borderWidth: 1,
+    bodyColor: colors.ink2,
+    bodyFont: { family: fontFamily, size: 12 },
+    titleColor: colors.ink,
+    titleFont: { family: fontFamily, size: 12, weight: 800 },
+    padding: 10,
+    cornerRadius: 10,
+    displayColors: false,
+  },
+};
+
+const commonScales = {
+  grid: {
+    color: colors.grid,
+    borderDash: [4, 5],
+    drawBorder: false,
+  },
+  ticks: {
+    color: colors.muted,
+    font: { family: fontFamily, size: 11, weight: 650 },
+  },
+  title: {
+    color: colors.ink2,
+    font: { family: fontFamily, size: 12, weight: 800 },
+  },
+};
 
 function ChartShell({
   title,
@@ -191,7 +221,6 @@ function ChartShell({
   return (
     <section className={wide ? "analytics-chart-card analytics-chart-card-wide" : "analytics-chart-card"}>
       <div className="analytics-chart-head">
-        <p className="analytics-eyebrow">Chart</p>
         <h2>{title}</h2>
         <p>{eyebrow}</p>
       </div>
@@ -200,95 +229,181 @@ function ChartShell({
   );
 }
 
-function Tooltip({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <div className="analytics-chart-tooltip">
-      <strong>{title}</strong>
-      <div>{children}</div>
-    </div>
-  );
-}
+function ChartCanvas({
+  config,
+  frameClassName = "analytics-chart-frame analytics-chart-frame-medium",
+}: {
+  config: ChartConfiguration;
+  frameClassName?: string;
+}) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const chartRef = useRef<Chart<ChartType> | null>(null);
 
-function DumbbellChart({ rows }: { rows: Array<{ facility: string; delta: number; current: number; median: number; color: string }> }) {
-  const maxWait = Math.max(60, ...rows.flatMap((row) => [row.current, row.median]));
-  const axisMax = Math.ceil(maxWait / 60) * 60;
-  const hourlyTicks = Array.from({ length: axisMax / 60 + 1 }, (_, index) => index * 60);
-  const ticks = hourlyTicks.length <= 11 ? hourlyTicks : hourlyTicks.filter((tick, index) => index % 2 === 0 || tick === axisMax);
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return undefined;
+
+    chartRef.current?.destroy();
+    chartRef.current = new Chart(canvas, config);
+
+    return () => {
+      chartRef.current?.destroy();
+      chartRef.current = null;
+    };
+  }, [config]);
 
   return (
-    <div className="analytics-dumbbell-scroll">
-      <div className="analytics-dumbbell">
-        <div className="analytics-dumbbell-axis">
-          <div />
-          <div className="analytics-dumbbell-axis-line">
-            {ticks.map((tick) => (
-              <span key={tick} style={{ left: `${(tick / axisMax) * 100}%` }}>{axisMinutes(tick)}</span>
-            ))}
-          </div>
-          <div>change</div>
-        </div>
-        <div className="analytics-dumbbell-rows">
-          {rows.map((row) => {
-            const medianLeft = (row.median / axisMax) * 100;
-            const currentLeft = (row.current / axisMax) * 100;
-            const start = Math.min(medianLeft, currentLeft);
-            const width = Math.abs(currentLeft - medianLeft);
-            return (
-              <div className="analytics-dumbbell-row" key={row.facility}>
-                <div className="analytics-dumbbell-name">{row.facility}</div>
-                <div className="analytics-dumbbell-track">
-                  <span className="analytics-dumbbell-base" />
-                  <span className="analytics-dumbbell-band" style={{ left: `${start}%`, width: `${Math.max(width, 1)}%` }} />
-                  <span className="analytics-dumbbell-median" style={{ left: `${medianLeft}%` }} title={`Usual median ${minutes(row.median)}`} />
-                  <span className="analytics-dumbbell-current" style={{ left: `${currentLeft}%`, backgroundColor: row.color }} title={`Current ${minutes(row.current)}`} />
-                </div>
-                <div className={row.delta >= 0 ? "analytics-dumbbell-delta is-up" : "analytics-dumbbell-delta is-down"}>
-                  {signedAxisMinutes(row.delta)}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-        <div className="analytics-legend-inline analytics-dumbbell-legend">
-          <span><i className="analytics-dot analytics-dot-usual" />usual median</span>
-          <span><i className="analytics-dot analytics-dot-current" />current wait</span>
-        </div>
+    <div className="analytics-chart-scroll">
+      <div className={frameClassName}>
+        <canvas ref={canvasRef} />
       </div>
     </div>
   );
 }
 
-export function AnalyticsCharts({ current, distribution, heatmap, facilityRisk, typeTrend, coverage }: Props) {
-  const waitTicks = [0, 60, 120, 180, 240, 300, 360, 480, 600];
-  const trendWaitTicks = [0, 60, 120, 180, 240, 300, 360, 420, 480];
-  const sustainedWaitTicks = [0, 60, 120, 180, 240, 300, 360, 420, 480, 600];
+const dumbbellConnectorPlugin: Plugin = {
+  id: "analyticsDumbbellConnectors",
+  beforeDatasetsDraw(chart) {
+    const medianMeta = chart.getDatasetMeta(0);
+    const currentMeta = chart.getDatasetMeta(1);
+    const { ctx } = chart;
 
-  const currentRanking = current
+    ctx.save();
+    ctx.strokeStyle = "#d8ded9";
+    ctx.lineWidth = 7;
+    ctx.lineCap = "round";
+
+    medianMeta.data.forEach((medianPoint, index) => {
+      const currentPoint = currentMeta.data[index];
+      if (!currentPoint) return;
+      ctx.beginPath();
+      ctx.moveTo(medianPoint.x, medianPoint.y);
+      ctx.lineTo(currentPoint.x, currentPoint.y);
+      ctx.stroke();
+    });
+
+    ctx.restore();
+  },
+};
+
+const heatmapCellPlugin: Plugin = {
+  id: "analyticsHeatmapCells",
+  beforeDatasetsDraw(chart) {
+    const dataset = chart.data.datasets[0];
+    const points = dataset.data as HeatmapDatum[];
+    const xScale = chart.scales.x;
+    const yScale = chart.scales.y;
+    const { ctx } = chart;
+    const cellWidth = Math.max(8, Math.abs(xScale.getPixelForValue(1) - xScale.getPixelForValue(0)) - 2);
+    const cellHeight = Math.max(8, Math.abs(yScale.getPixelForValue(1) - yScale.getPixelForValue(0)) - 2);
+
+    ctx.save();
+    points.forEach((point) => {
+      const x = xScale.getPixelForValue(point.x) - cellWidth / 2;
+      const y = yScale.getPixelForValue(point.y) - cellHeight / 2;
+      ctx.fillStyle = heatColor(point.v);
+      ctx.beginPath();
+      ctx.roundRect(x, y, cellWidth, cellHeight, 3);
+      ctx.fill();
+    });
+    ctx.restore();
+  },
+};
+
+export function AnalyticsCharts({ current, distribution, heatmap, facilityRisk, typeTrend, coverage }: Props) {
+  const currentRanking = useMemo(() => current
     .filter((point) => point.wait !== null)
     .slice(0, 14)
     .map((point) => ({
       facility: facilityShortName(point.name),
       wait: point.wait ?? 0,
       color: pressureColor(point.wait),
-    }));
+    })), [current]);
 
-  const typeTrendTicks = sparseTicks(typeTrend.map((point) => shortTime(point.bucket)), 5);
-  const typeTrendSeries = [
-    { id: "ED median", type: "ed", metric: "median" },
-    { id: "ED p90", type: "ed", metric: "p90" },
-    { id: "UPCC median", type: "upcc", metric: "median" },
-    { id: "UPCC p90", type: "upcc", metric: "p90" },
+  const currentPressureConfig = useMemo<ChartConfiguration>(() => ({
+    type: "bar",
+    data: {
+      labels: currentRanking.map((point) => point.facility),
+      datasets: [{
+        label: "Current wait time",
+        data: currentRanking.map((point) => point.wait),
+        backgroundColor: currentRanking.map((point) => point.color),
+        borderRadius: 6,
+        borderSkipped: false,
+        barPercentage: 0.76,
+        categoryPercentage: 0.78,
+      }],
+    },
+    options: {
+      indexAxis: "y",
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      plugins: {
+        ...basePlugins,
+        legend: { display: false },
+        tooltip: {
+          ...basePlugins.tooltip,
+          callbacks: {
+            label: (item) => `Current wait time: ${minutes(Number(item.raw))}`,
+          },
+        },
+      },
+      scales: {
+        x: { ...commonScales, beginAtZero: true, ticks: { ...commonScales.ticks, callback: axisMinutes }, title: { ...commonScales.title, display: true, text: "current wait time" } },
+        y: { ...commonScales, grid: { display: false } },
+      },
+    },
+  }), [currentRanking]);
+
+  const typeTrendLabels = useMemo(() => Array.from(new Set(typeTrend.map((point) => shortTime(point.bucket)))), [typeTrend]);
+  const typeTrendTicks = useMemo(() => new Set(sparseTicks(typeTrendLabels, 5)), [typeTrendLabels]);
+  const typeTrendSeries = useMemo(() => [
+    { label: "ED median wait time", type: "ed", metric: "median", color: colors.coral },
+    { label: "ED P90 wait time", type: "ed", metric: "p90", color: colors.red },
+    { label: "UPCC median wait time", type: "upcc", metric: "median", color: colors.teal },
+    { label: "UPCC P90 wait time", type: "upcc", metric: "p90", color: colors.cyan },
   ].map((series) => ({
-    id: series.id,
-    data: typeTrend
-      .filter((point) => point.type === series.type)
-      .map((point) => ({
-        x: shortTime(point.bucket),
-        y: series.metric === "median" ? point.medianWait ?? 0 : point.p90Wait ?? 0,
-      })),
-  }));
+    label: series.label,
+    data: typeTrendLabels.map((label) => {
+      const found = typeTrend.find((point) => point.type === series.type && shortTime(point.bucket) === label);
+      return series.metric === "median" ? found?.medianWait ?? null : found?.p90Wait ?? null;
+    }),
+    borderColor: series.color,
+    backgroundColor: series.color,
+    borderWidth: 3,
+    pointRadius: 0,
+    pointHoverRadius: 4,
+    tension: 0.36,
+    spanGaps: true,
+  })), [typeTrend, typeTrendLabels]);
 
-  const sustained = facilityRisk
+  const trendConfig = useMemo<ChartConfiguration>(() => ({
+    type: "line",
+    data: { labels: typeTrendLabels, datasets: typeTrendSeries },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      interaction: { intersect: false, mode: "index" },
+      plugins: {
+        ...basePlugins,
+        legend: { display: false },
+        tooltip: {
+          ...basePlugins.tooltip,
+          callbacks: {
+            label: (item) => `${item.dataset.label}: ${minutes(Number(item.raw))}`,
+          },
+        },
+      },
+      scales: {
+        x: { ...commonScales, grid: { display: false }, ticks: { ...commonScales.ticks, callback: (_value, index) => typeTrendTicks.has(typeTrendLabels[index]) ? typeTrendLabels[index] : "" } },
+        y: { ...commonScales, beginAtZero: true, ticks: { ...commonScales.ticks, callback: axisMinutes }, title: { ...commonScales.title, display: true, text: "wait time" } },
+      },
+    },
+  }), [typeTrendLabels, typeTrendSeries, typeTrendTicks]);
+
+  const sustained = useMemo(() => facilityRisk
     .filter((point) => point.readings >= 100)
     .sort((a, b) => (b.p90Wait ?? 0) - (a.p90Wait ?? 0))
     .slice(0, 14)
@@ -296,243 +411,331 @@ export function AnalyticsCharts({ current, distribution, heatmap, facilityRisk, 
       facility: facilityShortName(point.name),
       median: point.medianWait ?? 0,
       p90: point.p90Wait ?? 0,
-    }));
+    })), [facilityRisk]);
 
-  const currentVsUsual = facilityRisk
+  const sustainedConfig = useMemo<ChartConfiguration>(() => ({
+    type: "bar",
+    data: {
+      labels: sustained.map((point) => point.facility),
+      datasets: [
+        { label: "Median wait time", data: sustained.map((point) => point.median), backgroundColor: colors.teal, borderRadius: 5, borderSkipped: false },
+        { label: "P90 wait time", data: sustained.map((point) => point.p90), backgroundColor: colors.coral, borderRadius: 5, borderSkipped: false },
+      ],
+    },
+    options: {
+      indexAxis: "y",
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      plugins: {
+        ...basePlugins,
+        tooltip: {
+          ...basePlugins.tooltip,
+          callbacks: {
+            label: (item) => `${item.dataset.label}: ${minutes(Number(item.raw))}`,
+          },
+        },
+      },
+      scales: {
+        x: { ...commonScales, beginAtZero: true, ticks: { ...commonScales.ticks, callback: axisMinutes }, title: { ...commonScales.title, display: true, text: "wait time" } },
+        y: { ...commonScales, grid: { display: false } },
+      },
+    },
+  }), [sustained]);
+
+  const currentVsUsual = useMemo(() => facilityRisk
     .filter((point) => point.currentWait !== null && point.medianWait !== null && point.readings >= 100)
     .map((point) => ({
       facility: facilityShortName(point.name),
       delta: Math.round((point.currentWait ?? 0) - (point.medianWait ?? 0)),
       current: point.currentWait ?? 0,
       median: point.medianWait ?? 0,
-      color: (point.currentWait ?? 0) >= (point.medianWait ?? 0) ? pressureColor(point.currentWait) : colors.blue,
+      color: (point.currentWait ?? 0) >= (point.medianWait ?? 0) ? pressureColor(point.currentWait) : colors.cyan,
     }))
     .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))
-    .slice(0, 12);
+    .slice(0, 12), [facilityRisk]);
 
-  const riskMatrix = ["ed", "upcc"].map((type) => ({
-    id: type.toUpperCase(),
-    data: facilityRisk
-      .filter((point) => point.type === type && point.readings >= 100)
-      .map((point) => ({
-        x: point.medianWait ?? 0,
-        y: point.p90Wait ?? 0,
-        size: Math.max(8, Math.min(28, Math.sqrt(point.readings) * 1.1)),
-        name: point.name,
-        readings: point.readings,
-      })),
-  }));
+  const dumbbellConfig = useMemo<ChartConfiguration>(() => ({
+    type: "scatter",
+    data: {
+      datasets: [
+        {
+          label: "Usual median wait time",
+          data: currentVsUsual.map((point, index) => ({ x: point.median, y: index })) as XYDatum[],
+          backgroundColor: colors.muted,
+          borderColor: colors.surface,
+          borderWidth: 2,
+          pointRadius: 5,
+          pointHoverRadius: 6,
+        },
+        {
+          label: "Current wait time",
+          data: currentVsUsual.map((point, index) => ({ x: point.current, y: index })) as XYDatum[],
+          backgroundColor: currentVsUsual.map((point) => point.color),
+          borderColor: colors.surface,
+          borderWidth: 3,
+          pointRadius: 8,
+          pointHoverRadius: 9,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      plugins: {
+        ...basePlugins,
+        tooltip: {
+          ...basePlugins.tooltip,
+          callbacks: {
+            title: (items) => currentVsUsual[Number(items[0]?.parsed.y)]?.facility ?? "Facility",
+            label: (item) => `${item.dataset.label}: ${minutes(item.parsed.x)}`,
+            afterBody: (items) => {
+              const row = currentVsUsual[Number(items[0]?.parsed.y)];
+              return row ? `Change from usual median wait time: ${signedAxisMinutes(row.delta)}` : "";
+            },
+          },
+        },
+      },
+      scales: {
+        x: { ...commonScales, beginAtZero: true, ticks: { ...commonScales.ticks, callback: axisMinutes }, title: { ...commonScales.title, display: true, text: "wait time" } },
+        y: {
+          ...commonScales,
+          reverse: true,
+          min: -0.5,
+          max: currentVsUsual.length - 0.5,
+          ticks: { ...commonScales.ticks, stepSize: 1, callback: (value) => currentVsUsual[Number(value)]?.facility ?? "" },
+          grid: { display: false },
+        },
+      },
+    },
+    plugins: [dumbbellConnectorPlugin],
+  }), [currentVsUsual]);
 
-  const distributionData = distribution.map((point) => ({ bucket: point.bucket, readings: point.readings }));
+  const riskPoints = useMemo(() => facilityRisk
+    .filter((point) => point.readings >= 100)
+    .map((point) => ({
+      x: point.medianWait ?? 0,
+      y: point.p90Wait ?? 0,
+      r: Math.max(5, Math.min(15, Math.sqrt(point.readings) * 0.62)),
+      name: point.name,
+      readings: point.readings,
+      type: point.type,
+    })), [facilityRisk]);
 
-  const heatmapNames = Array.from(new Set(heatmap.map((point) => point.name)));
-  const heatmapData = heatmapNames.map((name) => ({
-    id: facilityShortName(name),
-    data: Array.from({ length: 24 }, (_, hour) => {
-      const found = heatmap.find((point) => point.name === name && point.hour === hour);
-      return { x: hourLabel(hour), y: found?.avgWait ?? null };
-    }),
-  }));
+  const riskConfig = useMemo<ChartConfiguration>(() => ({
+    type: "bubble",
+    data: {
+      datasets: [
+        {
+          label: "ED",
+          data: riskPoints.filter((point) => point.type === "ed") as BubbleDatum[],
+          backgroundColor: "rgba(220, 109, 85, 0.72)",
+          borderColor: colors.coral,
+          borderWidth: 1,
+        },
+        {
+          label: "UPCC",
+          data: riskPoints.filter((point) => point.type === "upcc") as BubbleDatum[],
+          backgroundColor: "rgba(14, 116, 144, 0.58)",
+          borderColor: colors.cyan,
+          borderWidth: 1,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      plugins: {
+        ...basePlugins,
+        tooltip: {
+          ...basePlugins.tooltip,
+          callbacks: {
+            title: (items) => (items[0]?.raw as BubbleDatum | undefined)?.name ?? "Facility",
+            label: (item) => `Median wait time ${minutes(item.parsed.x)} / P90 wait time ${minutes(item.parsed.y)}`,
+            afterBody: (items) => {
+              const raw = items[0]?.raw as BubbleDatum | undefined;
+              return raw ? `${compactNumber(raw.readings)} readings` : "";
+            },
+          },
+        },
+      },
+      scales: {
+        x: { ...commonScales, beginAtZero: true, ticks: { ...commonScales.ticks, callback: axisMinutes }, title: { ...commonScales.title, display: true, text: "median wait time" } },
+        y: { ...commonScales, beginAtZero: true, ticks: { ...commonScales.ticks, callback: axisMinutes }, title: { ...commonScales.title, display: true, text: "P90 wait time" } },
+      },
+    },
+  }), [riskPoints]);
 
-  const coverageData = coverage
+  const distributionConfig = useMemo<ChartConfiguration>(() => ({
+    type: "bar",
+    data: {
+      labels: distribution.map((point) => point.bucket),
+      datasets: [{
+        label: "Readings",
+        data: distribution.map((point) => point.readings),
+        backgroundColor: distribution.map((_, index) => [colors.sky, colors.teal, colors.amber, colors.coral, colors.rose, colors.red][index] ?? colors.muted),
+        borderRadius: 6,
+        borderSkipped: false,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      plugins: { ...basePlugins, legend: { display: false } },
+      scales: {
+        x: { ...commonScales, grid: { display: false } },
+        y: { ...commonScales, beginAtZero: true, ticks: { ...commonScales.ticks, callback: compactNumber }, title: { ...commonScales.title, display: true, text: "readings" } },
+      },
+    },
+  }), [distribution]);
+
+  const heatmapNames = useMemo(() => Array.from(new Set(heatmap.map((point) => point.name))).slice(0, 12), [heatmap]);
+  const heatmapData = useMemo(() => heatmapNames.flatMap((name, y) => Array.from({ length: 24 }, (_, hour) => {
+    const found = heatmap.find((point) => point.name === name && point.hour === hour);
+    return { x: hour, y, v: found?.avgWait ?? null, name, hour };
+  })), [heatmap, heatmapNames]);
+
+  const heatmapConfig = useMemo<ChartConfiguration>(() => ({
+    type: "scatter",
+    data: {
+      datasets: [{
+        label: "Average wait time",
+        data: heatmapData as HeatmapDatum[],
+        pointRadius: 7,
+        pointHoverRadius: 8,
+        pointBackgroundColor: "rgba(0,0,0,0)",
+        pointBorderColor: "rgba(0,0,0,0)",
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          ...basePlugins.tooltip,
+          callbacks: {
+            title: (items) => {
+              const point = items[0]?.raw as HeatmapDatum | undefined;
+              return point?.name ?? "Facility";
+            },
+            label: (item) => {
+              const point = item.raw as HeatmapDatum;
+              return `Average wait time at ${hourLabel(point.hour)}: ${minutes(point.v)}`;
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          ...commonScales,
+          min: -0.5,
+          max: 23.5,
+          ticks: { ...commonScales.ticks, stepSize: 1, callback: (value) => [0, 4, 8, 12, 16, 20].includes(Number(value)) ? hourLabel(Number(value)) : "" },
+          grid: { display: false },
+        },
+        y: {
+          ...commonScales,
+          reverse: true,
+          min: -0.5,
+          max: heatmapNames.length - 0.5,
+          ticks: { ...commonScales.ticks, stepSize: 1, callback: (value) => facilityShortName(heatmapNames[Number(value)] ?? "") },
+          grid: { display: false },
+        },
+      },
+    },
+    plugins: [heatmapCellPlugin],
+  }), [heatmapData, heatmapNames]);
+
+  const coverageData = useMemo(() => coverage
     .filter((point) => point.readings > 0)
     .slice(0, 18)
     .map((point) => ({
       facility: facilityShortName(point.name),
       readings: point.readings,
       color: point.readings >= 1000 ? colors.teal : point.readings >= 500 ? colors.amber : colors.coral,
-    }));
+    })), [coverage]);
+
+  const coverageConfig = useMemo<ChartConfiguration>(() => ({
+    type: "bar",
+    data: {
+      labels: coverageData.map((point) => point.facility),
+      datasets: [{
+        label: "Readings",
+        data: coverageData.map((point) => point.readings),
+        backgroundColor: coverageData.map((point) => point.color),
+        borderRadius: 5,
+        borderSkipped: false,
+      }],
+    },
+    options: {
+      indexAxis: "y",
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      plugins: { ...basePlugins, legend: { display: false } },
+      scales: {
+        x: { ...commonScales, beginAtZero: true, ticks: { ...commonScales.ticks, callback: compactNumber }, title: { ...commonScales.title, display: true, text: "readings" } },
+        y: { ...commonScales, grid: { display: false } },
+      },
+    },
+  }), [coverageData]);
 
   return (
     <div className="analytics-charts">
       <section className="analytics-chart-grid analytics-chart-grid-featured">
-        <ChartShell title="Current access pressure" eyebrow="Longest current waits, severity-colored by threshold.">
-          <div className="analytics-chart-scroll">
-            <div className="analytics-chart-frame analytics-chart-frame-tall">
-              <ResponsiveBar
-                data={currentRanking}
-                keys={["wait"]}
-                indexBy="facility"
-                layout="horizontal"
-                theme={theme}
-                margin={{ top: 8, right: 28, bottom: 42, left: 140 }}
-                padding={0.24}
-                colors={({ data }) => String(data.color)}
-                borderRadius={6}
-                axisBottom={{ tickSize: 0, tickPadding: 8, tickValues: waitTicks, legend: "current wait", legendOffset: 34, format: axisMinutes }}
-                axisLeft={{ tickSize: 0, tickPadding: 8 }}
-                label={(bar) => minutes(Number(bar.value))}
-                labelSkipWidth={46}
-                labelTextColor={colors.ink}
-                enableGridY={false}
-                tooltip={({ data }) => <Tooltip title={String(data.facility)}>Current wait: {minutes(Number(data.wait))}</Tooltip>}
-              />
-            </div>
-          </div>
+        <ChartShell title="Current access pressure" eyebrow="Longest current wait times, severity-colored by threshold.">
+          <ChartCanvas config={currentPressureConfig} frameClassName="analytics-chart-frame analytics-chart-frame-tall" />
           <div className="analytics-legend-inline">
-            <span><i style={{ backgroundColor: colors.sky }} />under 1h</span>
-            <span><i style={{ backgroundColor: colors.amber }} />2h+</span>
-            <span><i style={{ backgroundColor: colors.rose }} />4h+</span>
-            <span><i style={{ backgroundColor: colors.red }} />6h+</span>
+            <span><i className="analytics-dot-short" />under 1h</span>
+            <span><i className="analytics-dot-watch" />2h+</span>
+            <span><i className="analytics-dot-high" />4h+</span>
+            <span><i className="analytics-dot-severe" />6h+</span>
           </div>
         </ChartShell>
 
-        <ChartShell title="ED vs UPCC trend" eyebrow="Median and p90 by care type, shown separately for clearer tail risk.">
-          <div className="analytics-chart-scroll">
-            <div className="analytics-chart-frame analytics-chart-frame-tall analytics-chart-frame-wide">
-              <ResponsiveLine
-                data={typeTrendSeries}
-                theme={theme}
-                colors={({ id }) => {
-                  if (id === "ED p90") return colors.rose;
-                  if (id === "ED median") return colors.coral;
-                  if (id === "UPCC p90") return colors.violet;
-                  return colors.teal;
-                }}
-                margin={{ top: 28, right: 28, bottom: 58, left: 54 }}
-                xScale={{ type: "point" }}
-                yScale={{ type: "linear", min: 0, stacked: false, reverse: false }}
-                curve="monotoneX"
-                axisBottom={{ tickRotation: -20, tickSize: 0, tickPadding: 12, tickValues: typeTrendTicks }}
-                axisLeft={{ tickSize: 0, tickPadding: 10, tickValues: trendWaitTicks, legend: "wait", legendOffset: -42, format: axisMinutes }}
-                enablePoints={false}
-                lineWidth={3}
-                useMesh
-                legends={[{ anchor: "top-left", direction: "row", translateY: -22, itemWidth: 110, itemHeight: 18, symbolSize: 10 }]}
-              />
-            </div>
+        <ChartShell title="ED vs UPCC trend" eyebrow="Median wait time and P90 wait time by care type, shown separately for clearer tail risk.">
+          <ChartCanvas config={trendConfig} frameClassName="analytics-chart-frame analytics-chart-frame-tall analytics-chart-frame-wide" />
+          <div className="analytics-legend-inline analytics-line-legend" aria-label="ED and UPCC wait-time trend legend">
+            <span><i className="analytics-line-ed-median" />ED median wait time</span>
+            <span><i className="analytics-line-ed-p90" />ED P90 wait time</span>
+            <span><i className="analytics-line-upcc-median" />UPCC median wait time</span>
+            <span><i className="analytics-line-upcc-p90" />UPCC P90 wait time</span>
           </div>
         </ChartShell>
       </section>
 
       <section className="analytics-chart-grid">
-        <ChartShell title="Sustained facility pressure" eyebrow="Facilities ranked by p90 wait. Median shows typical pressure; p90 shows bad-day pressure.">
-          <div className="analytics-chart-scroll">
-            <div className="analytics-chart-frame analytics-chart-frame-tall">
-              <ResponsiveBar
-                data={sustained}
-                keys={["median", "p90"]}
-                indexBy="facility"
-                layout="horizontal"
-                groupMode="grouped"
-                theme={theme}
-                margin={{ top: 28, right: 28, bottom: 48, left: 150 }}
-                padding={0.22}
-                innerPadding={3}
-                colors={[colors.teal, colors.violet]}
-                borderRadius={5}
-                axisBottom={{ tickSize: 0, tickPadding: 8, tickValues: sustainedWaitTicks, legend: "wait", legendOffset: 34, format: axisMinutes }}
-                axisLeft={{ tickSize: 0, tickPadding: 8 }}
-                legends={[{ dataFrom: "keys", anchor: "top-left", direction: "row", translateY: -28, itemWidth: 90, itemHeight: 18, symbolSize: 10 }]}
-                labelSkipWidth={54}
-                label={(bar) => minutes(Number(bar.value))}
-                labelTextColor={colors.ink}
-              />
-            </div>
-          </div>
+        <ChartShell title="Sustained facility pressure" eyebrow="Facilities ranked by P90 wait time. Median wait time shows typical pressure; P90 wait time shows bad-day pressure.">
+          <ChartCanvas config={sustainedConfig} frameClassName="analytics-chart-frame analytics-chart-frame-tall" />
         </ChartShell>
 
-        <ChartShell title="Current vs usual" eyebrow="Grey dot is site median; colored dot is current wait. The line shows the gap.">
-          <DumbbellChart rows={currentVsUsual} />
+        <ChartShell title="Current wait time vs usual median" eyebrow="Neutral dot is site median wait time; colored dot is current wait time. The line shows the gap.">
+          <ChartCanvas config={dumbbellConfig} frameClassName="analytics-chart-frame analytics-chart-frame-tall" />
         </ChartShell>
       </section>
 
       <section className="analytics-chart-grid">
-        <ChartShell title="Tail-risk map" eyebrow="Median vs p90 by facility. Upper-right sites are typically slow and painful in the tail.">
-          <div className="analytics-chart-scroll">
-            <div className="analytics-chart-frame analytics-chart-frame-medium analytics-chart-frame-wide">
-              <ResponsiveScatterPlot
-                data={riskMatrix}
-                theme={theme}
-                margin={{ top: 18, right: 28, bottom: 58, left: 68 }}
-                xScale={{ type: "linear", min: 0, max: "auto" }}
-                yScale={{ type: "linear", min: 0, max: "auto" }}
-                colors={[colors.coral, colors.violet]}
-                blendMode="multiply"
-                nodeSize={(node) => Number(node.data.size)}
-                axisBottom={{ tickSize: 0, tickPadding: 10, tickValues: sustainedWaitTicks, legend: "median wait", legendOffset: 42, format: axisMinutes }}
-                axisLeft={{ tickSize: 0, tickPadding: 10, tickValues: sustainedWaitTicks, legend: "p90 wait", legendOffset: -54, format: axisMinutes }}
-                useMesh
-                legends={[{ anchor: "top-left", direction: "row", translateY: -12, itemWidth: 80, itemHeight: 18, symbolSize: 10 }]}
-                tooltip={({ node }) => (
-                  <Tooltip title={String(node.data.name)}>
-                    Median {minutes(Number(node.data.x))} / P90 {minutes(Number(node.data.y))}<br />
-                    {Number(node.data.readings).toLocaleString()} readings
-                  </Tooltip>
-                )}
-              />
-            </div>
-          </div>
+        <ChartShell title="Tail-risk map" eyebrow="Median wait time vs P90 wait time by facility. Upper-right sites are typically slow and painful in the tail.">
+          <ChartCanvas config={riskConfig} frameClassName="analytics-chart-frame analytics-chart-frame-medium analytics-chart-frame-wide" />
         </ChartShell>
 
-        <ChartShell title="Wait distribution" eyebrow="How many readings land in each bucket, useful for long-tail pressure checks.">
-          <div className="analytics-chart-scroll">
-            <div className="analytics-chart-frame analytics-chart-frame-medium">
-              <ResponsiveBar
-                data={distributionData}
-                keys={["readings"]}
-                indexBy="bucket"
-                theme={theme}
-                margin={{ top: 12, right: 24, bottom: 46, left: 58 }}
-                padding={0.22}
-                colors={({ index }) => [colors.sky, colors.teal, colors.amber, colors.coral, colors.rose, colors.red][index] ?? colors.muted}
-                borderRadius={6}
-                axisBottom={{ tickSize: 0, tickPadding: 10 }}
-                axisLeft={{ tickSize: 0, tickPadding: 10, legend: "readings", legendOffset: -46, format: compactNumber }}
-                labelSkipHeight={18}
-                labelTextColor={colors.ink}
-              />
-            </div>
-          </div>
+        <ChartShell title="Wait-time distribution" eyebrow="How many readings land in each wait-time bucket, useful for long-tail pressure checks.">
+          <ChartCanvas config={distributionConfig} frameClassName="analytics-chart-frame analytics-chart-frame-medium" />
         </ChartShell>
       </section>
 
       <section className="analytics-chart-grid analytics-chart-grid-featured">
-        <ChartShell title="Facility-hour pattern" eyebrow="Top sustained-pressure facilities by local hour. Darker means higher average wait." wide>
-          <div className="analytics-chart-scroll">
-            <div className="analytics-chart-frame analytics-chart-frame-tall analytics-chart-frame-extra-wide">
-              <ResponsiveHeatMap
-                data={heatmapData}
-                theme={theme}
-                margin={{ top: 18, right: 20, bottom: 56, left: 168 }}
-                valueFormat={(value) => minutes(Number(value))}
-                axisTop={null}
-                axisRight={null}
-                axisBottom={{ tickSize: 0, tickPadding: 10, tickRotation: -35, tickValues: ["12a", "4a", "8a", "12p", "4p", "8p"] }}
-                axisLeft={{ tickSize: 0, tickPadding: 8 }}
-                colors={{ type: "sequential", scheme: "reds" }}
-                emptyColor="#f3f4f1"
-                borderRadius={2}
-                borderWidth={1}
-                borderColor="#ffffff"
-                enableLabels={false}
-                hoverTarget="cell"
-              />
-            </div>
-          </div>
+        <ChartShell title="Facility-hour pattern" eyebrow="Top sustained-pressure facilities by local hour. Darker means higher average wait time." wide>
+          <ChartCanvas config={heatmapConfig} frameClassName="analytics-chart-frame analytics-chart-frame-tall analytics-chart-frame-extra-wide" />
         </ChartShell>
 
         <ChartShell title="Coverage volume" eyebrow="Readings per facility. Low-volume facilities should be interpreted cautiously.">
-          <div className="analytics-chart-scroll">
-            <div className="analytics-chart-frame analytics-chart-frame-tall">
-              <ResponsiveBar
-                data={coverageData}
-                keys={["readings"]}
-                indexBy="facility"
-                layout="horizontal"
-                theme={theme}
-                margin={{ top: 8, right: 24, bottom: 42, left: 142 }}
-                padding={0.24}
-                colors={({ data }) => String(data.color)}
-                borderRadius={5}
-                axisBottom={{ tickSize: 0, tickPadding: 8, legend: "readings", legendOffset: 34, format: compactNumber }}
-                axisLeft={{ tickSize: 0, tickPadding: 8 }}
-                labelSkipWidth={42}
-                label={(bar) => compactNumber(Number(bar.value))}
-                labelTextColor={colors.ink}
-              />
-            </div>
-          </div>
+          <ChartCanvas config={coverageConfig} frameClassName="analytics-chart-frame analytics-chart-frame-tall" />
         </ChartShell>
       </section>
     </div>
