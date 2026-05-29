@@ -4,6 +4,7 @@ import Link from "next/link";
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
   type CSSProperties,
   type ReactNode,
@@ -19,6 +20,7 @@ import {
   faDiamondTurnRight,
   faHospital,
   faList,
+  faLocationCrosshairs,
   faLocationDot,
   faMapLocationDot,
   faPhone,
@@ -36,6 +38,8 @@ import {
   severityFor,
   severityLabel,
 } from "./data";
+import { withOriginDistances } from "./geo-distance";
+import { type LocationOrigin } from "./location-types";
 import "./styles.css";
 
 /* ───────── icons ─────────────────────────────────────────────────────────── */
@@ -57,7 +61,8 @@ type IconName =
   | "bars"
   | "hospital"
   | "check"
-  | "chevronDown";
+  | "chevronDown"
+  | "gps";
 
 const ICONS: Record<IconName, IconDefinition> = {
   pin: faLocationDot,
@@ -77,6 +82,7 @@ const ICONS: Record<IconName, IconDefinition> = {
   hospital: faHospital,
   check: faCheck,
   chevronDown: faChevronDown,
+  gps: faLocationCrosshairs,
 };
 
 const Icon = ({
@@ -201,51 +207,69 @@ const WaveBackground = ({
 
 /* ───────── topbar ────────────────────────────────────────────────────────── */
 
-const TopBar = ({ active }: { active: "list" | "map" }) => (
-  <header className="topbar">
-    <div className="topbar-inner">
-      <Link href="/" className="wordmark">
-        <span className="dot" aria-hidden="true"><Icon name="hospital" size={14} /></span>
-        <span>
-          EDWT
-          <small>Lower Mainland · BC</small>
-        </span>
-      </Link>
-      <nav className="nav-tabs" aria-label="Primary">
-        <Link href="/" className={active === "list" ? "active" : ""}>
-          <Icon name="list" size={14} /> Facilities
+const TopBar = ({ active }: { active: "list" | "map" }) => {
+  // Native <details>/<summary> — the toggle works without any JavaScript at
+  // all, so the hamburger stays functional even if hydration fails (which
+  // was happening on at least one touch device). Nav-link onClicks close the
+  // menu when JS is present; without JS the navigation itself closes it.
+  const menuRef = useRef<HTMLDetailsElement>(null);
+  const closeMenu = () => {
+    menuRef.current?.removeAttribute("open");
+  };
+  return (
+    <header className="topbar">
+      <div className="topbar-inner">
+        <Link href="/" className="wordmark">
+          <span className="dot" aria-hidden="true"><Icon name="hospital" size={14} /></span>
+          <span>
+            EDWT
+            <small>Lower Mainland · BC</small>
+          </span>
         </Link>
-        <Link href="/map" className={active === "map" ? "active" : ""}>
-          <Icon name="map" size={14} /> Map
-        </Link>
-        <Link href="/admin">
-          <Icon name="trendUp" size={14} /> Analytics
-        </Link>
-      </nav>
-      <details className="mobile-menu">
-        <summary aria-label="Open page menu">
-          <Icon name="bars" size={18} />
-        </summary>
-        <div className="mobile-menu-panel">
+        <nav className="nav-tabs" aria-label="Primary">
           <Link href="/" className={active === "list" ? "active" : ""}>
-            <Icon name="list" size={15} /> Facilities
+            <Icon name="list" size={14} /> Facilities
           </Link>
           <Link href="/map" className={active === "map" ? "active" : ""}>
-            <Icon name="map" size={15} /> Map
+            <Icon name="map" size={14} /> Map
           </Link>
           <Link href="/admin">
-            <Icon name="trendUp" size={15} /> Analytics
+            <Icon name="trendUp" size={14} /> Analytics
           </Link>
+        </nav>
+        <details className="mobile-menu" ref={menuRef}>
+          <summary aria-label="Open page menu">
+            <Icon name="bars" size={18} />
+          </summary>
+          <div className="mobile-menu-panel" role="menu">
+            <Link
+              href="/"
+              className={active === "list" ? "active" : ""}
+              onClick={closeMenu}
+            >
+              <Icon name="list" size={15} /> Facilities
+            </Link>
+            <Link
+              href="/map"
+              className={active === "map" ? "active" : ""}
+              onClick={closeMenu}
+            >
+              <Icon name="map" size={15} /> Map
+            </Link>
+            <Link href="/admin" onClick={closeMenu}>
+              <Icon name="trendUp" size={15} /> Analytics
+            </Link>
+          </div>
+        </details>
+        <div className="topbar-spacer" />
+        <div className="live-pill">
+          <span className="live-dot" aria-hidden="true" />
+          Live · updated 2 min ago
         </div>
-      </details>
-      <div className="topbar-spacer" />
-      <div className="live-pill">
-        <span className="live-dot" aria-hidden="true" />
-        Live · updated 2 min ago
       </div>
-    </div>
-  </header>
-);
+    </header>
+  );
+};
 
 /* ───────── facility card ─────────────────────────────────────────────────── */
 
@@ -324,9 +348,11 @@ const FacilityCard = ({
           >
             <Icon name="directions" size={14} /> <span className="action-label">Directions</span>
           </a>
-          <a className="action-btn" href={`tel:${f.phone}`} aria-label={`Call ${f.name}`} title="Call">
-            <Icon name="phone" size={14} /> <span className="action-label">Call</span>
-          </a>
+          {f.phone && (
+            <a className="action-btn" href={`tel:${f.phone}`} aria-label={`Call ${f.name}`} title="Call">
+              <Icon name="phone" size={14} /> <span className="action-label">Call</span>
+            </a>
+          )}
           <button className="action-btn" type="button" onClick={() => onSelect(f)} aria-label={`Details for ${f.name}`} title="Details">
             <Icon name="info" size={14} /> <span className="action-label">Details</span>
           </button>
@@ -449,15 +475,17 @@ const DetailsDrawer = ({
           >
             <Icon name="directions" size={14} /> <span className="action-label">Directions</span>
           </a>
-          <a
-            className="action-btn"
-            href={`tel:${f.phone}`}
-            style={{ flex: 1, justifyContent: "center" }}
-            aria-label={`Call ${f.name} at ${f.phone}`}
-            title={`Call ${f.phone}`}
-          >
-            <Icon name="phone" size={14} /> <span className="action-label">Call {f.phone}</span>
-          </a>
+          {f.phone && (
+            <a
+              className="action-btn"
+              href={`tel:${f.phone}`}
+              style={{ flex: 1, justifyContent: "center" }}
+              aria-label={`Call ${f.name} at ${f.phone}`}
+              title={`Call ${f.phone}`}
+            >
+              <Icon name="phone" size={14} /> <span className="action-label">Call {f.phone}</span>
+            </a>
+          )}
         </div>
       </aside>
     </div>
@@ -528,14 +556,22 @@ function fmtMins(m: number): string {
   return h ? `${h}h ${mm}m` : `${mm}m`;
 }
 
-export function ERNowPageClient({ facilities }: { facilities: Facility[] }): ReactNode {
+export function ERNowPageClient({
+  facilities,
+  initialOrigin,
+}: {
+  facilities: Facility[];
+  initialOrigin: LocationOrigin;
+}): ReactNode {
   const [filter, setFilter] = useState<FilterId>("all");
   const [sort, setSort] = useState<SortId>("wait");
   const [sortSheetOpen, setSortSheetOpen] = useState(false);
   const [selected, setSelected] = useState<Facility | null>(null);
-  const [locationText, setLocationText] = useState(
-    "Watson Drive, Surrey · using your location",
-  );
+  // Store ONLY a GPS override locally; fall back to the prop so server-side IP
+  // geolocation updates flow in on refresh without resetting a user's GPS choice.
+  const [gpsOrigin, setGpsOrigin] = useState<LocationOrigin | null>(null);
+  const origin: LocationOrigin = gpsOrigin ?? initialOrigin;
+  const [geoStatus, setGeoStatus] = useState<"idle" | "locating" | "denied" | "unavailable" | "insecure">("idle");
   // Time is rendered client-side to avoid an SSR/CSR mismatch on the hero meta.
   const [now, setNow] = useState<Date | null>(null);
 
@@ -553,6 +589,55 @@ export function ERNowPageClient({ facilities }: { facilities: Facility[] }): Rea
   }, []);
 
   const activeSort = SORTS.find((s) => s.id === sort) ?? SORTS[0];
+  const locationModeLabel = origin.source === "gps" ? "Precise location" : "Approximate location";
+  const locationText = origin.source === "gps" ? "Browser GPS location" : origin.label;
+  const locationStatus = geoStatus === "denied"
+    ? "Location permission was denied"
+    : geoStatus === "insecure"
+      ? "GPS needs HTTPS on mobile devices"
+      : geoStatus === "unavailable"
+        ? "Precise location is unavailable"
+        : null;
+  const locationButtonLabel = geoStatus === "locating"
+    ? "Getting precise location"
+    : origin.source === "gps"
+      ? "Precise location enabled"
+      : "Use precise location";
+
+  const requestPreciseLocation = () => {
+    if (!window.isSecureContext) {
+      setGeoStatus("insecure");
+      return;
+    }
+
+    if (!("geolocation" in navigator)) {
+      setGeoStatus("unavailable");
+      return;
+    }
+
+    setGeoStatus("locating");
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setGpsOrigin({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+          label: "Precise location",
+          source: "gps",
+          accuracyLabel: "browser GPS",
+        });
+        setGeoStatus("idle");
+      },
+      (error) => {
+        setGeoStatus(error.code === error.PERMISSION_DENIED ? "denied" : "unavailable");
+      },
+      { enableHighAccuracy: true, maximumAge: 60_000, timeout: 8_000 },
+    );
+  };
+
+  const facilitiesWithDistance = useMemo(
+    () => withOriginDistances(facilities, origin),
+    [facilities, origin],
+  );
 
   useEffect(() => {
     if (!sortSheetOpen) return;
@@ -569,9 +654,9 @@ export function ERNowPageClient({ facilities }: { facilities: Facility[] }): Rea
   }, [sortSheetOpen]);
 
   const filtered = useMemo(() => {
-    const matched = facilities.filter((f) => filterMatch(f, filter));
+    const matched = facilitiesWithDistance.filter((f) => filterMatch(f, filter));
     return sortFacilities(matched, sort);
-  }, [facilities, filter, sort]);
+  }, [facilitiesWithDistance, filter, sort]);
 
   const counts = useMemo(() => {
     const c: Record<FilterId, number> = {
@@ -582,21 +667,34 @@ export function ERNowPageClient({ facilities }: { facilities: Facility[] }): Rea
       open: 0,
     };
     for (const { id } of FILTERS) {
-      c[id] = facilities.filter((f) => filterMatch(f, id)).length;
+      c[id] = facilitiesWithDistance.filter((f) => filterMatch(f, id)).length;
     }
     return c;
-  }, [facilities]);
+  }, [facilitiesWithDistance]);
 
-  const openFacilities = facilities.filter((f) => f.open);
-  const shortest = openFacilities.reduce(
-    (a, b) => ((b.waitMin ?? Infinity) < (a.waitMin ?? Infinity) ? b : a),
-    openFacilities[0],
+  // All derived "open right now" values are nullable so a zero-open-facilities
+  // state — overnight UPCC closure, regional outage, fresh empty DB — renders
+  // an empty state instead of dereferencing undefined.
+  const openFacilities = useMemo(
+    () => facilitiesWithDistance.filter((f) => f.open),
+    [facilitiesWithDistance],
   );
-  const closestOpen = [...openFacilities].sort((a, b) => a.distanceKm - b.distanceKm)[0];
-  const avgWait = Math.round(
-    openFacilities.reduce((s, f) => s + (f.waitMin ?? 0), 0) /
-      Math.max(1, openFacilities.length),
-  );
+  const shortest = useMemo(() => {
+    if (openFacilities.length === 0) return null;
+    return openFacilities.reduce(
+      (a, b) => ((b.waitMin ?? Infinity) < (a.waitMin ?? Infinity) ? b : a),
+      openFacilities[0],
+    );
+  }, [openFacilities]);
+  const closestOpen = useMemo(() => {
+    if (openFacilities.length === 0) return null;
+    return [...openFacilities].sort((a, b) => a.distanceKm - b.distanceKm)[0];
+  }, [openFacilities]);
+  const avgWait = useMemo(() => {
+    if (openFacilities.length === 0) return null;
+    const total = openFacilities.reduce((s, f) => s + (f.waitMin ?? 0), 0);
+    return Math.round(total / openFacilities.length);
+  }, [openFacilities]);
 
   return (
     <div className="er-now-root">
@@ -620,18 +718,19 @@ export function ERNowPageClient({ facilities }: { facilities: Facility[] }): Rea
                 <Icon name="pin" size={18} />
               </span>
               <div className="loc-body">
-                <div className="loc-label">Your location</div>
+                <div className="loc-label">{locationModeLabel}</div>
                 <div className="loc-addr">{locationText}</div>
+                {locationStatus && <div className="loc-status">{locationStatus}</div>}
               </div>
               <button
-                className="change"
+                className={`change gps-action ${origin.source === "gps" ? "active" : ""}`}
                 type="button"
-                onClick={() => {
-                  const next = window.prompt("Enter a different address:", "Watson Drive, Surrey");
-                  if (next?.trim()) setLocationText(next.trim());
-                }}
+                onClick={requestPreciseLocation}
+                disabled={geoStatus === "locating"}
+                aria-label={locationButtonLabel}
+                title={locationButtonLabel}
               >
-                Change
+                <Icon name="gps" size={15} />
               </button>
             </div>
             {now && (
@@ -666,102 +765,118 @@ export function ERNowPageClient({ facilities }: { facilities: Facility[] }): Rea
           </div>
         </div>
 
-        {/* Stats */}
-        <div className="stats">
-          <div className="stat">
-            <div className="stat-label">Shortest wait</div>
-            <div className="stat-value">{fmtMins(shortest.waitMin ?? 0)}</div>
-            <div className="stat-trend down">
-              {shortest.name.split(" ").slice(0, 2).join(" ")} · {shortest.subtitle}
+        {/* Stats — only meaningful when at least one facility is open */}
+        {shortest && closestOpen && avgWait != null ? (
+          <div className="stats">
+            <div className="stat">
+              <div className="stat-label">Shortest wait</div>
+              <div className="stat-value">{fmtMins(shortest.waitMin ?? 0)}</div>
+              <div className="stat-trend down">
+                {shortest.name.split(" ").slice(0, 2).join(" ")} · {shortest.subtitle}
+              </div>
+            </div>
+            <div className="stat">
+              <div className="stat-label">Closest open</div>
+              <div className="stat-value">
+                {closestOpen.distanceKm}
+                <span className="unit">km</span>
+              </div>
+              <div className="stat-trend">
+                {closestOpen.name.split(" ").slice(0, 2).join(" ")}
+              </div>
+            </div>
+            <div className="stat">
+              <div className="stat-label">Average wait today</div>
+              <div className="stat-value">{fmtMins(avgWait)}</div>
+              <div className="stat-trend up">
+                <Icon name="trendUp" size={12} /> 18m vs. yesterday
+              </div>
+            </div>
+            <div className="stat">
+              <div className="stat-label">Open right now</div>
+              <div className="stat-value">
+                {openFacilities.length}
+                <span className="unit">/ {facilitiesWithDistance.length}</span>
+              </div>
+              <div className="stat-trend">facilities reporting</div>
             </div>
           </div>
-          <div className="stat">
-            <div className="stat-label">Closest open</div>
-            <div className="stat-value">
-              {closestOpen.distanceKm}
-              <span className="unit">km</span>
-            </div>
-            <div className="stat-trend">
-              {closestOpen.name.split(" ").slice(0, 2).join(" ")}
-            </div>
-          </div>
-          <div className="stat">
-            <div className="stat-label">Average wait today</div>
-            <div className="stat-value">{fmtMins(avgWait)}</div>
-            <div className="stat-trend up">
-              <Icon name="trendUp" size={12} /> 18m vs. yesterday
+        ) : (
+          <div className="info-banner" role="status">
+            <span className="ico"><Icon name="warning" size={13} /></span>
+            <div className="b-body">
+              <strong>No facilities are currently reporting as open.</strong>{" "}
+              The live feed may be paused or every site in range is closed. Call{" "}
+              <a href="tel:811">8-1-1</a> for nurse advice, or{" "}
+              <a href="tel:911">9-1-1</a> if this is life-threatening.
             </div>
           </div>
-          <div className="stat">
-            <div className="stat-label">Open right now</div>
-            <div className="stat-value">
-              {openFacilities.length}
-              <span className="unit">/ {facilities.length}</span>
-            </div>
-            <div className="stat-trend">facilities reporting</div>
-          </div>
-        </div>
+        )}
 
-        {/* Recommended pick */}
-        <div className="best-pick">
-          <WaveBackground f={shortest} height={120} intensity={0.35} />
-          <div>
-            <span className="pick-eyebrow">
-              <Icon name="star" size={11} stroke={2} />
-              Recommended for you
-            </span>
-            <h2 className="pick-name">
-              {shortest.name} · {shortest.subtitle}
-            </h2>
-            <p className="pick-reason">
-              Shortest reported wait among open facilities near you — about a{" "}
-              {fmtMins(shortest.waitMin ?? 0)} expected wait with{" "}
-              {shortest.inWaitingRoom} people in the waiting room. ~
-              {shortest.distanceKm} km from your location.
-            </p>
-            <div className="pick-meta">
-              <span>
-                <Icon name="clock" size={13} /> {shortest.hours}
+        {/* Recommended pick — only when there's an open facility to recommend */}
+        {shortest && (
+          <div className="best-pick">
+            <WaveBackground f={shortest} height={120} intensity={0.35} />
+            <div>
+              <span className="pick-eyebrow">
+                <Icon name="star" size={11} stroke={2} />
+                Recommended for you
               </span>
-              <span>
-                <Icon name="users" size={13} /> {shortest.audience}
-              </span>
-              {shortest.physiciansOnDuty > 0 && (
+              <h2 className="pick-name">
+                {shortest.name} · {shortest.subtitle}
+              </h2>
+              <p className="pick-reason">
+                Shortest reported wait among open facilities — about a{" "}
+                {fmtMins(shortest.waitMin ?? 0)} expected wait
+                {shortest.inWaitingRoom > 0 && (
+                  <> with <b>{shortest.inWaitingRoom} people</b> in the waiting room</>
+                )}
+                . ~{shortest.distanceKm} km from your location.
+              </p>
+              <div className="pick-meta">
                 <span>
-                  <Icon name="stethoscope" size={13} /> {shortest.physiciansOnDuty}{" "}
-                  clinicians on duty
+                  <Icon name="clock" size={13} /> {shortest.hours}
                 </span>
-              )}
+                <span>
+                  <Icon name="users" size={13} /> {shortest.audience}
+                </span>
+                {shortest.physiciansOnDuty > 0 && (
+                  <span>
+                    <Icon name="stethoscope" size={13} /> {shortest.physiciansOnDuty}{" "}
+                    clinicians on duty
+                  </span>
+                )}
+              </div>
+              <div className="actions" style={{ marginTop: 20 }}>
+                <a
+                  className="action-btn primary"
+                  href={mapFacilityUrl(shortest, true)}
+                  aria-label={`Directions to ${shortest.name}`}
+                  title="Directions"
+                >
+                  <Icon name="directions" size={14} /> <span className="action-label">Directions</span>
+                </a>
+                <button
+                  className="action-btn"
+                  type="button"
+                  onClick={() => setSelected(shortest)}
+                  aria-label={`Full details for ${shortest.name}`}
+                  title="Full details"
+                >
+                  <Icon name="info" size={14} /> <span className="action-label">Full details</span>
+                </button>
+              </div>
             </div>
-            <div className="actions" style={{ marginTop: 20 }}>
-              <a
-                className="action-btn primary"
-                href={mapFacilityUrl(shortest, true)}
-                aria-label={`Directions to ${shortest.name}`}
-                title="Directions"
-              >
-                <Icon name="directions" size={14} /> <span className="action-label">Directions</span>
-              </a>
-              <button
-                className="action-btn"
-                type="button"
-                onClick={() => setSelected(shortest)}
-                aria-label={`Full details for ${shortest.name}`}
-                title="Full details"
-              >
-                <Icon name="info" size={14} /> <span className="action-label">Full details</span>
-              </button>
+            <div className="wait" data-sev={severityFor(shortest.waitMin)}>
+              <div className="wait-num">{shortest.waitText}</div>
+              <div className="wait-label">
+                <span className="sev-dot" />
+                {severityLabel(shortest.waitMin)}
+              </div>
+              <div className="updated">Updated {shortest.lastUpdated}</div>
             </div>
           </div>
-          <div className="wait" data-sev={severityFor(shortest.waitMin)}>
-            <div className="wait-num">{shortest.waitText}</div>
-            <div className="wait-label">
-              <span className="sev-dot" />
-              {severityLabel(shortest.waitMin)}
-            </div>
-            <div className="updated">Updated {shortest.lastUpdated}</div>
-          </div>
-        </div>
+        )}
 
         {/* Filter toolbar */}
         <div className="toolbar">

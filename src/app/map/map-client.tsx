@@ -3,14 +3,15 @@
 import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faBars, faChartLine, faHospital, faList, faMapLocationDot } from "@fortawesome/free-solid-svg-icons";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import maplibregl, { type LngLatLike, type Map as MapLibreMap, type Marker } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { type Facility, severityFor, severityLabel } from "../data";
+import { withOriginDistances } from "../geo-distance";
+import { type LocationOrigin } from "../location-types";
 import "./styles.css";
 
 const VANCOUVER_CENTER: LngLatLike = [-122.84, 49.18];
-const FALLBACK_ORIGIN: [number, number] = [-122.84, 49.14];
 const ROUTE_SOURCE_ID = "selected-route";
 const ROUTE_LAYER_ID = "selected-route-line";
 
@@ -20,6 +21,11 @@ type RouteState = {
   originLabel: string;
 } | null;
 
+// CARTO basemap tiles + OpenStreetMap data — attribution is mandatory per both
+// licenses, so the Map constructor below keeps `attributionControl` enabled.
+// NOTE: `router.project-osrm.org` is OSRM's public demo and is NOT suitable for
+// production traffic; replace with a self-hosted OSRM, Maptiler, or Mapbox
+// directions endpoint before any real launch.
 const mapStyle: maplibregl.StyleSpecification = {
   version: 8,
   sources: {
@@ -27,6 +33,8 @@ const mapStyle: maplibregl.StyleSpecification = {
       type: "raster",
       tiles: ["https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png"],
       tileSize: 256,
+      attribution:
+        '© <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a> · © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors',
     },
   },
   layers: [
@@ -66,14 +74,25 @@ function getBrowserPosition(): Promise<[number, number] | null> {
 
 export function MapClient({
   facilities,
+  initialOrigin,
   initialFacilityId,
   routeRequested,
 }: {
   facilities: Facility[];
+  initialOrigin: LocationOrigin;
   initialFacilityId: string | null;
   routeRequested: boolean;
 }) {
-  const openFacilities = facilities.filter((facility) => facility.open);
+  // GPS override pattern: store only the user-granted location locally so the
+  // server's IP-geolocated `initialOrigin` can update through router.refresh()
+  // without clobbering a user's precise-location choice.
+  const [gpsOrigin, setGpsOrigin] = useState<LocationOrigin | null>(null);
+  const origin: LocationOrigin = gpsOrigin ?? initialOrigin;
+  const facilitiesWithDistance = useMemo(
+    () => withOriginDistances(facilities, origin),
+    [facilities, origin],
+  );
+  const openFacilities = facilitiesWithDistance.filter((facility) => facility.open);
   const shortest = [...openFacilities].sort(
     (a, b) => (a.waitMin ?? Infinity) - (b.waitMin ?? Infinity),
   )[0];
@@ -85,14 +104,26 @@ export function MapClient({
   const map = useRef<MapLibreMap | null>(null);
   const markers = useRef<Map<string, Marker>>(new Map());
   const autoRouteDone = useRef(false);
-  const [selectedId, setSelectedId] = useState(initialFacilityId ?? shortest?.id ?? facilities[0]?.id ?? null);
-  const selected = facilities.find((facility) => facility.id === selectedId) ?? facilities[0];
-  const selectedInTopPressure = pressureRank(facilities, selectedId);
+  const [selectedId, setSelectedId] = useState(initialFacilityId ?? shortest?.id ?? facilitiesWithDistance[0]?.id ?? null);
+  const selected = facilitiesWithDistance.find((facility) => facility.id === selectedId) ?? facilitiesWithDistance[0];
+  const selectedInTopPressure = pressureRank(facilitiesWithDistance, selectedId);
   const [route, setRoute] = useState<RouteState>(null);
   const [mapReady, setMapReady] = useState(false);
   const [routeLoading, setRouteLoading] = useState(false);
   const [mapUnavailable, setMapUnavailable] = useState<string | null>(null);
   const [routeError, setRouteError] = useState<string | null>(null);
+  // Mobile menu uses native <details>/<summary> so it works even without JS;
+  // we just close it programmatically when a nav link is tapped.
+  const mobileMenuRef = useRef<HTMLDetailsElement>(null);
+  const closeMobileMenu = () => mobileMenuRef.current?.removeAttribute("open");
+
+  // Capture the initial facility list in a ref so the mount-only init effect
+  // can read it for fitBounds without taking a dep that would tear the whole
+  // map down (and reset pan/zoom + any active route) every time router.refresh
+  // hands a new array reference down. `useRef(initial)` ignores subsequent
+  // renders, so this snapshot stays at the first-render value — exactly what
+  // fitBounds wants. The reconciliation effect below picks up later changes.
+  const initialFacilitiesRef = useRef(facilities);
 
   useEffect(() => {
     if (!mapNode.current || map.current) return;
@@ -103,7 +134,6 @@ export function MapClient({
         style: mapStyle,
         center: VANCOUVER_CENTER,
         zoom: 10.2,
-        attributionControl: false,
       });
     } catch {
       const fallbackTimer = window.setTimeout(() => {
@@ -115,8 +145,10 @@ export function MapClient({
     const markerStore = markers.current;
 
     const bounds = new maplibregl.LngLatBounds();
-    facilities.forEach((facility) => bounds.extend([facility.lng, facility.lat]));
-    map.current.fitBounds(bounds, { padding: 78, maxZoom: 11.8, duration: 0 });
+    initialFacilitiesRef.current.forEach((facility) => bounds.extend([facility.lng, facility.lat]));
+    if (!bounds.isEmpty()) {
+      map.current.fitBounds(bounds, { padding: 78, maxZoom: 11.8, duration: 0 });
+    }
     const readyTimer = window.setTimeout(() => setMapReady(true), 0);
 
     return () => {
@@ -126,7 +158,7 @@ export function MapClient({
       map.current?.remove();
       map.current = null;
     };
-  }, [facilities]);
+  }, []);
 
   useEffect(() => {
     if (!map.current) return;
@@ -134,7 +166,7 @@ export function MapClient({
     markers.current.forEach((marker) => marker.remove());
     markers.current.clear();
 
-    facilities.forEach((facility) => {
+    facilitiesWithDistance.forEach((facility) => {
       const severity = severityFor(facility.waitMin);
       const el = document.createElement("button");
       el.type = "button";
@@ -149,7 +181,7 @@ export function MapClient({
         .addTo(map.current!);
       markers.current.set(facility.id, marker);
     });
-  }, [facilities, selectedId]);
+  }, [facilitiesWithDistance, selectedId]);
 
   useEffect(() => {
     if (!map.current || !selected) return;
@@ -171,9 +203,18 @@ export function MapClient({
     setRouteError(null);
 
     const browserOrigin = await getBrowserPosition();
-    const origin = browserOrigin ?? FALLBACK_ORIGIN;
+    const routeOrigin: [number, number] = browserOrigin ?? [origin.lng, origin.lat];
+    if (browserOrigin) {
+      setGpsOrigin({
+        lat: browserOrigin[1],
+        lng: browserOrigin[0],
+        label: "Precise location",
+        source: "gps",
+        accuracyLabel: "browser GPS",
+      });
+    }
     const url = "https://router.project-osrm.org/route/v1/driving/" +
-      origin[0] + "," + origin[1] + ";" + selected.lng + "," + selected.lat +
+      routeOrigin[0] + "," + routeOrigin[1] + ";" + selected.lng + "," + selected.lat +
       "?overview=full&geometries=geojson&steps=false";
 
     try {
@@ -218,14 +259,14 @@ export function MapClient({
       setRoute({
         distanceKm: nextRoute.distance / 1000,
         durationMin: nextRoute.duration / 60,
-        originLabel: browserOrigin ? "your location" : "Surrey fallback start",
+        originLabel: browserOrigin ? "precise location" : origin.label,
       });
     } catch (error) {
       setRouteError(error instanceof Error ? error.message : "Could not calculate directions");
     } finally {
       setRouteLoading(false);
     }
-  }, [selected]);
+  }, [origin, selected]);
 
   useEffect(() => {
     clearRoute();
@@ -252,14 +293,20 @@ export function MapClient({
           <Link href="/map" className="active">Map</Link>
           <Link href="/admin">Analytics</Link>
         </nav>
-        <details className="map-mobile-menu">
+        <details className="map-mobile-menu" ref={mobileMenuRef}>
           <summary aria-label="Open page menu">
             <FontAwesomeIcon icon={faBars} aria-hidden="true" />
           </summary>
-          <div className="map-mobile-menu-panel">
-            <Link href="/"><FontAwesomeIcon icon={faList} /> Facilities</Link>
-            <Link href="/map" className="active"><FontAwesomeIcon icon={faMapLocationDot} /> Map</Link>
-            <Link href="/admin"><FontAwesomeIcon icon={faChartLine} /> Analytics</Link>
+          <div className="map-mobile-menu-panel" role="menu">
+            <Link href="/" onClick={closeMobileMenu}>
+              <FontAwesomeIcon icon={faList} /> Facilities
+            </Link>
+            <Link href="/map" className="active" onClick={closeMobileMenu}>
+              <FontAwesomeIcon icon={faMapLocationDot} /> Map
+            </Link>
+            <Link href="/admin" onClick={closeMobileMenu}>
+              <FontAwesomeIcon icon={faChartLine} /> Analytics
+            </Link>
           </div>
         </details>
         <div className="map-live"><span /> Live waits</div>
@@ -268,8 +315,8 @@ export function MapClient({
       <section className="map-shell">
         <aside className="map-sidebar" aria-label="Facility map controls">
           <div className="map-copy">
-            <p className="eyebrow">MapLibre GL</p>
-            <h1>Facility pressure map</h1>
+            <p className="eyebrow">{facilitiesWithDistance.length} reporting</p>
+            <h1>Nearby facilities</h1>
             <p>
               Wait-time markers are colored by severity. Pick a facility to inspect the current wait, distance, and directions.
             </p>
@@ -313,7 +360,7 @@ export function MapClient({
                   {routeLoading ? "Routing..." : "Directions"}
                 </button>
                 <button type="button" onClick={() => map.current?.easeTo({ center: [selected.lng, selected.lat], zoom: 13.2, duration: 650 })}>Center map</button>
-                <a href={"tel:" + selected.phone}>Call</a>
+                {selected.phone && <a href={"tel:" + selected.phone}>Call</a>}
               </div>
               {route && (
                 <div className="route-note">
@@ -325,7 +372,7 @@ export function MapClient({
           )}
 
           <div className="facility-scroll">
-            {facilities.map((facility) => (
+            {facilitiesWithDistance.map((facility) => (
               <button
                 key={facility.id}
                 type="button"

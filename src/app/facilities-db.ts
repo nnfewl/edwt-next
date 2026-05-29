@@ -1,8 +1,5 @@
-import postgres from "postgres";
+import { client as sharedClient } from "../db/client";
 import { type Facility } from "./data";
-
-const databaseUrl = process.env.DATABASE_URL ?? "postgres://edwt:edwt@localhost:5433/edwt";
-const DEFAULT_ORIGIN = { lat: 49.14, lng: -122.84 };
 
 type DbFacilityRow = {
   id: string;
@@ -66,54 +63,64 @@ function formatAge(value: Date | null): string {
   return Math.round(hours / 24) + "d ago";
 }
 
-function localParts(date: Date, timeZone: string) {
+const VANCOUVER_TZ = "America/Vancouver";
+
+// Get hour/minute in a given timezone without locale-dependent string parsing.
+function localHourMinute(date: Date, timeZone: string): { hour: number; minute: number } {
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone,
-    weekday: "short",
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
   }).formatToParts(date);
   const get = (type: string) => parts.find((part) => part.type === type)?.value ?? "0";
-  return {
-    weekday: get("weekday"),
-    hour: Number(get("hour")),
-    minute: Number(get("minute")),
-  };
+  return { hour: Number(get("hour")) % 24, minute: Number(get("minute")) };
 }
 
-function fakeDateMinutes(value: string | null | undefined): number | null {
-  if (!value) return null;
+// Day-of-week (Sun=0..Sat=6) in a given timezone — built from year/month/day so
+// it doesn't depend on which ICU short-weekday string the runtime emits.
+function localDayIndex(date: Date, timeZone: string): number {
   const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Vancouver",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).formatToParts(new Date(value));
-  const hour = Number(parts.find((part) => part.type === "hour")?.value ?? "0");
-  const minute = Number(parts.find((part) => part.type === "minute")?.value ?? "0");
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const get = (type: string) => Number(parts.find((part) => part.type === type)?.value ?? "0");
+  const y = get("year");
+  const m = get("month") - 1;
+  const d = get("day");
+  if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) return -1;
+  return new Date(Date.UTC(y, m, d)).getUTCDay();
+}
+
+// The source encodes each day's open/close as an RFC 2822 string anchored to
+// 1970-01-01 GMT, where 16:00 GMT means "8 a.m. PST." Converting via the
+// Vancouver timezone recovers the intended wall-clock minutes-of-day.
+function operatingMinutes(value: string | null | undefined): number | null {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  const { hour, minute } = localHourMinute(date, VANCOUVER_TZ);
   if (!Number.isFinite(hour) || !Number.isFinite(minute)) return null;
   return hour * 60 + minute;
-}
-
-function dayIndex(weekday: string): number {
-  return ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(weekday);
 }
 
 function hoursInfo(row: DbFacilityRow): { label: string; open: boolean } {
   if (row.open247) return { label: "Open 24 / 7", open: true };
   if (!isOperatingHours(row.operating_hours)) return { label: "Hours vary", open: row.wait_time_minutes !== null };
 
-  const now = localParts(new Date(), "America/Vancouver");
-  const index = dayIndex(now.weekday);
+  const now = new Date();
+  const index = localDayIndex(now, VANCOUVER_TZ);
   const today = index >= 0 ? row.operating_hours.days?.[index] : undefined;
-  const openMin = fakeDateMinutes(today?.open);
-  const closeMinRaw = fakeDateMinutes(today?.close);
+  const openMin = operatingMinutes(today?.open);
+  const closeMinRaw = operatingMinutes(today?.close);
 
   if (openMin == null || closeMinRaw == null) return { label: "Hours vary", open: false };
 
   const closeMin = closeMinRaw <= openMin ? closeMinRaw + 24 * 60 : closeMinRaw;
-  const nowMinRaw = now.hour * 60 + now.minute;
+  const { hour, minute } = localHourMinute(now, VANCOUVER_TZ);
+  const nowMinRaw = hour * 60 + minute;
   const nowMin = nowMinRaw < openMin && closeMin > 24 * 60 ? nowMinRaw + 24 * 60 : nowMinRaw;
   const open = nowMin >= openMin && nowMin < closeMin;
   const label = formatMinutes(openMin) + " - " + formatMinutes(closeMinRaw);
@@ -126,17 +133,6 @@ function formatMinutes(value: number): string {
   const suffix = hour24 >= 12 ? "p.m." : "a.m.";
   const hour12 = hour24 % 12 || 12;
   return hour12 + ":" + String(minute).padStart(2, "0") + " " + suffix;
-}
-
-function distanceKm(lat: number, lng: number): number {
-  const earthKm = 6371;
-  const toRad = (value: number) => (value * Math.PI) / 180;
-  const dLat = toRad(lat - DEFAULT_ORIGIN.lat);
-  const dLng = toRad(lng - DEFAULT_ORIGIN.lng);
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(DEFAULT_ORIGIN.lat)) * Math.cos(toRad(lat)) * Math.sin(dLng / 2) ** 2;
-  return Math.round(earthKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) * 10) / 10;
 }
 
 function toFacility(row: DbFacilityRow): Facility | null {
@@ -152,7 +148,8 @@ function toFacility(row: DbFacilityRow): Facility | null {
     audience: audienceLabel(row.audience),
     waitMin,
     waitText: formatWait(row.wait_time_minutes, row.show_wait_times),
-    distanceKm: distanceKm(row.latitude, row.longitude),
+    // Distance is computed on the client once the origin is known.
+    distanceKm: 0,
     address: row.address ?? "Address not available",
     phone: row.phone ?? "",
     hours: hours.label,
@@ -165,51 +162,72 @@ function toFacility(row: DbFacilityRow): Facility | null {
   };
 }
 
+// 30-second module-level cache. The query is identical for every request (no
+// per-user filtering), so a single in-process cache fans the result out to all
+// concurrent renders without re-querying. Combined with the shared `client`
+// pool in src/db/client.ts, this caps DB load at ~2 reads/minute regardless of
+// how many tabs the AutoRefresh component fans out across.
+const CACHE_TTL_MS = 30_000;
+let cache: { at: number; data: Facility[] } | null = null;
+let inflight: Promise<Facility[]> | null = null;
+
+async function queryFacilities(): Promise<Facility[]> {
+  const rows = await sharedClient<DbFacilityRow[]>`
+    with latest as (
+      select distinct on (location_id)
+        location_id,
+        observed_at,
+        reading_created_at,
+        wait_time_minutes,
+        elos_minutes,
+        status
+      from wait_time_readings
+      order by location_id, observed_at desc
+    )
+    select
+      l.id,
+      l.name,
+      l.type,
+      l.address,
+      l.phone,
+      l.audience,
+      l.latitude,
+      l.longitude,
+      l.open247 as "open247",
+      l.show_wait_times,
+      l.wait_time_fallback,
+      l.operating_hours,
+      latest.observed_at,
+      latest.reading_created_at,
+      latest.wait_time_minutes,
+      latest.elos_minutes
+    from locations l
+    left join latest on latest.location_id = l.id
+    where l.status = 'published'
+      and l.type in ('ed', 'upcc')
+      and l.latitude is not null
+      and l.longitude is not null
+    order by l.name
+  `;
+
+  return rows
+    .map(toFacility)
+    .filter((facility): facility is Facility => facility !== null);
+}
+
 export async function getPublicFacilities(): Promise<Facility[]> {
-  const sql = postgres(databaseUrl, { max: 1, idle_timeout: 5 });
-
-  try {
-    const rows = await sql<DbFacilityRow[]>`
-      with latest as (
-        select distinct on (location_id)
-          location_id,
-          observed_at,
-          reading_created_at,
-          wait_time_minutes,
-          elos_minutes,
-          status
-        from wait_time_readings
-        order by location_id, observed_at desc
-      )
-      select
-        l.id,
-        l.name,
-        l.type,
-        l.address,
-        l.phone,
-        l.audience,
-        l.latitude,
-        l.longitude,
-        l.open247 as "open247",
-        l.show_wait_times,
-        l.wait_time_fallback,
-        l.operating_hours,
-        latest.observed_at,
-        latest.reading_created_at,
-        latest.wait_time_minutes,
-        latest.elos_minutes
-      from locations l
-      left join latest on latest.location_id = l.id
-      where l.status = 'published'
-        and l.type in ('ed', 'upcc')
-        and l.latitude is not null
-        and l.longitude is not null
-      order by l.name
-    `;
-
-    const facilities = rows.map(toFacility).filter((facility): facility is Facility => facility !== null);
-    return facilities;
-  } finally {
-    await sql.end({ timeout: 5 }).catch(() => undefined);
+  if (cache && Date.now() - cache.at < CACHE_TTL_MS) return cache.data;
+  // Coalesce concurrent callers onto a single in-flight query so a thundering
+  // herd at cache-expiry still produces only one DB round-trip.
+  if (!inflight) {
+    inflight = queryFacilities()
+      .then((data) => {
+        cache = { at: Date.now(), data };
+        return data;
+      })
+      .finally(() => {
+        inflight = null;
+      });
   }
+  return inflight;
 }

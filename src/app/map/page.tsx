@@ -1,5 +1,6 @@
 import { AutoRefresh } from "../auto-refresh";
 import { getPublicFacilities } from "../facilities-db";
+import { getApproximateLocationOrigin } from "../location-origin";
 import { MapClient } from "./map-client";
 
 export const dynamic = "force-dynamic";
@@ -16,13 +17,17 @@ function firstParam(value: string | string[] | undefined): string | null {
 
 export default async function MapPage({ searchParams }: MapPageProps) {
   const params = (await searchParams) ?? {};
-  const facilities = await getPublicFacilities();
+  const [initialOrigin, facilities] = await Promise.all([
+    getApproximateLocationOrigin(),
+    getPublicFacilities(),
+  ]);
 
   return (
     <>
       <AutoRefresh />
       <MapClient
         facilities={facilities}
+        initialOrigin={initialOrigin}
         initialFacilityId={firstParam(params.facility)}
         routeRequested={firstParam(params.route) === "1"}
       />

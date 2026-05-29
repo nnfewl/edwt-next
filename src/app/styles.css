@@ -74,9 +74,12 @@
   position: sticky;
   top: 0;
   z-index: 50;
-  background: rgba(245, 241, 234, 0.86);
-  backdrop-filter: saturate(140%) blur(10px);
-  -webkit-backdrop-filter: saturate(140%) blur(10px);
+  /* Fully opaque background. The prototype's translucent + blurred look
+     relied on backdrop-filter compositing, which doesn't render reliably
+     across Chrome configurations (advertised as supported, but the filter
+     can be silently disabled). Card content was visibly bleeding through
+     even at 0.94 opacity in testing, so we go solid. */
+  background: var(--bg);
   border-bottom: 1px solid var(--line);
 }
 .er-now-root .topbar-inner {
@@ -274,19 +277,22 @@
 
 /* Location card */
 .er-now-root .locator {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
-  padding: 16px 16px 16px 22px;
-  display: flex;
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid rgba(222, 215, 201, 0.86);
+  border-radius: 20px;
+  padding: 10px 10px 10px 12px;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) 38px;
   align-items: center;
-  gap: 14px;
-  box-shadow: var(--shadow-sm);
-  min-width: 380px;
+  gap: 10px;
+  box-shadow: 0 12px 30px rgba(26, 29, 27, 0.07);
+  min-width: 340px;
+  max-width: 430px;
+  backdrop-filter: blur(12px) saturate(130%);
 }
 .er-now-root .locator .pin {
-  width: 38px;
-  height: 38px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   background: var(--teal-soft);
   color: var(--teal);
@@ -300,31 +306,52 @@
   min-width: 0;
 }
 .er-now-root .locator .loc-label {
-  font-size: 11px;
+  font-size: 10px;
   letter-spacing: 0.08em;
+  line-height: 1;
   text-transform: uppercase;
   color: var(--muted);
 }
 .er-now-root .locator .loc-addr {
-  font-size: 15px;
+  font-size: 14px;
   color: var(--ink);
-  font-weight: 500;
-  margin-top: 2px;
+  font-weight: 720;
+  line-height: 1.15;
+  margin-top: 4px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.er-now-root .locator .loc-status {
+  margin-top: 3px;
+  color: var(--coral);
+  font-size: 11.5px;
+  font-weight: 650;
+}
 .er-now-root .locator .change {
-  background: var(--bg-2);
-  border: 1px solid var(--line);
-  color: var(--ink-2);
-  padding: 8px 14px;
-  border-radius: 999px;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border-radius: 14px;
+  background: var(--ink);
+  border: 1px solid var(--ink);
+  color: var(--bg);
+  display: inline-grid;
+  place-items: center;
   font-size: 13px;
   font-weight: 500;
+  box-shadow: 0 8px 18px rgba(26, 29, 27, 0.12);
 }
 .er-now-root .locator .change:hover {
-  background: var(--line);
+  background: color-mix(in oklab, var(--ink) 86%, var(--teal));
+}
+.er-now-root .locator .change.active {
+  background: var(--teal);
+  border-color: var(--teal);
+}
+.er-now-root .locator .change:disabled {
+  cursor: progress;
+  opacity: 0.68;
 }
 
 /* ---------- Stats banner ---------- */
@@ -1131,6 +1158,10 @@
     width: 100%;
     overflow-x: auto;
     scrollbar-width: none;
+    /* Fade the trailing edge so the truncated chip signals scrollability —
+       the original prototype expected wider viewports than 390px. */
+    mask-image: linear-gradient(to right, black 0, black calc(100% - 28px), transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, black 0, black calc(100% - 28px), transparent 100%);
   }
   .er-now-root .chip-row::-webkit-scrollbar {
     display: none;
@@ -1273,26 +1304,69 @@
     margin-top: 10px;
   }
   .er-now-root .locator {
+    grid-template-columns: 28px minmax(0, 1fr) 40px;
     min-width: 0;
+    max-width: none;
     width: 100%;
-    min-height: 38px;
-    padding: 7px 9px;
-    border-radius: 12px;
+    min-height: 44px;
+    padding: 5px 5px 5px 10px;
+    border: 1px solid rgba(222, 215, 201, 0.88);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.86);
+    box-shadow: 0 8px 22px rgba(26, 29, 27, 0.055);
+    backdrop-filter: blur(12px) saturate(130%);
     gap: 8px;
+  }
+  .er-now-root .locator .pin {
+    display: inline-flex;
+    width: 28px;
+    height: 28px;
+    border-radius: 999px;
+    background: color-mix(in oklab, var(--teal) 14%, white);
+    border: 1px solid color-mix(in oklab, var(--teal) 22%, transparent);
+    color: var(--teal);
+    align-self: center;
     box-shadow: none;
   }
-  .er-now-root .locator .pin,
+  .er-now-root .locator .pin svg {
+    width: 12px;
+    height: 12px;
+  }
   .er-now-root .locator .loc-label {
     display: none;
   }
+  .er-now-root .locator .loc-body {
+    display: flex;
+    align-items: center;
+    min-height: 34px;
+  }
   .er-now-root .locator .loc-addr {
+    margin: 0;
     font-size: 13px;
+    line-height: 1;
+  }
+  .er-now-root .locator .loc-status {
+    grid-column: 1 / -1;
+    margin: 1px 42px 0 38px;
     line-height: 1.2;
   }
   .er-now-root .locator .change {
-    min-height: 32px;
-    padding: 6px 10px;
-    font-size: 12px;
+    width: 40px;
+    height: 34px;
+    min-height: 34px;
+    border-radius: 999px;
+    background: var(--ink);
+    border-color: var(--ink);
+    color: var(--bg);
+    box-shadow: none;
+  }
+  .er-now-root .locator .change:hover {
+    background: color-mix(in oklab, var(--ink) 86%, var(--teal));
+  }
+  .er-now-root .locator .change.active {
+    background: var(--teal);
+    border-color: var(--teal);
+    color: var(--bg);
   }
 
   .er-now-root .info-banner {
@@ -1558,6 +1632,13 @@
   .er-now-root .action-label {
     display: none;
   }
+  /* The recommended pick and the details drawer are primary call-to-actions;
+     showing the icon alone makes the buttons read as decoration. Restore the
+     text label for those two contexts so the affordance is obvious. */
+  .er-now-root .best-pick .action-label,
+  .er-now-root .drawer-panel .action-label {
+    display: inline;
+  }
   .er-now-root .actions {
     display: flex;
     grid-template-columns: none;
@@ -1704,12 +1785,17 @@
   }
   .er-now-root .best-pick .actions {
     margin-top: 12px !important;
+    gap: 8px;
   }
   .er-now-root .best-pick .action-btn {
-    width: 44px;
-    min-width: 44px;
+    /* Fit the restored "Directions" / "Full details" labels — the previous
+       44 × 42 square sized for icon-only and clipped the words. */
+    width: auto;
+    min-width: 0;
     height: 42px;
+    padding: 0 14px;
     border-radius: 12px;
+    white-space: nowrap;
   }
 }
 
@@ -1808,78 +1894,103 @@
   }
 }
 
-/* Native-feeling mobile navigation sheet */
+/* Mobile navigation — native <details>/<summary>. Toggle works without any
+   JavaScript so the hamburger keeps functioning even when hydration fails. */
 @media (max-width: 760px) {
   .er-now-root .mobile-menu {
     position: relative;
     z-index: 120;
-  }
-  .er-now-root .mobile-menu[open]::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    z-index: 80;
-    background: rgba(21, 24, 22, 0.22);
-    backdrop-filter: blur(8px);
   }
   .er-now-root .mobile-menu summary {
     position: relative;
     z-index: 130;
     width: 44px;
     height: 44px;
-    background: rgba(255, 255, 255, 0.88);
-    box-shadow: 0 8px 22px rgba(26, 29, 27, 0.1);
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    background: var(--surface);
+    color: var(--ink);
+    display: grid;
+    place-content: center;
+    cursor: pointer;
+    list-style: none;
+    box-shadow: 0 1px 2px rgba(26, 29, 27, 0.06);
+    /* touch-action: manipulation kills the 300 ms tap delay and the
+       double-tap-zoom on iOS, which is the most common cause of "button
+       not responding" on touch screens. */
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .er-now-root .mobile-menu summary::-webkit-details-marker {
+    display: none;
   }
   .er-now-root .mobile-menu[open] summary {
     background: var(--ink);
     color: var(--bg);
-    transform: scale(0.96);
+    border-color: var(--ink);
   }
   .er-now-root .mobile-menu-panel {
+    /* Compact right-anchored dropdown — width capped so it doesn't claim
+       the whole viewport, and it visually hangs from the trigger button. */
     position: fixed;
     z-index: 125;
-    left: max(12px, env(safe-area-inset-left));
     right: max(12px, env(safe-area-inset-right));
-    top: calc(64px + env(safe-area-inset-top));
-    min-width: 0;
-    max-width: none;
-    padding: 8px;
-    border-radius: 22px;
-    border: 1px solid rgba(222, 215, 201, 0.86);
-    background: rgba(255, 255, 255, 0.94);
-    box-shadow: 0 24px 70px rgba(26, 29, 27, 0.2);
-    backdrop-filter: blur(18px) saturate(140%);
-  }
-  .er-now-root .mobile-menu-panel::before {
-    content: "";
-    display: block;
-    width: 34px;
-    height: 4px;
-    margin: 4px auto 10px;
-    border-radius: 999px;
-    background: rgba(31, 37, 34, 0.18);
+    top: calc(60px + env(safe-area-inset-top));
+    left: auto;
+    width: 240px;
+    max-width: calc(100vw - 24px);
+    padding: 6px;
+    border-radius: 14px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    box-shadow: 0 18px 48px rgba(26, 29, 27, 0.18),
+      0 1px 0 rgba(26, 29, 27, 0.03);
   }
   .er-now-root .mobile-menu-panel a {
-    min-height: 56px;
+    display: flex;
+    align-items: center;
+    min-height: 48px;
     gap: 12px;
-    padding: 0 14px;
-    border-radius: 16px;
+    padding: 0 12px;
+    border-radius: 10px;
+    color: var(--ink);
     font-size: 15px;
-    font-weight: 750;
+    font-weight: 600;
+    text-decoration: none;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
   }
   .er-now-root .mobile-menu-panel a svg {
     width: 18px;
     height: 18px;
     color: var(--muted);
+    flex-shrink: 0;
   }
   .er-now-root .mobile-menu-panel a.active {
-    background: linear-gradient(135deg, var(--ink), color-mix(in oklab, var(--ink) 82%, var(--teal)));
+    background: var(--ink);
     color: var(--bg);
-    box-shadow: 0 10px 26px rgba(26, 29, 27, 0.18);
   }
   .er-now-root .mobile-menu-panel a.active svg {
     color: var(--bg);
   }
+}
+
+/* Touch-screen hardening: kill 300ms tap delay + double-tap-zoom on every
+   interactive control. Without this, taps on iOS/Android feel "swallowed"
+   because the browser is waiting to see if it's a double-tap-to-zoom. */
+.er-now-root button,
+.er-now-root .chip,
+.er-now-root .action-btn,
+.er-now-root .sort-option,
+.er-now-root .sort-trigger,
+.er-now-root .sort-sheet-option,
+.er-now-root .icon-btn,
+.er-now-root .nav-tabs a,
+.er-now-root .change,
+.er-now-root .gps-action,
+.er-now-root .empty-reset {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Mobile sort bottom sheet */
@@ -2055,17 +2166,6 @@
   opacity: 0.16;
   transform: translateY(22px);
 }
-.er-now-root .facility::before {
-  content: "";
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 4px;
-  background: var(--muted);
-  opacity: 0.9;
-}
-.er-now-root .facility[data-severity="short"]::before { background: var(--green); }
-.er-now-root .facility[data-severity="medium"]::before { background: var(--amber); }
-.er-now-root .facility[data-severity="long"]::before { background: var(--red); }
 .er-now-root .facility .left {
   gap: 9px;
 }
@@ -2254,5 +2354,50 @@
   .er-now-root .facility .updated {
     max-width: 68px;
     text-align: center;
+  }
+}
+
+/* Mobile radius normalization */
+@media (max-width: 760px) {
+  .er-now-root .locator,
+  .er-now-root .stats,
+  .er-now-root .best-pick,
+  .er-now-root .toolbar .chip-row,
+  .er-now-root .sort-trigger,
+  .er-now-root .facility,
+  .er-now-root .info-banner {
+    border-radius: 14px;
+  }
+
+  .er-now-root .locator .pin,
+  .er-now-root .locator .change,
+  .er-now-root .chip,
+  .er-now-root .chip.active,
+  .er-now-root .sort-trigger-icon,
+  .er-now-root .facility .action-btn,
+  .er-now-root .best-pick .action-btn,
+  .er-now-root .best-pick > .wait,
+  .er-now-root .facility .wait {
+    border-radius: 10px;
+  }
+}
+
+/* Mobile location GPS button should read as an icon, not a black block */
+@media (max-width: 760px) {
+  .er-now-root .locator .change {
+    background: color-mix(in oklab, var(--teal) 10%, white);
+    border-color: color-mix(in oklab, var(--teal) 20%, var(--line));
+    color: var(--teal);
+    box-shadow: none;
+  }
+
+  .er-now-root .locator .change:hover {
+    background: color-mix(in oklab, var(--teal) 16%, white);
+  }
+
+  .er-now-root .locator .change.active {
+    background: color-mix(in oklab, var(--teal) 18%, white);
+    border-color: color-mix(in oklab, var(--teal) 32%, var(--line));
+    color: var(--teal);
   }
 }
