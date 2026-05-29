@@ -1,28 +1,23 @@
 "use client";
 
-import Link from "next/link";
 import {
   useEffect,
   useMemo,
-  useRef,
   useState,
   type CSSProperties,
   type ReactNode,
 } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faBars,
   faChartLine,
   faCheck,
   faChevronDown,
   faCircleInfo,
   faClock,
   faDiamondTurnRight,
-  faHospital,
   faList,
   faLocationCrosshairs,
   faLocationDot,
-  faMapLocationDot,
   faPhone,
   faStar,
   faStethoscope,
@@ -34,10 +29,11 @@ import {
 import {
   type Facility,
   type HistoryPoint,
-  historyFor,
+  facilityWaitStatusLabel,
   severityFor,
-  severityLabel,
 } from "./data";
+import { ClosedIllustration } from "./closed-illustration";
+import { AppTopBar } from "./app-topbar";
 import { withOriginDistances } from "./geo-distance";
 import { type LocationOrigin } from "./location-types";
 import "./styles.css";
@@ -52,14 +48,11 @@ type IconName =
   | "users"
   | "stethoscope"
   | "directions"
-  | "map"
   | "list"
   | "trendUp"
   | "x"
   | "star"
   | "warning"
-  | "bars"
-  | "hospital"
   | "check"
   | "chevronDown"
   | "gps";
@@ -72,14 +65,11 @@ const ICONS: Record<IconName, IconDefinition> = {
   users: faUsers,
   stethoscope: faStethoscope,
   directions: faDiamondTurnRight,
-  map: faMapLocationDot,
   list: faList,
   trendUp: faChartLine,
   x: faXmark,
   star: faStar,
   warning: faTriangleExclamation,
-  bars: faBars,
-  hospital: faHospital,
   check: faCheck,
   chevronDown: faChevronDown,
   gps: faLocationCrosshairs,
@@ -106,30 +96,31 @@ const Icon = ({
 const WaveBackground = ({
   f,
   height = 110,
-  intensity = 0.9,
+  intensity = 0.48,
 }: {
   f: Facility;
   height?: number;
   intensity?: number;
 }) => {
   if (f.waitMin == null) return null;
-  const hist = historyFor(f);
-  if (!hist.length) return null;
+  const hist = f.history ?? [];
+  if (hist.length < 2) return null;
 
   const W = 1000;
   const H = height;
-  const maxVal = Math.max(
-    240,
-    Math.max(...hist.map((p) => p.min)) * 1.1,
-  );
+  const maxWaitForFullWave = 720;
+  const pressure = (v: number) =>
+    Math.min(1, Math.max(0, v) / maxWaitForFullWave);
 
   const x = (i: number) => (i / (hist.length - 1)) * W;
-  const amp = (v: number) =>
-    H * (0.3 + 0.6 * (Math.min(v, maxVal) / maxVal));
-  const baseline = H * 0.55;
-  const y = (v: number) => baseline + (H - baseline - amp(v) / 2);
+  const amp = (v: number) => {
+    const shaped = Math.pow(pressure(v), 0.75);
+    return H * (0.08 + shaped * 0.8);
+  };
+  const baseline = H * 0.94;
+  const y = (v: number) => Math.max(H * 0.08, baseline - amp(v));
 
-  // Catmull–Rom smoothing so the curve reads as breath, not jitter.
+  // Catmull-Rom smoothing so the curve reads as breath, not jitter.
   const buildPath = (offsetY: number, scale: number) => {
     const pts: [number, number][] = hist.map((p: HistoryPoint, i: number) => [
       x(i),
@@ -154,10 +145,11 @@ const WaveBackground = ({
   const front = buildPath(0, 1);
 
   const sev = severityFor(f.waitMin);
+  const currentPressure = pressure(f.waitMin);
   const palette = {
-    short: { c: "var(--green)", op: 0.1 },
-    medium: { c: "var(--amber)", op: 0.12 },
-    long: { c: "var(--red)", op: 0.13 },
+    short: { c: "var(--green)", op: 0.045 + currentPressure * 0.045 },
+    medium: { c: "var(--amber)", op: 0.055 + currentPressure * 0.05 },
+    long: { c: "var(--red)", op: 0.065 + currentPressure * 0.055 },
     closed: { c: "var(--muted)", op: 0.06 },
   }[sev];
 
@@ -196,78 +188,12 @@ const WaveBackground = ({
         d={front.line}
         fill="none"
         stroke={palette.c}
-        strokeWidth={1.2}
-        strokeOpacity={0.45}
+        strokeWidth={1 + currentPressure * 1.05}
+        strokeOpacity={0.22 + currentPressure * 0.26}
         strokeLinecap="round"
         strokeLinejoin="round"
       />
     </svg>
-  );
-};
-
-/* ───────── topbar ────────────────────────────────────────────────────────── */
-
-const TopBar = ({ active }: { active: "list" | "map" }) => {
-  // Native <details>/<summary> — the toggle works without any JavaScript at
-  // all, so the hamburger stays functional even if hydration fails (which
-  // was happening on at least one touch device). Nav-link onClicks close the
-  // menu when JS is present; without JS the navigation itself closes it.
-  const menuRef = useRef<HTMLDetailsElement>(null);
-  const closeMenu = () => {
-    menuRef.current?.removeAttribute("open");
-  };
-  return (
-    <header className="topbar">
-      <div className="topbar-inner">
-        <Link href="/" className="wordmark">
-          <span className="dot" aria-hidden="true"><Icon name="hospital" size={14} /></span>
-          <span>
-            EDWT
-            <small>Lower Mainland · BC</small>
-          </span>
-        </Link>
-        <nav className="nav-tabs" aria-label="Primary">
-          <Link href="/" className={active === "list" ? "active" : ""}>
-            <Icon name="list" size={14} /> Facilities
-          </Link>
-          <Link href="/map" className={active === "map" ? "active" : ""}>
-            <Icon name="map" size={14} /> Map
-          </Link>
-          <Link href="/admin">
-            <Icon name="trendUp" size={14} /> Analytics
-          </Link>
-        </nav>
-        <details className="mobile-menu" ref={menuRef}>
-          <summary aria-label="Open page menu">
-            <Icon name="bars" size={18} />
-          </summary>
-          <div className="mobile-menu-panel" role="menu">
-            <Link
-              href="/"
-              className={active === "list" ? "active" : ""}
-              onClick={closeMenu}
-            >
-              <Icon name="list" size={15} /> Facilities
-            </Link>
-            <Link
-              href="/map"
-              className={active === "map" ? "active" : ""}
-              onClick={closeMenu}
-            >
-              <Icon name="map" size={15} /> Map
-            </Link>
-            <Link href="/admin" onClick={closeMenu}>
-              <Icon name="trendUp" size={15} /> Analytics
-            </Link>
-          </div>
-        </details>
-        <div className="topbar-spacer" />
-        <div className="live-pill">
-          <span className="live-dot" aria-hidden="true" />
-          Live · updated 2 min ago
-        </div>
-      </div>
-    </header>
   );
 };
 
@@ -281,36 +207,28 @@ const FacilityCard = ({
   onSelect: (f: Facility) => void;
 }) => {
   const sev = severityFor(f.waitMin);
-  const sevLabel = severityLabel(f.waitMin);
+  const sevLabel = facilityWaitStatusLabel(f);
+  const hasWaitData = f.waitMin != null;
   const isEm = f.type === "Emergency";
-  const hoursLabel = f.hours.replace(/^Open\s*[·-]?\s*/i, "");
 
   return (
     <article className="facility" data-severity={sev}>
-      <WaveBackground f={f} height={110} intensity={0.9} />
+      <WaveBackground f={f} height={110} intensity={0.46} />
       <div className="left">
         <div className="badges">
           <span className={`badge ${isEm ? "emergency" : "upcc"}`}>
             <span className="bdot" />
             {isEm ? "Emergency" : "UPCC"}
           </span>
-          {f.open ? (
-            <span className="badge open">
-              <span className="bdot" />
-              Open · {hoursLabel}
-            </span>
-          ) : (
-            <span className="badge closed">
-              <span className="bdot" />
-              {f.hours}
-            </span>
-          )}
+          <span className={"badge " + (f.open ? "open" : "closed")}>
+            <span className="bdot" />
+            {f.hours}
+          </span>
           <span className="badge">{f.audience}</span>
         </div>
 
         <h3 className="name">
-          {f.name}
-          <span className="sub">· {f.subtitle}</span>
+          {f.name}<span className="sub">{"\u00a0\u00b7 "}{f.subtitle}</span>
         </h3>
 
         <div className="meta-row">
@@ -359,13 +277,33 @@ const FacilityCard = ({
         </div>
       </div>
 
-      <div className="wait" data-sev={sev}>
-        <div className="wait-num">{f.waitText}</div>
-        <div className="wait-label">
-          <span className="sev-dot" />
-          {sevLabel}
-        </div>
-        <div className="updated">Updated {f.lastUpdated}</div>
+      <div
+        className={"wait " + (!f.open ? "is-closed" : !hasWaitData ? "is-no-data" : "")}
+        data-sev={sev}
+        aria-label={!f.open ? f.name + " is closed" : !hasWaitData ? f.name + " has no posted wait data" : undefined}
+      >
+        {f.open ? (
+          hasWaitData ? (
+            <>
+              <div className="wait-num">{f.waitText}</div>
+              <div className="wait-label">
+                <span className="sev-dot" />
+                {sevLabel}
+              </div>
+              <div className="updated">Updated {f.lastUpdated}</div>
+            </>
+          ) : (
+            <div className="no-data-state">
+              <strong>No data</strong>
+              <span>No wait posted</span>
+            </div>
+          )
+        ) : (
+          <div className="closed-state">
+            <ClosedIllustration className="closed-illustration closed-hero" />
+            <strong>Closed</strong>
+          </div>
+        )}
       </div>
     </article>
   );
@@ -396,6 +334,7 @@ const DetailsDrawer = ({
 
   if (!f) return null;
   const sev = severityFor(f.waitMin);
+  const hasWaitData = f.waitMin != null;
   const stopBubble = (e: React.MouseEvent) => e.stopPropagation();
   const waitInline: CSSProperties = {
     alignItems: "flex-start",
@@ -433,25 +372,50 @@ const DetailsDrawer = ({
           {f.subtitle} · {f.audience}
         </div>
 
-        <div className="wait" data-sev={sev} style={waitInline}>
-          <div className="wait-num" style={{ fontSize: 80 }}>
-            {f.waitText}
-          </div>
-          <div className="wait-label">
-            <span className="sev-dot" />
-            {severityLabel(f.waitMin)} · updated {f.lastUpdated}
-          </div>
+        <div
+          className={"wait " + (!f.open ? "is-closed" : !hasWaitData ? "is-no-data" : "")}
+          data-sev={sev}
+          style={waitInline}
+          aria-label={!f.open ? f.name + " is closed" : !hasWaitData ? f.name + " has no posted wait data" : undefined}
+        >
+          {f.open ? (
+            hasWaitData ? (
+              <>
+                <div className="wait-num" style={{ fontSize: 80 }}>
+                  {f.waitText}
+                </div>
+                <div className="wait-label">
+                  <span className="sev-dot" />
+                  {facilityWaitStatusLabel(f)} · updated {f.lastUpdated}
+                </div>
+              </>
+            ) : (
+              <div className="no-data-state no-data-state-drawer">
+                <strong>No data</strong>
+                <span>No wait posted</span>
+              </div>
+            )
+          ) : (
+            <div className="closed-state closed-state-drawer">
+              <ClosedIllustration className="closed-illustration closed-drawer" />
+              <strong>Closed</strong>
+            </div>
+          )}
         </div>
 
         <h4 className="drawer-section-label">What to expect</h4>
         <p className="drawer-text">
           {f.open ? (
-            <>
-              The reported wait is the latest published wait-time reading for this facility. Sicker patients are seen first, so the live wait can change quickly.
-              {f.inWaitingRoom > 0 && (
-                <> Right now there are <b>{f.inWaitingRoom} people</b> in the waiting room.</>
-              )}
-            </>
+            hasWaitData ? (
+              <>
+                The reported wait is the latest published wait-time reading for this facility. Sicker patients are seen first, so the live wait can change quickly.
+                {f.inWaitingRoom > 0 && (
+                  <> Right now there are <b>{f.inWaitingRoom} people</b> in the waiting room.</>
+                )}
+              </>
+            ) : (
+              <>This facility is open, but no wait time is currently posted.</>
+            )
           ) : (
             <>This facility is currently closed. It will reopen at the next scheduled time.</>
           )}
@@ -679,26 +643,30 @@ export function ERNowPageClient({
     () => facilitiesWithDistance.filter((f) => f.open),
     [facilitiesWithDistance],
   );
+  const openWaitFacilities = useMemo(
+    () => openFacilities.filter((f) => f.waitMin != null),
+    [openFacilities],
+  );
   const shortest = useMemo(() => {
-    if (openFacilities.length === 0) return null;
-    return openFacilities.reduce(
+    if (openWaitFacilities.length === 0) return null;
+    return openWaitFacilities.reduce(
       (a, b) => ((b.waitMin ?? Infinity) < (a.waitMin ?? Infinity) ? b : a),
-      openFacilities[0],
+      openWaitFacilities[0],
     );
-  }, [openFacilities]);
+  }, [openWaitFacilities]);
   const closestOpen = useMemo(() => {
     if (openFacilities.length === 0) return null;
     return [...openFacilities].sort((a, b) => a.distanceKm - b.distanceKm)[0];
   }, [openFacilities]);
   const avgWait = useMemo(() => {
-    if (openFacilities.length === 0) return null;
-    const total = openFacilities.reduce((s, f) => s + (f.waitMin ?? 0), 0);
-    return Math.round(total / openFacilities.length);
-  }, [openFacilities]);
+    if (openWaitFacilities.length === 0) return null;
+    const total = openWaitFacilities.reduce((s, f) => s + (f.waitMin ?? 0), 0);
+    return Math.round(total / openWaitFacilities.length);
+  }, [openWaitFacilities]);
 
   return (
     <div className="er-now-root">
-      <TopBar active="list" />
+      <AppTopBar active="list" />
       <main className="page">
         {/* Hero */}
         <section className="hero">
@@ -805,9 +773,11 @@ export function ERNowPageClient({
           <div className="info-banner" role="status">
             <span className="ico"><Icon name="warning" size={13} /></span>
             <div className="b-body">
-              <strong>No facilities are currently reporting as open.</strong>{" "}
-              The live feed may be paused or every site in range is closed. Call{" "}
-              <a href="tel:811">8-1-1</a> for nurse advice, or{" "}
+              <strong>{openFacilities.length === 0 ? "No facilities are currently reporting as open." : "No posted wait times are available right now."}</strong>{" "}
+              {openFacilities.length === 0
+                ? "The live feed may be paused or every site in range is closed."
+                : "Open facilities may still be accepting patients, but the live feed has not posted wait data."}{" "}
+              Call <a href="tel:811">8-1-1</a> for nurse advice, or{" "}
               <a href="tel:911">9-1-1</a> if this is life-threatening.
             </div>
           </div>
@@ -816,7 +786,7 @@ export function ERNowPageClient({
         {/* Recommended pick — only when there's an open facility to recommend */}
         {shortest && (
           <div className="best-pick">
-            <WaveBackground f={shortest} height={120} intensity={0.35} />
+            <WaveBackground f={shortest} height={120} intensity={0.32} />
             <div>
               <span className="pick-eyebrow">
                 <Icon name="star" size={11} stroke={2} />
@@ -867,13 +837,22 @@ export function ERNowPageClient({
                 </button>
               </div>
             </div>
-            <div className="wait" data-sev={severityFor(shortest.waitMin)}>
-              <div className="wait-num">{shortest.waitText}</div>
-              <div className="wait-label">
-                <span className="sev-dot" />
-                {severityLabel(shortest.waitMin)}
-              </div>
-              <div className="updated">Updated {shortest.lastUpdated}</div>
+            <div className={"wait " + (!shortest.open ? "is-closed" : "")} data-sev={severityFor(shortest.waitMin)} aria-label={shortest.open ? undefined : shortest.name + " is closed"}>
+              {shortest.open ? (
+                <>
+                  <div className="wait-num">{shortest.waitText}</div>
+                  <div className="wait-label">
+                    <span className="sev-dot" />
+                    {facilityWaitStatusLabel(shortest)}
+                  </div>
+                  <div className="updated">Updated {shortest.lastUpdated}</div>
+                </>
+              ) : (
+                <div className="closed-state">
+                  <ClosedIllustration className="closed-illustration closed-hero" />
+                  <strong>Closed</strong>
+                </div>
+              )}
             </div>
           </div>
         )}

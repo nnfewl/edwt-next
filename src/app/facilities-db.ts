@@ -1,5 +1,5 @@
 import { client as sharedClient } from "../db/client";
-import { type Facility } from "./data";
+import { type Facility, type HistoryPoint } from "./data";
 
 type DbFacilityRow = {
   id: string;
@@ -18,6 +18,7 @@ type DbFacilityRow = {
   reading_created_at: Date | null;
   wait_time_minutes: number | null;
   elos_minutes: number | null;
+  wait_history: unknown;
 };
 
 type HoursDay = {
@@ -33,6 +34,38 @@ function isOperatingHours(value: unknown): value is OperatingHours {
   return typeof value === "object" && value !== null && Array.isArray((value as OperatingHours).days);
 }
 
+function parseJson(value: string): unknown {
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
+}
+
+function parseWaitHistory(value: unknown): HistoryPoint[] {
+  const raw = typeof value === "string" ? parseJson(value) : value;
+  if (!Array.isArray(raw)) return [];
+
+  const points: HistoryPoint[] = [];
+  for (const item of raw) {
+    if (typeof item !== "object" || item === null) continue;
+    const record = item as Record<string, unknown>;
+    const minutes = Number(record.wait_time_minutes);
+    const observedRaw = record.observed_at;
+    const observedAt =
+      observedRaw instanceof Date
+        ? observedRaw
+        : typeof observedRaw === "string"
+          ? new Date(observedRaw)
+          : null;
+
+    if (!Number.isFinite(minutes) || !observedAt || Number.isNaN(observedAt.getTime())) continue;
+    points.push({ observedAt: observedAt.toISOString(), min: Math.max(0, Math.round(minutes)) });
+  }
+
+  return points.slice(-12);
+}
+
 function audienceLabel(value: string | null): string {
   if (value === "sixteenAndUnder") return "16 and under";
   if (value === "seventeenPlus") return "17+";
@@ -46,8 +79,9 @@ function subtitleFor(row: DbFacilityRow): string {
   return "Emergency Department";
 }
 
-function formatWait(minutes: number | null, showWaitTimes: boolean | null): string {
-  if (minutes == null || showWaitTimes === false) return "No wait posted";
+function formatWait(minutes: number | null, showWaitTimes: boolean | null, open: boolean): string {
+  if (!open) return "Closed";
+  if (minutes == null || showWaitTimes === false) return "No data";
   if (minutes >= 60) return Math.floor(minutes / 60) + "h " + Math.round(minutes % 60) + "m";
   return Math.round(minutes) + "m";
 }
@@ -138,7 +172,8 @@ function formatMinutes(value: number): string {
 function toFacility(row: DbFacilityRow): Facility | null {
   if (row.latitude == null || row.longitude == null) return null;
   const hours = hoursInfo(row);
-  const waitMin = row.show_wait_times === false ? null : row.wait_time_minutes;
+  const waitMin = !hours.open || row.show_wait_times === false ? null : row.wait_time_minutes;
+  const history = waitMin != null ? parseWaitHistory(row.wait_history) : [];
 
   return {
     id: row.id,
@@ -147,7 +182,7 @@ function toFacility(row: DbFacilityRow): Facility | null {
     type: row.type === "upcc" ? "UPCC" : "Emergency",
     audience: audienceLabel(row.audience),
     waitMin,
-    waitText: formatWait(row.wait_time_minutes, row.show_wait_times),
+    waitText: formatWait(row.wait_time_minutes, row.show_wait_times, hours.open),
     // Distance is computed on the client once the origin is known.
     distanceKm: 0,
     address: row.address ?? "Address not available",
@@ -159,6 +194,7 @@ function toFacility(row: DbFacilityRow): Facility | null {
     open: hours.open,
     physiciansOnDuty: 0,
     inWaitingRoom: 0,
+    history,
   };
 }
 
@@ -183,6 +219,28 @@ async function queryFacilities(): Promise<Facility[]> {
         status
       from wait_time_readings
       order by location_id, observed_at desc
+    ), hourly_history as (
+      select distinct on (location_id, date_trunc('hour', observed_at))
+        location_id,
+        observed_at,
+        wait_time_minutes
+      from wait_time_readings
+      where observed_at >= now() - interval '12 hours'
+        and has_wait_time = true
+        and wait_time_minutes is not null
+      order by location_id, date_trunc('hour', observed_at), observed_at desc
+    ), history as (
+      select
+        location_id,
+        jsonb_agg(
+          jsonb_build_object(
+            'observed_at', observed_at,
+            'wait_time_minutes', wait_time_minutes
+          )
+          order by observed_at
+        ) as wait_history
+      from hourly_history
+      group by location_id
     )
     select
       l.id,
@@ -200,9 +258,11 @@ async function queryFacilities(): Promise<Facility[]> {
       latest.observed_at,
       latest.reading_created_at,
       latest.wait_time_minutes,
-      latest.elos_minutes
+      latest.elos_minutes,
+      history.wait_history
     from locations l
     left join latest on latest.location_id = l.id
+    left join history on history.location_id = l.id
     where l.status = 'published'
       and l.type in ('ed', 'upcc')
       and l.latitude is not null

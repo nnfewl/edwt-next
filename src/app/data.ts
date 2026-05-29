@@ -20,6 +20,7 @@ export type Facility = {
   open: boolean;
   physiciansOnDuty: number;
   inWaitingRoom: number;
+  history?: HistoryPoint[];
 };
 
 export const FACILITIES: Facility[] = [
@@ -206,51 +207,23 @@ export function severityFor(min: number | null): Severity {
 }
 
 export function severityLabel(min: number | null): string {
-  if (min == null) return "No live wait";
+  if (min == null) return "No data";
   if (min <= 60) return "Short wait";
   if (min <= 180) return "Moderate wait";
   return "Long wait";
 }
 
-export type HistoryPoint = { h: number; min: number };
-
-// Deterministic 12-hour pressure curve that ends at the current wait.
-// Diurnal-shaped (quiet overnight, peak evening) + per-facility jitter so each
-// card's wave reads as its own signal rather than a shared decoration.
-export function historyFor(f: Facility): HistoryPoint[] {
-  if (f.waitMin == null) return [];
-  let seed = 0;
-  for (let i = 0; i < f.id.length; i++) {
-    seed = (seed * 31 + f.id.charCodeAt(i)) >>> 0;
-  }
-  const rnd = () => {
-    seed = (seed * 9301 + 49297) % 233280;
-    return seed / 233280;
-  };
-
-  const N = 12;
-  const now = new Date().getHours();
-  const shape: number[] = [];
-  for (let i = 0; i < N; i++) {
-    const h = (now - (N - 1 - i) + 24) % 24;
-    const t = (h - 14) / 10; // peak around 2pm
-    let factor = 1 - Math.min(1, t * t * 0.85);
-    factor = 0.55 + factor * 0.7;
-    factor *= 0.88 + rnd() * 0.24;
-    shape.push(factor);
-  }
-  const lastFactor = shape[N - 1];
-  const scale = (f.waitMin as number) / lastFactor;
-  return shape.map((s, i) => ({
-    h: N - 1 - i,
-    min: Math.max(5, Math.round(s * scale)),
-  }));
+export function facilityWaitStatusLabel(facility: Pick<Facility, "open" | "waitMin">): string {
+  if (!facility.open) return "Closed";
+  return severityLabel(facility.waitMin);
 }
+
+export type HistoryPoint = { observedAt: string; min: number };
 
 export type Trend = "rising" | "falling" | "steady";
 
 export function trendFor(f: Facility): Trend {
-  const hist = historyFor(f);
+  const hist = f.history ?? [];
   if (hist.length < 4) return "steady";
   const recent = hist.slice(-3).reduce((s, p) => s + p.min, 0) / 3;
   const prior = hist.slice(-6, -3).reduce((s, p) => s + p.min, 0) / 3;
