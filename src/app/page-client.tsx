@@ -212,7 +212,11 @@ const FacilityCard = ({
   const isEm = f.type === "Emergency";
 
   return (
-    <article className="facility" data-severity={sev}>
+    <article
+      className="facility"
+      data-severity={sev}
+      onClick={() => onSelect(f)}
+    >
       <WaveBackground f={f} height={110} intensity={0.46} />
       <div className="left">
         <div className="badges">
@@ -227,11 +231,10 @@ const FacilityCard = ({
           <span className="badge">{f.audience}</span>
         </div>
 
-        <h3 className="name">
-          {f.name}<span className="sub">{"\u00a0\u00b7 "}{f.subtitle}</span>
-        </h3>
+        <h3 className="name">{f.name}</h3>
 
         <div className="meta-row">
+          <span className="subtitle-meta">{f.subtitle}</span>
           <span className="distance-pill" aria-label={`${f.distanceKm} km away`}>
             <Icon name="pin" size={11} />
             {f.distanceKm} km away
@@ -263,15 +266,31 @@ const FacilityCard = ({
             href={mapFacilityUrl(f, true)}
             aria-label={`Directions to ${f.name}`}
             title="Directions"
+            onClick={(e) => e.stopPropagation()}
           >
             <Icon name="directions" size={14} /> <span className="action-label">Directions</span>
           </a>
           {f.phone && (
-            <a className="action-btn" href={`tel:${f.phone}`} aria-label={`Call ${f.name}`} title="Call">
+            <a
+              className="action-btn call-btn"
+              href={`tel:${f.phone}`}
+              aria-label={`Call ${f.name}`}
+              title="Call"
+              onClick={(e) => e.stopPropagation()}
+            >
               <Icon name="phone" size={14} /> <span className="action-label">Call</span>
             </a>
           )}
-          <button className="action-btn" type="button" onClick={() => onSelect(f)} aria-label={`Details for ${f.name}`} title="Details">
+          <button
+            className="action-btn"
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelect(f);
+            }}
+            aria-label={`Details for ${f.name}`}
+            title="Details"
+          >
             <Icon name="info" size={14} /> <span className="action-label">Details</span>
           </button>
         </div>
@@ -735,40 +754,47 @@ export function ERNowPageClient({
 
         {/* Stats — only meaningful when at least one facility is open */}
         {shortest && closestOpen && avgWait != null ? (
-          <div className="stats">
-            <div className="stat">
-              <div className="stat-label">Shortest wait</div>
-              <div className="stat-value">{fmtMins(shortest.waitMin ?? 0)}</div>
-              <div className="stat-trend down">
-                {shortest.name.split(" ").slice(0, 2).join(" ")} · {shortest.subtitle}
+          <>
+            <div className="stats">
+              <div className="stat">
+                <div className="stat-label">Shortest wait</div>
+                <div className="stat-value">{fmtMins(shortest.waitMin ?? 0)}</div>
+                <div className="stat-trend down">
+                  {shortest.name.split(" ").slice(0, 2).join(" ")} · {shortest.subtitle}
+                </div>
+              </div>
+              <div className="stat">
+                <div className="stat-label">Closest open</div>
+                <div className="stat-value">
+                  {closestOpen.distanceKm}
+                  <span className="unit">km</span>
+                </div>
+                <div className="stat-trend">
+                  {closestOpen.name.split(" ").slice(0, 2).join(" ")}
+                </div>
+              </div>
+              <div className="stat">
+                <div className="stat-label">Average wait now</div>
+                <div className="stat-value">{fmtMins(avgWait)}</div>
+                <div className="stat-trend">
+                  across {openWaitFacilities.length} open
+                </div>
+              </div>
+              <div className="stat">
+                <div className="stat-label">Open right now</div>
+                <div className="stat-value">
+                  {openFacilities.length}
+                  <span className="unit">/ {facilitiesWithDistance.length}</span>
+                </div>
+                <div className="stat-trend">facilities reporting</div>
               </div>
             </div>
-            <div className="stat">
-              <div className="stat-label">Closest open</div>
-              <div className="stat-value">
-                {closestOpen.distanceKm}
-                <span className="unit">km</span>
-              </div>
-              <div className="stat-trend">
-                {closestOpen.name.split(" ").slice(0, 2).join(" ")}
-              </div>
-            </div>
-            <div className="stat">
-              <div className="stat-label">Average wait today</div>
-              <div className="stat-value">{fmtMins(avgWait)}</div>
-              <div className="stat-trend up">
-                <Icon name="trendUp" size={12} /> 18m vs. yesterday
-              </div>
-            </div>
-            <div className="stat">
-              <div className="stat-label">Open right now</div>
-              <div className="stat-value">
-                {openFacilities.length}
-                <span className="unit">/ {facilitiesWithDistance.length}</span>
-              </div>
-              <div className="stat-trend">facilities reporting</div>
-            </div>
-          </div>
+            <p className="stats-summary">
+              <b>{openFacilities.length}</b> of {facilitiesWithDistance.length} facilities
+              open · shortest <b>{fmtMins(shortest.waitMin ?? 0)}</b> ·
+              average <b>{fmtMins(avgWait)}</b>
+            </p>
+          </>
         ) : (
           <div className="info-banner" role="status">
             <span className="ico"><Icon name="warning" size={13} /></span>
@@ -793,7 +819,8 @@ export function ERNowPageClient({
                 Recommended for you
               </span>
               <h2 className="pick-name">
-                {shortest.name} · {shortest.subtitle}
+                {shortest.name}
+                <span className="pick-sub">{shortest.subtitle}</span>
               </h2>
               <p className="pick-reason">
                 Shortest reported wait among open facilities — about a{" "}
@@ -995,7 +1022,6 @@ export function ERNowPageClient({
               physician — not the full visit length. Sicker patients are seen
               first.
             </p>
-            <a href="#how-it-works">Learn more →</a>
           </div>
           <div className="advice-card">
             <div className="a-num">03</div>
@@ -1004,7 +1030,6 @@ export function ERNowPageClient({
               Bring your BC Services Card, a list of medications, and something
               to keep you occupied. Eat and drink lightly unless told otherwise.
             </p>
-            <a href="#prepare">See full checklist →</a>
           </div>
         </section>
 

@@ -893,6 +893,15 @@
   font-weight: 750;
   text-wrap: balance;
 }
+.er-now-root .best-pick .pick-sub {
+  display: block;
+  margin-top: 6px;
+  font-family: var(--font-ui);
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--ink-2);
+}
 .er-now-root .best-pick .pick-reason {
   color: var(--ink-2);
   font-size: 14.5px;
@@ -1752,156 +1761,6 @@
   padding-left: 0;
 }
 
-@media (max-width: 760px) {
-  .er-now-root .best-pick {
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: start;
-    gap: 12px;
-    padding: 14px;
-    background: linear-gradient(180deg, rgba(248, 255, 251, 0.98), rgba(255, 255, 255, 0.96));
-    border-color: color-mix(in oklab, var(--green) 18%, var(--line));
-    box-shadow: 0 10px 32px rgba(24, 92, 65, 0.06);
-  }
-  .er-now-root .best-pick .pick-eyebrow {
-    margin-bottom: 9px;
-    padding: 4px 10px;
-    font-size: 9.5px;
-  }
-  .er-now-root .best-pick .pick-name {
-    font-size: 22px;
-    line-height: 1.08;
-    max-width: 11.5em;
-  }
-  .er-now-root .best-pick > .wait {
-    min-width: 76px;
-    padding: 8px 9px;
-    border: 1px solid rgba(222, 215, 201, 0.9);
-    border-radius: 14px;
-    background: rgba(255, 255, 255, 0.86);
-    align-items: center;
-    text-align: center;
-    gap: 4px;
-  }
-  .er-now-root .best-pick .wait .wait-num {
-    max-width: none;
-    font-size: 34px;
-    line-height: 0.95;
-    text-align: center;
-  }
-  .er-now-root .best-pick .wait .wait-label {
-    justify-content: center;
-    font-size: 10.5px;
-    white-space: nowrap;
-  }
-  .er-now-root .best-pick .updated {
-    display: none;
-  }
-  .er-now-root .best-pick .actions {
-    margin-top: 12px !important;
-    gap: 8px;
-  }
-  .er-now-root .best-pick .action-btn {
-    /* Fit the restored "Directions" / "Full details" labels — the previous
-       44 × 42 square sized for icon-only and clipped the words. */
-    width: auto;
-    min-width: 0;
-    height: 42px;
-    padding: 0 14px;
-    border-radius: 12px;
-    white-space: nowrap;
-  }
-}
-
-@media (max-width: 380px) {
-  .er-now-root .best-pick {
-    grid-template-columns: 1fr;
-  }
-  .er-now-root .best-pick .pick-name {
-    max-width: none;
-  }
-  .er-now-root .best-pick > .wait {
-    justify-self: start;
-    display: inline-flex;
-    flex-direction: row;
-    min-width: 0;
-    padding: 8px 10px;
-  }
-}
-
-/* Richer mobile recommended card */
-@media (max-width: 760px) {
-  .er-now-root .best-pick {
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 12px 14px;
-    padding: 16px;
-    background:
-      radial-gradient(circle at 88% 14%, rgba(18, 147, 109, 0.15), transparent 34%),
-      linear-gradient(135deg, rgba(232, 249, 242, 0.98) 0%, rgba(248, 250, 252, 0.98) 100%);
-    border-color: color-mix(in oklab, var(--teal) 22%, var(--line));
-    box-shadow: 0 14px 38px rgba(24, 92, 65, 0.09);
-  }
-  .er-now-root .best-pick::after {
-    content: "";
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    height: 54px;
-    background: linear-gradient(180deg, transparent, rgba(18, 147, 109, 0.08));
-    pointer-events: none;
-  }
-  .er-now-root .best-pick .pick-eyebrow {
-    background: color-mix(in oklab, var(--ink) 90%, var(--teal));
-    box-shadow: 0 8px 18px rgba(22, 27, 24, 0.12);
-  }
-  .er-now-root .best-pick .pick-name {
-    font-size: 24px;
-    line-height: 1.07;
-    max-width: 12.4em;
-    margin-bottom: 8px;
-  }
-  .er-now-root .best-pick .pick-meta {
-    display: flex;
-    gap: 6px;
-    margin-top: 8px;
-    font-size: 11px;
-  }
-  .er-now-root .best-pick .pick-meta span {
-    max-width: 100%;
-    padding: 5px 8px;
-    border: 1px solid rgba(222, 215, 201, 0.82);
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.72);
-    color: var(--ink-2);
-  }
-  .er-now-root .best-pick .pick-meta span:nth-child(n + 3) {
-    display: none;
-  }
-  .er-now-root .best-pick > .wait {
-    min-width: 84px;
-    padding: 10px 10px 9px;
-    background: rgba(255, 255, 255, 0.78);
-    border-color: rgba(255, 255, 255, 0.9);
-    box-shadow: inset 0 0 0 1px rgba(222, 215, 201, 0.72), 0 10px 24px rgba(24, 92, 65, 0.08);
-    backdrop-filter: blur(8px);
-  }
-  .er-now-root .best-pick .wait .wait-num {
-    font-size: 38px;
-  }
-  .er-now-root .best-pick .actions {
-    grid-column: 1 / -1;
-    margin-top: 12px !important;
-    padding-top: 10px;
-    border-top: 1px solid rgba(222, 215, 201, 0.72);
-  }
-  .er-now-root .best-pick .action-btn {
-    background: rgba(255, 255, 255, 0.76);
-  }
-  .er-now-root .best-pick .action-btn.primary {
-    background: var(--ink);
-  }
-}
-
 /* Mobile navigation — native <details>/<summary>. Toggle works without any
    JavaScript so the hamburger keeps functioning even when hydration fails. */
 @media (max-width: 760px) {
@@ -2329,35 +2188,6 @@
   }
 }
 
-/* Mobile facility wait badge refinement */
-@media (max-width: 760px) {
-  .er-now-root .facility .wait {
-    align-self: start;
-    min-width: 74px;
-    padding: 8px 8px 7px;
-    border-left: 0;
-    border-radius: 14px;
-    background: rgba(255, 255, 255, 0.76);
-    box-shadow: inset 0 0 0 1px rgba(222, 215, 201, 0.75);
-    align-items: center;
-    text-align: center;
-  }
-  .er-now-root .facility .wait-num,
-  .er-now-root .facility .wait[data-sev="closed"] .wait-num {
-    max-width: none;
-    text-align: center;
-  }
-  .er-now-root .facility .wait-label {
-    max-width: none;
-    justify-content: center;
-    text-align: center;
-  }
-  .er-now-root .facility .updated {
-    max-width: 68px;
-    text-align: center;
-  }
-}
-
 /* Mobile radius normalization */
 @media (max-width: 760px) {
   .er-now-root .locator,
@@ -2555,10 +2385,17 @@
   display: block;
 }
 
-.er-now-root .facility .name .sub {
-  display: inline;
-  margin-top: 0;
-  white-space: nowrap;
+/* Facility type ("Emergency Department" etc.) reads as a caption in the meta
+   line alongside distance — keeps the bold name as the sole title. */
+.er-now-root .facility .meta-row .subtitle-meta {
+  color: var(--ink-2);
+  font-weight: 650;
+}
+.er-now-root .facility .meta-row .subtitle-meta::after {
+  content: "·";
+  margin-left: 10px;
+  color: var(--muted);
+  font-weight: 400;
 }
 
 .er-now-root .wave-bg {
@@ -2585,5 +2422,449 @@
   .er-now-root .best-pick > .wave-bg {
     opacity: 0.18;
     transform: translateY(22px);
+  }
+}
+
+/* One-line summary that replaces the 4-up stats grid on phones. */
+.er-now-root .stats-summary {
+  display: none;
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   MOBILE REDESIGN — calm, low-density, flat.
+
+   This block is the single source of truth for the ≤760px facility list,
+   recommended card, stats, banner, toolbar and location surfaces. It
+   intentionally supersedes the older, patched-together ≤760px rules above:
+   flatten the card-in-card chrome into airy hairline-divided rows, drop
+   secondary data off each row (it lives in the details drawer), and let
+   one hero — the recommended pick — carry the top of the page.
+   ════════════════════════════════════════════════════════════════════ */
+@media (max-width: 760px) {
+  /* ---- Page rhythm: more air, fewer competing boxes ---- */
+  .er-now-root .page {
+    padding: 18px max(16px, env(safe-area-inset-right)) 52px
+      max(16px, env(safe-area-inset-left));
+  }
+  .er-now-root .hero {
+    margin-bottom: 14px;
+  }
+  .er-now-root .hero h1 {
+    font-size: clamp(22px, 7vw, 30px);
+    line-height: 1.14;
+    letter-spacing: -0.01em;
+  }
+
+  /* ---- Location pill: opaque (backdrop-filter doesn't composite here) ---- */
+  .er-now-root .locator {
+    background: var(--surface);
+    backdrop-filter: none;
+    box-shadow: 0 4px 16px rgba(26, 29, 27, 0.05);
+  }
+
+  /* ---- 911 notice: quiet left-accent rule, not a loud filled block ---- */
+  .er-now-root .info-banner {
+    margin: 14px 0 18px;
+    padding: 12px 14px;
+    gap: 11px;
+    border: 0;
+    border-left: 3px solid color-mix(in oklab, var(--coral) 60%, white);
+    border-radius: 10px;
+    background: color-mix(in oklab, var(--coral) 7%, white);
+    align-items: flex-start;
+  }
+  .er-now-root .info-banner .ico {
+    width: 20px;
+    height: 20px;
+    margin-top: 1px;
+    background: transparent;
+    color: var(--coral);
+  }
+  .er-now-root .info-banner .b-body {
+    -webkit-line-clamp: 3;
+    font-size: 12.5px;
+    line-height: 1.45;
+    color: var(--ink-2);
+  }
+
+  /* ---- Stats grid → one calm summary line ---- */
+  .er-now-root .stats {
+    display: none;
+  }
+  .er-now-root .stats-summary {
+    display: block;
+    margin: 0 2px 20px;
+    font-size: 13.5px;
+    line-height: 1.55;
+    color: var(--muted);
+  }
+  .er-now-root .stats-summary b {
+    color: var(--ink);
+    font-weight: 750;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---- Recommended pick: the one hero. Soft tint + wave, fully flat. ---- */
+  .er-now-root .best-pick {
+    display: block;
+    margin: 0 0 24px;
+    padding: 20px;
+    border-radius: 20px;
+    border: 1px solid color-mix(in oklab, var(--teal) 16%, var(--line));
+    background: linear-gradient(
+      162deg,
+      color-mix(in oklab, var(--teal) 8%, white) 0%,
+      color-mix(in oklab, var(--green) 4%, white) 100%
+    );
+    box-shadow: none;
+  }
+  .er-now-root .best-pick::after {
+    content: none;
+  }
+  .er-now-root .best-pick .pick-eyebrow {
+    margin-bottom: 14px;
+    padding: 5px 12px;
+    font-size: 10px;
+    background: var(--teal);
+    box-shadow: none;
+  }
+  .er-now-root .best-pick .pick-name {
+    font-size: clamp(20px, 6.4vw, 26px);
+    line-height: 1.16;
+    max-width: none;
+    margin: 0 0 6px;
+  }
+  .er-now-root .best-pick .pick-sub {
+    margin-top: 4px;
+    font-size: 13.5px;
+  }
+  .er-now-root .best-pick .pick-reason {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin: 0 0 16px;
+    max-width: none;
+    font-size: 13.5px;
+    line-height: 1.5;
+    color: var(--ink-2);
+  }
+  .er-now-root .best-pick .pick-meta {
+    display: none;
+  }
+  .er-now-root .best-pick > .wait {
+    margin: 4px 0 18px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+    align-items: flex-start;
+    text-align: left;
+  }
+  .er-now-root .best-pick .wait .wait-num {
+    max-width: none;
+    font-size: clamp(40px, 16vw, 60px);
+    line-height: 0.92;
+    text-align: left;
+  }
+  .er-now-root .best-pick .wait .wait-label {
+    justify-content: flex-start;
+    font-size: 12.5px;
+  }
+  .er-now-root .best-pick .updated {
+    display: block;
+    font-size: 11px;
+  }
+  .er-now-root .best-pick .actions {
+    grid-column: auto;
+    margin-top: 0 !important;
+    padding-top: 0;
+    border-top: 0;
+    gap: 8px;
+  }
+  .er-now-root .best-pick .action-btn {
+    width: auto;
+    min-width: 0;
+    height: 44px;
+    padding: 0 16px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.78);
+  }
+  .er-now-root .best-pick .action-btn.primary {
+    background: var(--ink);
+  }
+  .er-now-root .best-pick > .wave-bg {
+    opacity: 0.3;
+    transform: translateY(16px);
+  }
+
+  /* ---- Filter / sort toolbar: opaque, light, still sticky ---- */
+  .er-now-root .toolbar {
+    position: sticky;
+    top: calc(46px + env(safe-area-inset-top));
+    z-index: 35;
+    margin: 0 -16px 16px;
+    padding: 10px max(16px, env(safe-area-inset-right)) 10px
+      max(16px, env(safe-area-inset-left));
+    background: var(--bg);
+    border-top: 0;
+    border-bottom: 1px solid var(--line);
+    backdrop-filter: none;
+  }
+  /* Filter pills: individual outlined pills that wrap — no scrolling strip,
+     no crammed container. Container goes transparent; each chip is its own pill. */
+  .er-now-root .toolbar .chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    width: 100%;
+    overflow: visible;
+    gap: 8px;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+  .er-now-root .toolbar .chip {
+    flex: 0 0 auto;
+    min-height: 34px;
+    padding: 7px 13px;
+    font-size: 12.5px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+  }
+  .er-now-root .toolbar .chip.active {
+    background: var(--ink);
+    color: var(--bg);
+    border-color: var(--ink);
+  }
+  .er-now-root .toolbar .chip .count {
+    background: rgba(0, 0, 0, 0.06);
+  }
+  .er-now-root .toolbar .chip.active .count {
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  /* ════ Facility list → airy rows, hairline dividers, no card chrome ════ */
+  .er-now-root .facility-list {
+    gap: 0;
+    border-top: 1px solid var(--line);
+  }
+  .er-now-root .facility {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 16px;
+    padding: 18px 4px;
+    border: 0;
+    border-bottom: 1px solid var(--line);
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    cursor: pointer;
+  }
+  .er-now-root .facility[data-severity="closed"] {
+    background: transparent;
+    color: inherit;
+  }
+  .er-now-root .facility .left {
+    gap: 6px;
+  }
+
+  /* Badges: type and open status only. Keep them as real pills so the
+     background always covers the full label. */
+  .er-now-root .facility .badges {
+    gap: 4px 12px;
+  }
+  .er-now-root .facility .badge {
+    flex: 0 0 auto;
+    width: fit-content;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding: 3px 8px;
+    border: 1px solid rgba(222, 215, 201, 0.85);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.72);
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0;
+    color: var(--muted);
+    overflow: visible;
+    text-overflow: clip;
+    white-space: nowrap;
+  }
+  .er-now-root .facility .badge.emergency {
+    background: rgba(255, 118, 94, 0.12);
+    border-color: transparent;
+    color: var(--coral);
+  }
+  .er-now-root .facility .badge.upcc {
+    background: rgba(20, 184, 166, 0.12);
+    border-color: transparent;
+    color: var(--teal);
+  }
+  .er-now-root .facility .badge.open {
+    background: rgba(34, 197, 94, 0.12);
+    border-color: transparent;
+    color: var(--green);
+  }
+  .er-now-root .facility .badge.closed {
+    color: var(--muted);
+  }
+  .er-now-root .facility .badge .bdot {
+    width: 5px;
+    height: 5px;
+  }
+  .er-now-root .facility .badges .badge:nth-child(3) {
+    display: none;
+  }
+
+  /* Name + a single muted meta line */
+  .er-now-root .facility .name {
+    display: block;
+    max-width: 100%;
+    font-size: clamp(16.5px, 5.2vw, 20px);
+    line-height: 1.2;
+    font-weight: 750;
+  }
+  .er-now-root .facility .name .sub {
+    display: block;
+    margin-top: 3px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--muted);
+    white-space: normal;
+  }
+  .er-now-root .facility .meta-row {
+    gap: 4px 12px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  /* Distance stays; address / waiting / on-duty move to the drawer */
+  .er-now-root .facility .meta-row .m {
+    display: none;
+  }
+  .er-now-root .facility .distance-pill {
+    order: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .er-now-root .facility .distance-pill svg {
+    color: var(--muted);
+  }
+
+  /* Compact icon actions on the row — the icons are self-explanatory, so no
+     text labels (keeps rows calm). All three stay: Directions · Call · Details. */
+  .er-now-root .facility .actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+    width: auto;
+  }
+  .er-now-root .facility .actions .call-btn {
+    display: inline-flex;
+  }
+  .er-now-root .facility .action-label {
+    display: none;
+  }
+  .er-now-root .facility .action-btn {
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
+    min-height: 40px;
+    padding: 0;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid var(--line);
+  }
+  .er-now-root .facility .action-btn.primary {
+    background: var(--ink);
+    border-color: var(--ink);
+  }
+
+  /* Wait readout: plain right-aligned number, no inner box */
+  .er-now-root .facility .wait {
+    align-self: center;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    align-items: flex-end;
+    text-align: right;
+    gap: 3px;
+  }
+  .er-now-root .facility .wait-num,
+  .er-now-root .facility .wait[data-sev="closed"] .wait-num {
+    max-width: none;
+    font-size: clamp(28px, 10.5vw, 44px);
+    line-height: 0.92;
+    text-align: right;
+  }
+  .er-now-root .facility .wait-label {
+    max-width: none;
+    justify-content: flex-end;
+    text-align: right;
+    font-size: 12px;
+    color: var(--ink-2);
+  }
+  .er-now-root .facility .updated {
+    display: none;
+  }
+  .er-now-root .facility > .wave-bg {
+    opacity: 0.14;
+    transform: translateY(16px);
+  }
+
+  /* Closed / no-data: compact, right-aligned in the wait column */
+  .er-now-root .facility .wait.is-closed,
+  .er-now-root .facility .wait.is-no-data {
+    min-width: 0;
+    padding: 0;
+    background: transparent;
+    box-shadow: none;
+    align-items: flex-end;
+    text-align: right;
+  }
+  .er-now-root .facility .wait.is-closed .closed-hero {
+    width: 60px;
+    height: 60px;
+  }
+  .er-now-root .facility .closed-state,
+  .er-now-root .facility .no-data-state {
+    align-items: flex-end;
+    text-align: right;
+  }
+  .er-now-root .facility .closed-state strong {
+    font-size: 13px;
+  }
+  .er-now-root .facility .no-data-state strong {
+    font-size: 17px;
+  }
+  .er-now-root .facility .no-data-state span {
+    max-width: 90px;
+    font-size: 10.5px;
+    text-align: right;
+  }
+
+  /* Details sheet actions: full-width, labelled. Fixes the earlier rule that
+     pinned these buttons to 42px wide while still rendering the
+     "Directions" / "Call 604-…" labels, which clipped the text. */
+  .er-now-root .drawer-panel .action-btn {
+    flex: 1 1 0 !important;
+    width: auto;
+    min-width: 0;
+    height: 44px;
+    min-height: 44px;
+    padding: 0 16px;
   }
 }

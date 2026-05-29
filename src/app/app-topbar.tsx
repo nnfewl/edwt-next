@@ -18,10 +18,7 @@ export function AppTopBar({ active }: { active: AppTopBarActive }) {
           <span className="app-wordmark-mark" aria-hidden="true">
             <FontAwesomeIcon icon={faHospital} />
           </span>
-          <span>
-            EDWT
-            <small>Lower Mainland · BC</small>
-          </span>
+          <span>EDWT</span>
         </Link>
 
         <nav className="app-nav-tabs" aria-label="Primary">
