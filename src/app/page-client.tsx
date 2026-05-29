@@ -9,6 +9,7 @@ import {
 } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
+  faArrowUpRightFromSquare,
   faChartLine,
   faCheck,
   faChevronDown,
@@ -55,7 +56,8 @@ type IconName =
   | "warning"
   | "check"
   | "chevronDown"
-  | "gps";
+  | "gps"
+  | "external";
 
 const ICONS: Record<IconName, IconDefinition> = {
   pin: faLocationDot,
@@ -73,6 +75,7 @@ const ICONS: Record<IconName, IconDefinition> = {
   check: faCheck,
   chevronDown: faChevronDown,
   gps: faLocationCrosshairs,
+  external: faArrowUpRightFromSquare,
 };
 
 const Icon = ({
@@ -1033,11 +1036,49 @@ export function ERNowPageClient({
           </div>
         </section>
 
-        <p className="footnote">
-          Wait times are estimates only and update every few minutes. If your
-          condition worsens while waiting, tell the triage nurse. This site is an
-          independent demo and not affiliated with any health authority.
-        </p>
+        <footer className="site-footer">
+          <div className="footer-bar">
+            <div className="footer-brand">
+              <span className="footer-mark" aria-hidden="true">
+                <Icon name="stethoscope" size={16} />
+              </span>
+              <div className="footer-brand-text">
+                <strong>EDWT</strong>
+                <span>Live emergency wait times · Lower Mainland, BC</span>
+              </div>
+            </div>
+            <div className="footer-meta">
+              <a
+                className="footer-link"
+                href="https://www.edwaittimes.ca/"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <span className="footer-link-label">
+                  Data from <strong>edwaittimes.ca</strong>
+                </span>
+                <Icon name="external" size={11} />
+              </a>
+              <a
+                className="footer-link status"
+                href="https://status.edwt.ca"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <span className="footer-link-label">
+                  <span className="status-dot" aria-hidden="true" />
+                  Service status
+                </span>
+                <Icon name="external" size={11} />
+              </a>
+            </div>
+          </div>
+          <p className="footnote">
+            Wait times are estimates only and update every few minutes. If your
+            condition worsens while waiting, tell the triage nurse. This site is an
+            independent demo and not affiliated with any health authority.
+          </p>
+        </footer>
       </main>
 
       <DetailsDrawer f={selected} onClose={() => setSelected(null)} />
