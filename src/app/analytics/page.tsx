@@ -597,19 +597,45 @@ async function queryAnalytics(): Promise<AnalyticsResult> {
   }
 }
 
+// Hard ceiling so the page can never hang: if the queries don't resolve in
+// time, return an error result and let the page render its error panel instead
+// of loading forever. Sits just under the function's maxDuration budget.
+const ANALYTICS_DEADLINE_MS = 30_000;
+
+function withDeadline(promise: Promise<AnalyticsResult>): Promise<AnalyticsResult> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(
+      () => resolve({ error: "Analytics queries timed out. The database may be slow or unreachable." }),
+      ANALYTICS_DEADLINE_MS,
+    );
+    promise.then(
+      (result) => {
+        clearTimeout(timer);
+        resolve(result);
+      },
+      (error) => {
+        clearTimeout(timer);
+        resolve({ error: error instanceof Error ? error.message : "Unknown database error" });
+      },
+    );
+  });
+}
+
 async function getAnalytics(): Promise<AnalyticsResult> {
   if (analyticsCache && Date.now() - analyticsCache.at < ANALYTICS_CACHE_TTL_MS) return analyticsCache.result;
   if (!analyticsInflight) {
     analyticsInflight = queryAnalytics()
       .then((result) => {
-        analyticsCache = { at: Date.now(), result };
+        // Only cache successful results so a transient failure isn't pinned for
+        // the whole TTL.
+        if (!result.error) analyticsCache = { at: Date.now(), result };
         return result;
       })
       .finally(() => {
         analyticsInflight = null;
       });
   }
-  return analyticsInflight;
+  return withDeadline(analyticsInflight);
 }
 
 function rowCount(data: AnalyticsData, table: string) {
