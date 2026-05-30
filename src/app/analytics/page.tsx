@@ -569,7 +569,6 @@ export default async function AnalyticsPage({
             <div>
               <span>Data source</span>
               <strong><a className="analytics-source-link" href={sourceUrl} target="_blank" rel="noreferrer">edwaittimes.ca API</a></strong>
-              <small>Queried through the same shared DB client used by the public facilities and map pages.</small>
             </div>
           </aside>
         </section>
