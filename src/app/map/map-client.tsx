@@ -376,6 +376,25 @@ function getBrowserPosition(): Promise<[number, number] | null> {
   });
 }
 
+function createFontAwesomeSvg(icon: typeof faLocationArrow) {
+  const [width, height, , , pathData] = icon.icon;
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+  svg.setAttribute("aria-hidden", "true");
+  svg.setAttribute("focusable", "false");
+  svg.classList.add("map-location-control-icon");
+
+  const paths = Array.isArray(pathData) ? pathData : [pathData];
+  paths.forEach((pathValue) => {
+    const pathNode = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    pathNode.setAttribute("fill", "currentColor");
+    pathNode.setAttribute("d", pathValue);
+    svg.append(pathNode);
+  });
+
+  return svg;
+}
+
 export function MapClient({
   facilities,
   initialOrigin,
@@ -408,6 +427,8 @@ export function MapClient({
   const mapNode = useRef<HTMLDivElement | null>(null);
   const map = useRef<MapLibreMap | null>(null);
   const userLocationMarker = useRef<maplibregl.Marker | null>(null);
+  const locationControlButton = useRef<HTMLButtonElement | null>(null);
+  const showUserLocationRef = useRef<() => void>(() => {});
   const autoRouteDone = useRef(false);
   const [selectedId, setSelectedId] = useState(initialFacilityId ?? shortest?.id ?? facilitiesWithDistance[0]?.id ?? null);
   const selected = facilitiesWithDistance.find((facility) => facility.id === selectedId) ?? facilitiesWithDistance[0];
@@ -450,6 +471,26 @@ export function MapClient({
     }
     const m = map.current;
     m.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+    const locationControl: maplibregl.IControl = {
+      onAdd() {
+        const container = document.createElement("div");
+        container.className = "maplibregl-ctrl maplibregl-ctrl-group map-location-control-group";
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "map-location-control";
+        button.title = "Show your location";
+        button.setAttribute("aria-label", "Show your location");
+        button.append(createFontAwesomeSvg(faLocationArrow));
+        button.addEventListener("click", () => showUserLocationRef.current());
+        container.append(button);
+        locationControlButton.current = button;
+        return container;
+      },
+      onRemove() {
+        locationControlButton.current = null;
+      },
+    };
+    m.addControl(locationControl, "top-right");
 
     const bounds = new maplibregl.LngLatBounds();
     initialFacilitiesRef.current.forEach((facility) => bounds.extend([facility.lng, facility.lat]));
@@ -556,6 +597,19 @@ export function MapClient({
 
     map.current.easeTo({ center: browserOrigin, zoom: Math.max(map.current.getZoom(), 12.8), duration: 700 });
   }, []);
+
+  useEffect(() => {
+    showUserLocationRef.current = showUserLocation;
+  }, [showUserLocation]);
+
+  useEffect(() => {
+    const button = locationControlButton.current;
+    if (!button) return;
+    button.disabled = !mapReady || locating;
+    button.title = locating ? "Finding your location" : "Show your location";
+    button.setAttribute("aria-label", locating ? "Finding your location" : "Show your location");
+    button.classList.toggle("is-locating", locating);
+  }, [locating, mapReady]);
 
   const showDirections = useCallback(async () => {
     if (!map.current || !selected) return;
@@ -772,16 +826,6 @@ export function MapClient({
         </aside>
 
         <div className="map-canvas-wrap">
-          <button
-            type="button"
-            className="map-location-control"
-            onClick={showUserLocation}
-            disabled={!mapReady || locating}
-            aria-label={locating ? "Finding your location" : "Show your location"}
-            title={locating ? "Finding your location" : "Show your location"}
-          >
-            <FontAwesomeIcon icon={faLocationArrow} aria-hidden="true" />
-          </button>
           <div ref={mapNode} className="map-canvas" />
           {mapUnavailable && (
             <div className="map-fallback" role="status">

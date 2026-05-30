@@ -15,6 +15,7 @@ import {
   faChevronDown,
   faCircleInfo,
   faClock,
+  faServer,
   faDiamondTurnRight,
   faList,
   faLocationCrosshairs,
@@ -46,6 +47,7 @@ type IconName =
   | "phone"
   | "info"
   | "clock"
+  | "server"
   | "users"
   | "stethoscope"
   | "directions"
@@ -64,6 +66,7 @@ const ICONS: Record<IconName, IconDefinition> = {
   phone: faPhone,
   info: faCircleInfo,
   clock: faClock,
+  server: faServer,
   users: faUsers,
   stethoscope: faStethoscope,
   directions: faDiamondTurnRight,
@@ -1054,8 +1057,11 @@ export function ERNowPageClient({
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                <span className="footer-link-label">
-                  Data from <strong>edwaittimes.ca</strong>
+                <span className="source-badge-icon" aria-hidden="true">
+                  <Icon name="server" size={13} />
+                </span>
+                <span className="footer-link-label source-badge-label">
+                  <strong>edwaittimes.ca</strong>
                 </span>
                 <Icon name="external" size={11} />
               </a>
