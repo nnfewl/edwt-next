@@ -1145,17 +1145,21 @@
   }
   .er-now-root .footer-bar {
     flex-direction: column;
-    align-items: stretch;
+    align-items: flex-start;
     gap: 16px;
   }
+  /* Compact, content-width pills sitting side by side (wrapping if needed) —
+     not full-width bars with a big empty gap between label and icon. */
   .er-now-root .footer-meta {
-    flex-direction: column;
-    align-items: stretch;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
     gap: 8px;
   }
   .er-now-root .footer-link {
-    justify-content: space-between;
-    padding: 12px 15px;
+    justify-content: center;
+    gap: 8px;
+    padding: 9px 14px;
   }
 }
 
@@ -2834,13 +2838,15 @@
 
   /* Badges: type and open status only. Keep them as real pills so the
      background always covers the full label. */
+  /* Keep the badge row on a single line — same content, just don't wrap.
+     Only two badges show on mobile (type + hours/status) and both always fit
+     at phone widths, so no shrinking or truncation is needed. */
   .er-now-root .facility .badges {
-    gap: 4px 12px;
+    flex-wrap: nowrap;
+    gap: 4px 8px;
   }
   .er-now-root .facility .badge {
     flex: 0 0 auto;
-    width: fit-content;
-    max-width: 100%;
     box-sizing: border-box;
     padding: 3px 8px;
     border: 1px solid rgba(222, 215, 201, 0.85);
@@ -2851,7 +2857,6 @@
     letter-spacing: 0;
     color: var(--muted);
     overflow: visible;
-    text-overflow: clip;
     white-space: nowrap;
   }
   .er-now-root .facility .badge.emergency {
