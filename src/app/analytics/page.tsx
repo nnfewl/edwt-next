@@ -8,6 +8,9 @@ import "./styles.css";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+// These analytics aggregations take longer than the default serverless budget.
+// Without this, Vercel kills the request before the queries finish → endless load.
+export const maxDuration = 60;
 
 type MaybeNumber = number | null;
 
@@ -276,6 +279,7 @@ async function queryAnalytics(): Promise<AnalyticsResult> {
           max(round((extract(epoch from (observed_at - reading_created_at)) / 60)::numeric, 1))::float as max_minutes_source_lag
         from wait_time_readings
         where reading_created_at is not null
+          and observed_at >= now() - interval '30 days'
       `,
       sql<TypeSummary[]>`
         select
@@ -288,6 +292,7 @@ async function queryAnalytics(): Promise<AnalyticsResult> {
           max(w.wait_time_minutes)::int as max_wait
         from locations l
         left join wait_time_readings w on w.location_id = l.id
+          and w.observed_at >= now() - interval '30 days'
         group by l.type
         order by l.type
       `,
@@ -330,6 +335,7 @@ async function queryAnalytics(): Promise<AnalyticsResult> {
         from locations l
         join wait_time_readings w on w.location_id = l.id
         where w.wait_time_minutes is not null
+          and w.observed_at >= now() - interval '30 days'
         group by l.id, l.name, l.type
         having count(w.id) >= 50
         order by avg(w.wait_time_minutes) desc
@@ -347,6 +353,7 @@ async function queryAnalytics(): Promise<AnalyticsResult> {
         from locations l
         join wait_time_readings w on w.location_id = l.id
         where w.wait_time_minutes is not null
+          and w.observed_at >= now() - interval '30 days'
         group by l.id, l.name, l.type
         having count(w.id) >= 50
         order by stddev_samp(w.wait_time_minutes) desc nulls last
@@ -361,6 +368,7 @@ async function queryAnalytics(): Promise<AnalyticsResult> {
           percentile_cont(0.9) within group (order by wait_time_minutes)::float as p90_wait
         from wait_time_readings
         where wait_time_minutes is not null
+          and observed_at >= now() - interval '30 days'
         group by 1
         order by 1
       `,
@@ -373,6 +381,7 @@ async function queryAnalytics(): Promise<AnalyticsResult> {
           percentile_cont(0.9) within group (order by wait_time_minutes)::float as p90_wait
         from wait_time_readings
         where wait_time_minutes is not null
+          and observed_at >= now() - interval '30 days'
         group by 1
         order by 1
       `,
@@ -399,6 +408,7 @@ async function queryAnalytics(): Promise<AnalyticsResult> {
           count(*)::int as readings
         from wait_time_readings
         where wait_time_minutes is not null
+          and observed_at >= now() - interval '30 days'
         group by 1, 2
         order by 2
       `,
@@ -407,6 +417,7 @@ async function queryAnalytics(): Promise<AnalyticsResult> {
           select location_id
           from wait_time_readings
           where wait_time_minutes is not null
+            and observed_at >= now() - interval '30 days'
           group by location_id
           having count(*) >= 50
           order by avg(wait_time_minutes) desc
@@ -422,6 +433,7 @@ async function queryAnalytics(): Promise<AnalyticsResult> {
         join wait_time_readings w on w.location_id = t.location_id
         join locations l on l.id = t.location_id
         where w.wait_time_minutes is not null
+          and w.observed_at >= now() - interval '30 days'
         group by l.name, l.type, 3
         order by l.name, 3
       `,
@@ -447,6 +459,7 @@ async function queryAnalytics(): Promise<AnalyticsResult> {
         join wait_time_readings w on w.location_id = l.id
         left join latest on latest.location_id = l.id
         where w.wait_time_minutes is not null
+          and w.observed_at >= now() - interval '30 days'
         group by l.id, l.name, l.type
         having count(w.id) >= 10
         order by avg(w.wait_time_minutes) desc
@@ -460,6 +473,7 @@ async function queryAnalytics(): Promise<AnalyticsResult> {
             count(*)::int as readings
           from wait_time_readings
           where wait_time_minutes is not null
+            and observed_at >= now() - interval '30 days'
           group by 1, 2
           having count(*) >= 2
         ), ranked as (
@@ -490,6 +504,7 @@ async function queryAnalytics(): Promise<AnalyticsResult> {
         from wait_time_readings w
         join locations l on l.id = w.location_id
         where w.wait_time_minutes is not null
+          and w.observed_at >= now() - interval '30 days'
         group by 1, 2
         order by 1, 2
       `,
@@ -524,6 +539,7 @@ async function queryAnalytics(): Promise<AnalyticsResult> {
             stddev_samp(wait_time_minutes)::float as stddev_wait
           from wait_time_readings
           where wait_time_minutes is not null
+            and observed_at >= now() - interval '30 days'
           group by location_id
           having count(*) >= 50 and stddev_samp(wait_time_minutes) > 0
         )
@@ -731,7 +747,7 @@ export default async function AnalyticsPage() {
     return (
       <div className="analytics-root">
         <AppTopBar active="analytics" />
-        <AutoRefresh />
+        <AutoRefresh intervalMs={300_000} />
         <main className="analytics-page">
           <section className="analytics-error-panel">
             <p className="analytics-eyebrow">Database unavailable</p>
@@ -760,7 +776,7 @@ export default async function AnalyticsPage() {
   return (
     <div className="analytics-root">
       <AppTopBar active="analytics" />
-      <AutoRefresh />
+      <AutoRefresh intervalMs={300_000} />
       <main className="analytics-page">
         <section className="analytics-hero">
           <div className="analytics-hero-copy">
