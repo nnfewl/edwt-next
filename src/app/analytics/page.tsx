@@ -766,8 +766,35 @@ function EmptyFallback({ children }: { children: ReactNode }) {
   return <p className="analytics-empty">{children}</p>;
 }
 
-export default async function AnalyticsPage() {
+export default async function AnalyticsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  console.log("[analytics] page render start", new Date().toISOString());
+
+  // STEP 1: direct /analytics must render without touching Postgres. Use
+  // /analytics?data=1 for the next iteration when re-enabling DB reads.
+  if (params.data !== "1") {
+    console.log("[analytics] shell-only mode — skipping all DB queries");
+    return (
+      <div className="analytics-root">
+        <AppTopBar active="analytics" />
+        <main className="analytics-page">
+          <section className="analytics-error-panel">
+            <p className="analytics-eyebrow">Analytics</p>
+            <h1>Analytics page is loading without data.</h1>
+            <p>The route rendered successfully without database queries. Data panels are temporarily disabled while production access is verified.</p>
+            <Link href="/" className="analytics-button">Back to facilities</Link>
+          </section>
+        </main>
+      </div>
+    );
+  }
+
   const result = await getAnalytics();
+  console.log("[analytics] getAnalytics resolved", { hasError: !!result.error, hasData: !!result.data });
 
   if (result.error || !result.data) {
     return (
