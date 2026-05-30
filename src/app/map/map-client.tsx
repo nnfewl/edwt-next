@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faCrosshairs, faLocationArrow, faPhone } from "@fortawesome/free-solid-svg-icons";
 import maplibregl, { type GeoJSONSource, type LngLatLike, type Map as MapLibreMap } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { type Facility, facilityWaitStatusLabel, severityFor } from "../data";
@@ -405,6 +407,7 @@ export function MapClient({
 
   const mapNode = useRef<HTMLDivElement | null>(null);
   const map = useRef<MapLibreMap | null>(null);
+  const userLocationMarker = useRef<maplibregl.Marker | null>(null);
   const autoRouteDone = useRef(false);
   const [selectedId, setSelectedId] = useState(initialFacilityId ?? shortest?.id ?? facilitiesWithDistance[0]?.id ?? null);
   const selected = facilitiesWithDistance.find((facility) => facility.id === selectedId) ?? facilitiesWithDistance[0];
@@ -413,6 +416,7 @@ export function MapClient({
   const [route, setRoute] = useState<RouteState>(null);
   const [mapReady, setMapReady] = useState(false);
   const [routeLoading, setRouteLoading] = useState(false);
+  const [locating, setLocating] = useState(false);
   const [mapUnavailable, setMapUnavailable] = useState<string | null>(null);
   const [routeError, setRouteError] = useState<string | null>(null);
   // Capture the initial facility list in a ref so the mount-only init effect
@@ -490,6 +494,8 @@ export function MapClient({
           m.off("mouseleave", layerId, handleMarkerLeave);
         });
       }
+      userLocationMarker.current?.remove();
+      userLocationMarker.current = null;
       map.current?.remove();
       map.current = null;
     };
@@ -513,6 +519,44 @@ export function MapClient({
     setRouteError(null);
   }, []);
 
+  const showUserLocation = useCallback(async () => {
+    if (!map.current) return;
+
+    setLocating(true);
+    setRouteError(null);
+    const browserOrigin = await getBrowserPosition();
+    setLocating(false);
+
+    if (!browserOrigin) {
+      setRouteError("Precise location is required to show your location on the map.");
+      return;
+    }
+
+    setGpsOrigin({
+      lat: browserOrigin[1],
+      lng: browserOrigin[0],
+      label: "Precise location",
+      source: "gps",
+      accuracyLabel: "browser GPS",
+    });
+
+    if (!userLocationMarker.current) {
+      const markerNode = document.createElement("div");
+      markerNode.className = "user-location-marker";
+      markerNode.setAttribute("aria-label", "Your location");
+      const pinNode = document.createElement("span");
+      pinNode.className = "user-location-pin";
+      markerNode.append(pinNode);
+      userLocationMarker.current = new maplibregl.Marker({ element: markerNode, anchor: "bottom" })
+        .setLngLat(browserOrigin)
+        .addTo(map.current);
+    } else {
+      userLocationMarker.current.setLngLat(browserOrigin);
+    }
+
+    map.current.easeTo({ center: browserOrigin, zoom: Math.max(map.current.getZoom(), 12.8), duration: 700 });
+  }, []);
+
   const showDirections = useCallback(async () => {
     if (!map.current || !selected) return;
 
@@ -533,6 +577,20 @@ export function MapClient({
       source: "gps",
       accuracyLabel: "browser GPS",
     });
+
+    if (!userLocationMarker.current) {
+      const markerNode = document.createElement("div");
+      markerNode.className = "user-location-marker";
+      markerNode.setAttribute("aria-label", "Your location");
+      const pinNode = document.createElement("span");
+      pinNode.className = "user-location-pin";
+      markerNode.append(pinNode);
+      userLocationMarker.current = new maplibregl.Marker({ element: markerNode, anchor: "bottom" })
+        .setLngLat(browserOrigin)
+        .addTo(map.current);
+    } else {
+      userLocationMarker.current.setLngLat(browserOrigin);
+    }
 
     const url = "https://router.project-osrm.org/route/v1/driving/" +
       browserOrigin[0] + "," + browserOrigin[1] + ";" + selected.lng + "," + selected.lat +
@@ -670,10 +728,19 @@ export function MapClient({
               )}
               <div className="selected-actions">
                 <button type="button" onClick={showDirections} disabled={routeLoading}>
-                  {routeLoading ? "Routing..." : "Directions"}
+                  <FontAwesomeIcon icon={faLocationArrow} aria-hidden="true" />
+                  <span>{routeLoading ? "Routing..." : "Directions"}</span>
                 </button>
-                <button type="button" onClick={() => map.current?.easeTo({ center: [selected.lng, selected.lat], zoom: 13.2, duration: 650 })}>Center map</button>
-                {selected.phone && <a href={"tel:" + selected.phone}>Call</a>}
+                <button type="button" onClick={() => map.current?.easeTo({ center: [selected.lng, selected.lat], zoom: 13.2, duration: 650 })}>
+                  <FontAwesomeIcon icon={faCrosshairs} aria-hidden="true" />
+                  <span>Center map</span>
+                </button>
+                {selected.phone && (
+                  <a href={"tel:" + selected.phone}>
+                    <FontAwesomeIcon icon={faPhone} aria-hidden="true" />
+                    <span>Call</span>
+                  </a>
+                )}
               </div>
               {route && (
                 <div className="route-note">
@@ -705,6 +772,16 @@ export function MapClient({
         </aside>
 
         <div className="map-canvas-wrap">
+          <button
+            type="button"
+            className="map-location-control"
+            onClick={showUserLocation}
+            disabled={!mapReady || locating}
+            aria-label={locating ? "Finding your location" : "Show your location"}
+            title={locating ? "Finding your location" : "Show your location"}
+          >
+            <FontAwesomeIcon icon={faLocationArrow} aria-hidden="true" />
+          </button>
           <div ref={mapNode} className="map-canvas" />
           {mapUnavailable && (
             <div className="map-fallback" role="status">
