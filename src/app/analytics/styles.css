@@ -144,6 +144,24 @@
   line-height: 1.35;
 }
 
+.analytics-window small {
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+.analytics-window .analytics-source-link {
+  color: var(--teal);
+  text-decoration: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
+}
+
+.analytics-window .analytics-source-link:hover {
+  color: var(--teal-ink);
+}
+
 .analytics-metrics {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

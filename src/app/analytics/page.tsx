@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import postgres from "postgres";
+import { client as sharedClient } from "../../db/client";
 import { AppTopBar } from "../app-topbar";
 import { AutoRefresh } from "../auto-refresh";
 import { AnalyticsCharts } from "./analytics-charts";
@@ -165,7 +165,7 @@ type AnalyticsData = {
   noReadings: NoReadingLocation[];
 };
 
-const databaseUrl = process.env.DATABASE_URL ?? "postgres://edwt:edwt@localhost:5433/edwt";
+const sourceUrl = process.env.EDWT_SOURCE_URL ?? "https://www.edwaittimes.ca/api/wait-times";
 const localFormatter = new Intl.DateTimeFormat("en-CA", {
   timeZone: "America/Vancouver",
   month: "short",
@@ -175,13 +175,21 @@ const localFormatter = new Intl.DateTimeFormat("en-CA", {
   hour12: false,
 });
 
-async function getAnalytics(): Promise<{ data?: AnalyticsData; error?: string }> {
-  const sql = postgres(databaseUrl, { max: 4, idle_timeout: 5 });
+type AnalyticsResult = { data?: AnalyticsData; error?: string };
+const ANALYTICS_CACHE_TTL_MS = 30_000;
+let analyticsCache: { at: number; result: AnalyticsResult } | null = null;
+let analyticsInflight: Promise<AnalyticsResult> | null = null;
+
+async function queryAnalytics(): Promise<AnalyticsResult> {
+  const sql = sharedClient;
+  const startedAt = Date.now();
+  console.log("[analytics] query start");
 
   try {
     const rawPollsExists = await sql<{ exists: boolean }[]>`
       select to_regclass('public.raw_polls') is not null as exists
     `;
+    console.log("[analytics] raw polls exists", Date.now() - startedAt);
     const hasRawPolls = rawPollsExists[0]?.exists ?? false;
     const tablesQuery = hasRawPolls
       ? sql<TableCount[]>`
@@ -218,6 +226,7 @@ async function getAnalytics(): Promise<{ data?: AnalyticsData; error?: string }>
       `
       : Promise.resolve([{ polls: 0, first_poll: null, last_poll: null, avg_seconds_between_polls: null, median_seconds_between_polls: null, max_seconds_between_polls: null }]);
 
+    console.log("[analytics] aggregate queries start", Date.now() - startedAt);
     const [
       tables,
       observedRange,
@@ -543,6 +552,7 @@ async function getAnalytics(): Promise<{ data?: AnalyticsData; error?: string }>
       `,
     ]);
 
+    console.log("[analytics] aggregate queries done", Date.now() - startedAt);
     return {
       data: {
         tables,
@@ -568,9 +578,22 @@ async function getAnalytics(): Promise<{ data?: AnalyticsData; error?: string }>
     };
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Unknown database error" };
-  } finally {
-    await sql.end({ timeout: 5 }).catch(() => undefined);
   }
+}
+
+async function getAnalytics(): Promise<AnalyticsResult> {
+  if (analyticsCache && Date.now() - analyticsCache.at < ANALYTICS_CACHE_TTL_MS) return analyticsCache.result;
+  if (!analyticsInflight) {
+    analyticsInflight = queryAnalytics()
+      .then((result) => {
+        analyticsCache = { at: Date.now(), result };
+        return result;
+      })
+      .finally(() => {
+        analyticsInflight = null;
+      });
+  }
+  return analyticsInflight;
 }
 
 function rowCount(data: AnalyticsData, table: string) {
@@ -755,6 +778,11 @@ export default async function AnalyticsPage() {
             <div>
               <span>Latest source reading</span>
               <strong>{fmtDate(data.observedRange?.last_source_reading)} PT</strong>
+            </div>
+            <div>
+              <span>Data source</span>
+              <strong><a className="analytics-source-link" href={sourceUrl} target="_blank" rel="noreferrer">edwaittimes.ca API</a></strong>
+              <small>Queried through the same shared DB client used by the public facilities and map pages.</small>
             </div>
           </aside>
         </section>
