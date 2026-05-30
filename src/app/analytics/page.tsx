@@ -484,9 +484,9 @@ export default async function AnalyticsPage({
   const params = await searchParams;
   console.log("[analytics] page render start", new Date().toISOString());
 
-  // STEP 1: direct /analytics must render without touching Postgres. Use
-  // /analytics?data=1 for the next iteration when re-enabling DB reads.
-  if (params.data !== "1") {
+  // Emergency isolation path: /analytics?shell=1 renders without touching
+  // Postgres. Direct /analytics uses the lightweight facility snapshot.
+  if (params.shell === "1") {
     console.log("[analytics] shell-only mode — skipping all DB queries");
     return (
       <div className="analytics-root">
@@ -533,7 +533,15 @@ export default async function AnalyticsPage({
   const highestAvg = data.highestAverage[0];
   const upcc = data.byType.find((row) => row.type === "upcc");
   const ed = data.byType.find((row) => row.type === "ed");
-  const dataWindow = `${fmtDate(data.observedRange?.first_observed)} to ${fmtDate(data.observedRange?.last_observed)} PT`;
+  const hasObservedRange = !!data.observedRange?.first_observed || !!data.observedRange?.last_observed;
+  const dataWindow = hasObservedRange
+    ? `${fmtDate(data.observedRange?.first_observed)} to ${fmtDate(data.observedRange?.last_observed)} PT`
+    : "Current facility snapshot";
+  const latestSourceReading = data.observedRange?.last_source_reading ? `${fmtDate(data.observedRange.last_source_reading)} PT` : "Snapshot mode";
+  const freshnessValue = data.freshness?.median_minutes_source_lag == null ? "n/a" : `${fmtNumber(data.freshness.median_minutes_source_lag, 1)}m`;
+  const freshnessDetail = data.freshness?.p95_minutes_source_lag == null
+    ? "Historical source-lag query disabled"
+    : `P95 source lag ${fmtNumber(data.freshness.p95_minutes_source_lag, 1)} minutes`;
   const edPremium = ed?.median_wait != null && upcc?.median_wait != null ? ed.median_wait - upcc.median_wait : null;
 
   return (
@@ -556,7 +564,7 @@ export default async function AnalyticsPage({
             </div>
             <div>
               <span>Latest source reading</span>
-              <strong>{fmtDate(data.observedRange?.last_source_reading)} PT</strong>
+              <strong>{latestSourceReading}</strong>
             </div>
             <div>
               <span>Data source</span>
@@ -570,7 +578,7 @@ export default async function AnalyticsPage({
           <MetricCard label="Facilities tracked" value={fmtNumber(locationCount)} detail={`${quality?.locations_with_readings ?? 0} locations produced wait-time readings`} tone="teal" />
           <MetricCard label="Readings captured" value={fmtNumber(readings)} detail={`${percent(quality?.with_wait_minutes ?? 0, quality?.readings ?? 0)} include wait-time minutes`} tone="green" />
           <MetricCard label="Poll archive" value={fmtNumber(polls)} detail={data.pollCadence?.polls ? `Median cadence ${fmtNumber(data.pollCadence.median_seconds_between_polls, 1)} seconds` : "Archive table not present"} tone="amber" />
-          <MetricCard label="Freshness" value={`${fmtNumber(data.freshness?.median_minutes_source_lag, 1)}m`} detail={`P95 source lag ${fmtNumber(data.freshness?.p95_minutes_source_lag, 1)} minutes`} tone="coral" />
+          <MetricCard label="Freshness" value={freshnessValue} detail={freshnessDetail} tone="coral" />
         </section>
 
         <section className="analytics-grid analytics-grid-readout">
