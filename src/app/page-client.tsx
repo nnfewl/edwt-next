@@ -819,11 +819,11 @@ export function ERNowPageClient({
         {shortest && (
           <div className="best-pick">
             <WaveBackground f={shortest} height={120} intensity={0.32} />
-            <div>
-              <span className="pick-eyebrow">
-                <Icon name="star" size={11} stroke={2} />
-                Recommended for you
-              </span>
+            <span className="pick-eyebrow">
+              <Icon name="star" size={11} stroke={2} />
+              Recommended for you
+            </span>
+            <div className="pick-body">
               <h2 className="pick-name">
                 {shortest.name}
                 <span className="pick-sub">{shortest.subtitle}</span>

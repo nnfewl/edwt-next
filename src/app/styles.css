@@ -863,14 +863,17 @@
   align-items: center;
   overflow: hidden;
 }
-.er-now-root .best-pick > div,
+.er-now-root .best-pick > .pick-eyebrow,
+.er-now-root .best-pick > .pick-body,
 .er-now-root .best-pick > .wait {
   position: relative;
   z-index: 1;
   min-width: 0;
 }
-.er-now-root .best-pick .pick-eyebrow {
+.er-now-root .best-pick > .pick-eyebrow {
+  grid-column: 1 / -1;
   display: inline-flex;
+  width: fit-content;
   align-items: center;
   gap: 8px;
   background: var(--ink);
@@ -1240,13 +1243,6 @@
   .er-now-root .advice-grid {
     grid-template-columns: 1fr;
   }
-  .er-now-root .best-pick {
-    grid-template-columns: 1fr;
-  }
-  .er-now-root .best-pick .wait {
-    align-items: flex-start;
-    text-align: left;
-  }
   .er-now-root .locator {
     min-width: 0;
     width: 100%;
@@ -1297,14 +1293,6 @@
   .er-now-root .stats {
     grid-template-columns: 1fr;
   }
-  .er-now-root .best-pick {
-    padding: 24px 20px;
-    gap: 24px;
-  }
-  .er-now-root .best-pick .pick-name {
-    font-size: 32px;
-  }
-  .er-now-root .best-pick .wait .wait-num,
   .er-now-root .wait-num {
     font-size: 54px;
   }
@@ -1574,48 +1562,6 @@
     line-height: 1.25;
   }
 
-  .er-now-root .best-pick {
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
-    gap: 10px 12px;
-    margin: 8px 0 12px;
-    padding: 13px;
-    border-radius: 12px;
-  }
-  .er-now-root .best-pick .pick-eyebrow {
-    margin-bottom: 7px;
-    font-size: 10px;
-  }
-  .er-now-root .best-pick .pick-name {
-    font-size: 22px;
-    line-height: 1.05;
-  }
-  .er-now-root .best-pick .pick-reason,
-  .er-now-root .best-pick .pick-meta {
-    display: none;
-  }
-  .er-now-root .best-pick .wait {
-    min-width: 80px;
-    align-items: flex-end;
-    text-align: right;
-  }
-  .er-now-root .best-pick .wait .wait-num {
-    max-width: 96px;
-    font-size: 32px;
-    line-height: 1;
-    text-align: right;
-  }
-  .er-now-root .best-pick .wait .wait-label,
-  .er-now-root .best-pick .updated {
-    justify-content: flex-end;
-    font-size: 10.5px;
-    line-height: 1.15;
-  }
-  .er-now-root .best-pick .actions {
-    grid-column: 1 / -1;
-    margin-top: 0 !important;
-  }
-
   .er-now-root .toolbar {
     position: sticky;
     top: calc(60px + env(safe-area-inset-top));
@@ -1765,24 +1711,20 @@
     font-size: 24px;
   }
   .er-now-root .stats,
-  .er-now-root .actions,
-  .er-now-root .best-pick {
+  .er-now-root .actions {
     grid-template-columns: 1fr;
   }
   .er-now-root .facility {
     grid-template-columns: 1fr;
   }
   .er-now-root .wait,
-  .er-now-root .wait-label,
-  .er-now-root .best-pick .wait,
-  .er-now-root .best-pick .wait .wait-label {
+  .er-now-root .wait-label {
     align-items: flex-start;
     justify-content: flex-start;
     text-align: left;
   }
   .er-now-root .wait-num,
-  .er-now-root .wait[data-sev="closed"] .wait-num,
-  .er-now-root .best-pick .wait .wait-num {
+  .er-now-root .wait[data-sev="closed"] .wait-num {
     max-width: none;
     text-align: left;
   }
@@ -1792,10 +1734,6 @@
   .er-now-root .action-label {
     display: none;
   }
-  /* The recommended pick and the details drawer are primary call-to-actions;
-     showing the icon alone makes the buttons read as decoration. Restore the
-     text label for those two contexts so the affordance is obvious. */
-  .er-now-root .best-pick .action-label,
   .er-now-root .drawer-panel .action-label {
     display: inline;
   }
@@ -2667,99 +2605,110 @@
     font-variant-numeric: tabular-nums;
   }
 
-  /* ---- Recommended pick: the one hero. Soft tint + wave, fully flat. ---- */
+  /* ---- Recommended pick ---- */
   .er-now-root .best-pick {
-    display: block;
-    margin: 0 0 24px;
-    padding: 20px;
-    border-radius: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 0 12px;
+    margin: 0 0 20px;
+    padding: 20px 16px 16px;
+    border-radius: 16px;
     border: 1px solid color-mix(in oklab, var(--teal) 16%, var(--line));
     background: linear-gradient(
       162deg,
-      color-mix(in oklab, var(--teal) 8%, white) 0%,
-      color-mix(in oklab, var(--green) 4%, white) 100%
+      color-mix(in oklab, var(--teal) 6%, white) 0%,
+      color-mix(in oklab, var(--green) 3%, white) 100%
     );
     box-shadow: none;
   }
-  .er-now-root .best-pick::after {
-    content: none;
-  }
-  .er-now-root .best-pick .pick-eyebrow {
-    margin-bottom: 14px;
-    padding: 5px 12px;
-    font-size: 10px;
+  .er-now-root .best-pick::after { content: none; }
+  .er-now-root .best-pick > .pick-eyebrow {
+    width: 100%;
+    margin-bottom: 10px;
+    padding: 4px 8px;
+    font-size: 9px;
+    letter-spacing: 0.03em;
     background: var(--teal);
     box-shadow: none;
+    white-space: nowrap;
+  }
+  .er-now-root .best-pick > .pick-body {
+    flex: 1 1 0;
+    min-width: 0;
   }
   .er-now-root .best-pick .pick-name {
-    font-size: clamp(20px, 6.4vw, 26px);
-    line-height: 1.16;
+    font-size: clamp(16px, 4.8vw, 22px);
+    line-height: 1.15;
     max-width: none;
-    margin: 0 0 6px;
+    margin: 0;
   }
   .er-now-root .best-pick .pick-sub {
-    margin-top: 4px;
-    font-size: 13.5px;
+    margin-top: 2px;
+    font-size: clamp(11px, 3.2vw, 12.5px);
   }
   .er-now-root .best-pick .pick-reason {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    margin: 0 0 16px;
-    max-width: none;
-    font-size: 13.5px;
-    line-height: 1.5;
-    color: var(--ink-2);
+    display: none;
   }
   .er-now-root .best-pick .pick-meta {
     display: none;
   }
+  .er-now-root .best-pick .action-label {
+    display: none;
+  }
+  .er-now-root .best-pick .actions {
+    margin-top: 10px !important;
+    padding-top: 0;
+    border-top: 0;
+    gap: 6px;
+    display: flex;
+  }
+  .er-now-root .best-pick .action-btn {
+    flex: 0 0 auto;
+    width: 38px;
+    min-width: 38px;
+    height: 38px;
+    padding: 0;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.78);
+    justify-content: center;
+  }
+  .er-now-root .best-pick .action-btn.primary {
+    background: var(--ink);
+  }
   .er-now-root .best-pick > .wait {
-    margin: 4px 0 18px;
+    flex-shrink: 0;
     padding: 0;
     border: 0;
     border-radius: 0;
     background: transparent;
     box-shadow: none;
     backdrop-filter: none;
-    align-items: flex-start;
-    text-align: left;
+    align-items: flex-end;
+    text-align: right;
+    min-width: 0;
+    margin: 0;
   }
   .er-now-root .best-pick .wait .wait-num {
     max-width: none;
-    font-size: clamp(40px, 16vw, 60px);
-    line-height: 0.92;
-    text-align: left;
+    font-size: clamp(30px, 9vw, 42px);
+    line-height: 1;
+    text-align: right;
+    white-space: nowrap;
   }
   .er-now-root .best-pick .wait .wait-label {
-    justify-content: flex-start;
-    font-size: 12.5px;
+    justify-content: flex-end;
+    font-size: 11px;
+    white-space: nowrap;
   }
   .er-now-root .best-pick .updated {
     display: block;
-    font-size: 11px;
-  }
-  .er-now-root .best-pick .actions {
-    grid-column: auto;
-    margin-top: 0 !important;
-    padding-top: 0;
-    border-top: 0;
-    gap: 8px;
-  }
-  .er-now-root .best-pick .action-btn {
-    width: auto;
-    min-width: 0;
-    height: 44px;
-    padding: 0 16px;
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.78);
-  }
-  .er-now-root .best-pick .action-btn.primary {
-    background: var(--ink);
+    font-size: 10.5px;
+    white-space: nowrap;
+    text-align: right;
   }
   .er-now-root .best-pick > .wave-bg {
-    opacity: 0.3;
+    opacity: 0.25;
     transform: translateY(16px);
   }
 
