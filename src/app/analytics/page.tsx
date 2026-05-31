@@ -1,6 +1,14 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { client as sharedClient } from "../../db/client";
+
+export const metadata: Metadata = {
+  title: "Wait-Time Analytics",
+  description:
+    "System-level analytics for Lower Mainland ED and UPCC wait times — trends, heatmaps, tail-risk, and coverage across tracked facilities.",
+  alternates: { canonical: "/analytics" },
+};
 import { AppTopBar } from "../app-topbar";
 import { AutoRefresh } from "../auto-refresh";
 import { AnalyticsCharts } from "./analytics-charts";
