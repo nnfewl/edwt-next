@@ -15,7 +15,7 @@ const DATABASE_URL =
 //   - statement_timeout — no single query can run past this; it errors and the
 //     page renders its error state rather than loading forever.
 export const client = postgres(DATABASE_URL, {
-  max: 5,
+  max: 10,
   idle_timeout: 20,
   connect_timeout: 10,
   prepare: false,

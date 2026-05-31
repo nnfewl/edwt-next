@@ -168,7 +168,6 @@ type AnalyticsData = {
   noReadings: NoReadingLocation[];
 };
 
-const sourceUrl = process.env.EDWT_SOURCE_URL ?? "https://www.edwaittimes.ca/api/wait-times";
 const localFormatter = new Intl.DateTimeFormat("en-CA", {
   timeZone: "America/Vancouver",
   month: "short",
@@ -229,28 +228,9 @@ async function queryAnalytics(): Promise<AnalyticsResult> {
       `
       : Promise.resolve([{ polls: 0, first_poll: null, last_poll: null, avg_seconds_between_polls: null, median_seconds_between_polls: null, max_seconds_between_polls: null }]);
 
-    console.log("[analytics] aggregate queries start", Date.now() - startedAt);
-    const [
-      tables,
-      observedRange,
-      quality,
-      pollCadence,
-      freshness,
-      byType,
-      current,
-      highestAverage,
-      mostVolatile,
-      hourly,
-      trend,
-      distribution,
-      heatmap,
-      facilityRisk,
-      rankFlow,
-      typeTrend,
-      coverage,
-      alerts,
-      noReadings,
-    ] = await Promise.all([
+    // Batch 1: lightweight meta queries (5 queries, all fast)
+    console.log("[analytics] batch 1 start", Date.now() - startedAt);
+    const [tables, observedRange, quality, pollCadence, freshness] = await Promise.all([
       tablesQuery,
       sql<ObservedRange[]>`
         select
@@ -281,6 +261,11 @@ async function queryAnalytics(): Promise<AnalyticsResult> {
         where reading_created_at is not null
           and observed_at >= now() - interval '30 days'
       `,
+    ]);
+    console.log("[analytics] batch 1 done", Date.now() - startedAt);
+
+    // Batch 2: per-type + snapshot + facility aggregations (5 queries)
+    const [byType, current, highestAverage, mostVolatile, noReadings] = await Promise.all([
       sql<TypeSummary[]>`
         select
           l.type,
@@ -359,6 +344,18 @@ async function queryAnalytics(): Promise<AnalyticsResult> {
         order by stddev_samp(w.wait_time_minutes) desc nulls last
         limit 10
       `,
+      sql<NoReadingLocation[]>`
+        select l.name, l.type, l.show_wait_times, l.show_status, l.wait_time_fallback
+        from locations l
+        left join wait_time_readings w on w.location_id = l.id
+        where w.id is null
+        order by l.type, l.name
+      `,
+    ]);
+    console.log("[analytics] batch 2 done", Date.now() - startedAt);
+
+    // Batch 3: time-series, distribution, heatmap, risk, alerts (9 queries)
+    const [hourly, trend, distribution, heatmap, facilityRisk, rankFlow, typeTrend, coverage, alerts] = await Promise.all([
       sql<HourlyRow[]>`
         select
           extract(hour from observed_at at time zone 'America/Vancouver')::int as vancouver_hour,
@@ -559,16 +556,8 @@ async function queryAnalytics(): Promise<AnalyticsResult> {
         order by ((latest.current_wait - baseline.avg_wait) / baseline.stddev_wait) desc
         limit 10
       `,
-      sql<NoReadingLocation[]>`
-        select l.name, l.type, l.show_wait_times, l.show_status, l.wait_time_fallback
-        from locations l
-        left join wait_time_readings w on w.location_id = l.id
-        where w.id is null
-        order by l.type, l.name
-      `,
     ]);
-
-    console.log("[analytics] aggregate queries done", Date.now() - startedAt);
+    console.log("[analytics] batch 3 done", Date.now() - startedAt);
     return {
       data: {
         tables,
@@ -600,7 +589,7 @@ async function queryAnalytics(): Promise<AnalyticsResult> {
 // Hard ceiling so the page can never hang: if the queries don't resolve in
 // time, return an error result and let the page render its error panel instead
 // of loading forever. Sits just under the function's maxDuration budget.
-const ANALYTICS_DEADLINE_MS = 30_000;
+const ANALYTICS_DEADLINE_MS = 45_000;
 
 function withDeadline(promise: Promise<AnalyticsResult>): Promise<AnalyticsResult> {
   return new Promise((resolve) => {
@@ -855,10 +844,6 @@ export default async function AnalyticsPage({
             <div>
               <span>Latest source reading</span>
               <strong>{latestSourceReading}</strong>
-            </div>
-            <div>
-              <span>Data source</span>
-              <strong><a className="analytics-source-link" href={sourceUrl} target="_blank" rel="noreferrer">edwaittimes.ca API</a></strong>
             </div>
           </aside>
         </section>
