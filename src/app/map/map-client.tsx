@@ -7,7 +7,6 @@ import maplibregl, { type GeoJSONSource, type LngLatLike, type Map as MapLibreMa
 import "maplibre-gl/dist/maplibre-gl.css";
 import { type Facility, facilityWaitStatusLabel, severityFor } from "../data";
 import { ClosedIllustration } from "../closed-illustration";
-import { AppTopBar } from "../app-topbar";
 import { withOriginDistances } from "../geo-distance";
 import { preciseGpsOriginWithLocationText, useSessionGpsOrigin, writeSessionGpsOrigin } from "../location-session";
 import { type LocationOrigin } from "../location-types";
@@ -710,8 +709,6 @@ export function MapClient({
 
   return (
     <main className="map-page">
-      <AppTopBar active="map" />
-
       <section className="map-shell">
         <aside className="map-sidebar" aria-label="Facility map controls">
           <div className="map-copy">

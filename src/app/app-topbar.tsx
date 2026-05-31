@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useLayoutEffect, useRef, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faBars, faChartLine, faHospital, faList, faMapLocationDot } from "@fortawesome/free-solid-svg-icons";
@@ -20,9 +21,15 @@ const NAV_ITEMS = [
   { id: "analytics", href: "/analytics", label: "Analytics", icon: faChartLine },
 ] satisfies Array<{ id: AppTopBarActive; href: string; label: string; icon: typeof faList }>;
 
-const LAST_ACTIVE_KEY = "edwt:last-active-tab";
+function activeFromPathname(pathname: string): AppTopBarActive {
+  if (pathname.startsWith("/map")) return "map";
+  if (pathname.startsWith("/analytics") || pathname.startsWith("/admin")) return "analytics";
+  return "list";
+}
 
-export function AppTopBar({ active }: { active: AppTopBarActive }) {
+export function AppTopBar() {
+  const pathname = usePathname();
+  const active = activeFromPathname(pathname);
   const menuRef = useRef<HTMLDetailsElement>(null);
   const navRef = useRef<HTMLElement>(null);
   const linkRefs = useRef<Record<AppTopBarActive, HTMLAnchorElement | null>>({
@@ -48,36 +55,15 @@ export function AppTopBar({ active }: { active: AppTopBarActive }) {
     const current = measure(active);
     if (!current) return undefined;
 
-    let previousActive: AppTopBarActive | null = null;
-    try {
-      previousActive = window.sessionStorage.getItem(LAST_ACTIVE_KEY) as AppTopBarActive | null;
-    } catch {
-      previousActive = null;
-    }
-
-    const previous = previousActive && previousActive !== active ? measure(previousActive) : null;
     let firstFrame = 0;
-    let secondFrame = 0;
 
-    if (previous) {
-      setIndicator({ ...previous, ready: true, animate: false });
-      firstFrame = window.requestAnimationFrame(() => {
-        secondFrame = window.requestAnimationFrame(() => {
-          setIndicator({ ...current, ready: true, animate: true });
-        });
-      });
-    } else {
-      setIndicator({ ...current, ready: true, animate: false });
+    setIndicator((state) => {
+      if (state.ready) return { ...current, ready: true, animate: true };
       firstFrame = window.requestAnimationFrame(() => {
         setIndicator((state) => ({ ...state, animate: true }));
       });
-    }
-
-    try {
-      window.sessionStorage.setItem(LAST_ACTIVE_KEY, active);
-    } catch {
-      // Ignore private-mode storage failures; the indicator still lands correctly.
-    }
+      return { ...current, ready: true, animate: false };
+    });
 
     const resizeObserver = new ResizeObserver(() => {
       const next = measure(active);
@@ -88,7 +74,6 @@ export function AppTopBar({ active }: { active: AppTopBarActive }) {
 
     return () => {
       window.cancelAnimationFrame(firstFrame);
-      window.cancelAnimationFrame(secondFrame);
       resizeObserver.disconnect();
     };
   }, [active]);

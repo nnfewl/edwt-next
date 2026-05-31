@@ -35,7 +35,6 @@ import {
   severityFor,
 } from "./data";
 import { ClosedIllustration } from "./closed-illustration";
-import { AppTopBar } from "./app-topbar";
 import { withOriginDistances } from "./geo-distance";
 import { preciseGpsOrigin, preciseGpsOriginWithLocationText, useSessionGpsOrigin, writeSessionGpsOrigin } from "./location-session";
 import { type LocationOrigin } from "./location-types";
@@ -703,7 +702,6 @@ export function ERNowPageClient({
 
   return (
     <div className="er-now-root">
-      <AppTopBar active="list" />
       <main className="page">
         {/* Hero */}
         <section className="hero">

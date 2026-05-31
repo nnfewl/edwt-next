@@ -9,7 +9,6 @@ export const metadata: Metadata = {
     "System-level analytics for Lower Mainland ED and UPCC wait times — trends, heatmaps, tail-risk, and coverage across tracked facilities.",
   alternates: { canonical: "/analytics" },
 };
-import { AppTopBar } from "../app-topbar";
 import { AutoRefresh } from "../auto-refresh";
 import { AnalyticsCharts } from "./analytics-charts";
 import "./styles.css";
@@ -777,7 +776,6 @@ export default async function AnalyticsPage({
     console.log("[analytics] shell-only mode — skipping all DB queries");
     return (
       <div className="analytics-root">
-        <AppTopBar active="analytics" />
         <main className="analytics-page">
           <section className="analytics-error-panel">
             <p className="analytics-eyebrow">Analytics</p>
@@ -796,7 +794,6 @@ export default async function AnalyticsPage({
   if (result.error || !result.data) {
     return (
       <div className="analytics-root">
-        <AppTopBar active="analytics" />
         <AutoRefresh intervalMs={300_000} />
         <main className="analytics-page">
           <section className="analytics-error-panel">
@@ -833,7 +830,6 @@ export default async function AnalyticsPage({
 
   return (
     <div className="analytics-root">
-      <AppTopBar active="analytics" />
       <AutoRefresh intervalMs={300_000} />
       <main className="analytics-page">
         <section className="analytics-hero">
