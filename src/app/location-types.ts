@@ -6,6 +6,7 @@ export type LocationOrigin = {
   label: string;
   source: LocationSource;
   accuracyLabel: string;
+  accuracyMeters?: number | null;
 };
 
 export const FALLBACK_LOCATION_ORIGIN: LocationOrigin = {

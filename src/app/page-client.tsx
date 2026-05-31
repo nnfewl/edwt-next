@@ -37,7 +37,7 @@ import {
 import { ClosedIllustration } from "./closed-illustration";
 import { AppTopBar } from "./app-topbar";
 import { withOriginDistances } from "./geo-distance";
-import { preciseGpsOriginWithLocationText, readSessionGpsOrigin, writeSessionGpsOrigin } from "./location-session";
+import { preciseGpsOrigin, preciseGpsOriginWithLocationText, useSessionGpsOrigin, writeSessionGpsOrigin } from "./location-session";
 import { type LocationOrigin } from "./location-types";
 import "./styles.css";
 
@@ -559,7 +559,7 @@ export function ERNowPageClient({
   const [selected, setSelected] = useState<Facility | null>(null);
   // Store ONLY a GPS override locally; fall back to the prop so server-side IP
   // geolocation updates flow in on refresh without resetting a user's GPS choice.
-  const [gpsOrigin, setGpsOrigin] = useState<LocationOrigin | null>(null);
+  const [gpsOrigin, setGpsOrigin] = useSessionGpsOrigin();
   const origin: LocationOrigin = gpsOrigin ?? initialOrigin;
   const [geoStatus, setGeoStatus] = useState<"idle" | "locating" | "denied" | "unavailable" | "insecure">("idle");
   // Time is rendered client-side to avoid an SSR/CSR mismatch on the hero meta.
@@ -608,13 +608,24 @@ export function ERNowPageClient({
     setGeoStatus("locating");
     navigator.geolocation.getCurrentPosition(
       async (position) => {
-        const nextOrigin = await preciseGpsOriginWithLocationText(
-          position.coords.latitude,
-          position.coords.longitude,
-          position.coords.accuracy,
-        );
-        setGpsOrigin(nextOrigin);
-        writeSessionGpsOrigin(nextOrigin);
+        try {
+          const nextOrigin = await preciseGpsOriginWithLocationText(
+            position.coords.latitude,
+            position.coords.longitude,
+            position.coords.accuracy,
+          );
+          setGpsOrigin(nextOrigin);
+          writeSessionGpsOrigin(nextOrigin);
+        } catch {
+          // Reverse-geocode failed — still use the coordinates.
+          const nextOrigin = preciseGpsOrigin(
+            position.coords.latitude,
+            position.coords.longitude,
+            position.coords.accuracy,
+          );
+          setGpsOrigin(nextOrigin);
+          writeSessionGpsOrigin(nextOrigin);
+        }
         setGeoStatus("idle");
       },
       (error) => {
@@ -623,14 +634,6 @@ export function ERNowPageClient({
       { enableHighAccuracy: true, maximumAge: 60_000, timeout: 8_000 },
     );
   };
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      const storedOrigin = readSessionGpsOrigin();
-      if (storedOrigin) setGpsOrigin(storedOrigin);
-    }, 0);
-    return () => window.clearTimeout(timer);
-  }, []);
 
   const facilitiesWithDistance = useMemo(
     () => withOriginDistances(facilities, origin),

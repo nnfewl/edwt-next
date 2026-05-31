@@ -9,7 +9,7 @@ import { type Facility, facilityWaitStatusLabel, severityFor } from "../data";
 import { ClosedIllustration } from "../closed-illustration";
 import { AppTopBar } from "../app-topbar";
 import { withOriginDistances } from "../geo-distance";
-import { preciseGpsOriginWithLocationText, readSessionGpsOrigin, writeSessionGpsOrigin } from "../location-session";
+import { preciseGpsOriginWithLocationText, useSessionGpsOrigin, writeSessionGpsOrigin } from "../location-session";
 import { type LocationOrigin } from "../location-types";
 import "./styles.css";
 
@@ -365,12 +365,17 @@ function addFacilityLayers(m: MapLibreMap, data: FacilityMarkerData, selectedId:
   });
 }
 
-function getBrowserPosition(): Promise<[number, number] | null> {
+type BrowserPosition = { lngLat: [number, number]; accuracy: number | null };
+
+function getBrowserPosition(): Promise<BrowserPosition | null> {
   if (!("geolocation" in navigator)) return Promise.resolve(null);
 
   return new Promise((resolve) => {
     navigator.geolocation.getCurrentPosition(
-      (position) => resolve([position.coords.longitude, position.coords.latitude]),
+      (position) => resolve({
+        lngLat: [position.coords.longitude, position.coords.latitude],
+        accuracy: Number.isFinite(position.coords.accuracy) ? position.coords.accuracy : null,
+      }),
       () => resolve(null),
       { enableHighAccuracy: true, maximumAge: 60_000, timeout: 6_000 },
     );
@@ -410,7 +415,7 @@ export function MapClient({
   // GPS override pattern: store only the user-granted location locally so the
   // server's IP-geolocated `initialOrigin` can update through router.refresh()
   // without clobbering a user's precise-location choice.
-  const [gpsOrigin, setGpsOrigin] = useState<LocationOrigin | null>(null);
+  const [gpsOrigin, setGpsOrigin] = useSessionGpsOrigin();
   const origin: LocationOrigin = gpsOrigin ?? initialOrigin;
   const facilitiesWithDistance = useMemo(
     () => withOriginDistances(facilities, origin),
@@ -589,18 +594,18 @@ export function MapClient({
 
     setLocating(true);
     setRouteError(null);
-    const browserOrigin = await getBrowserPosition();
+    const pos = await getBrowserPosition();
     setLocating(false);
 
-    if (!browserOrigin) {
+    if (!pos) {
       setRouteError("Precise location is required to show your location on the map.");
       return;
     }
 
-    applyGpsOrigin(await preciseGpsOriginWithLocationText(browserOrigin[1], browserOrigin[0]));
-    setUserLocationMarker(browserOrigin);
+    applyGpsOrigin(await preciseGpsOriginWithLocationText(pos.lngLat[1], pos.lngLat[0], pos.accuracy));
+    setUserLocationMarker(pos.lngLat);
 
-    map.current.easeTo({ center: browserOrigin, zoom: Math.max(map.current.getZoom(), 12.8), duration: 700 });
+    map.current.easeTo({ center: pos.lngLat, zoom: Math.max(map.current.getZoom(), 12.8), duration: 700 });
   }, [applyGpsOrigin, setUserLocationMarker]);
 
   useEffect(() => {
@@ -617,14 +622,6 @@ export function MapClient({
   }, [locating, mapReady]);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      const storedOrigin = readSessionGpsOrigin();
-      if (storedOrigin) setGpsOrigin(storedOrigin);
-    }, 0);
-    return () => window.clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
     if (!mapReady || !gpsOrigin || gpsOrigin.source !== "gps") return;
     setUserLocationMarker([gpsOrigin.lng, gpsOrigin.lat]);
   }, [gpsOrigin, mapReady, setUserLocationMarker]);
@@ -635,18 +632,18 @@ export function MapClient({
     setRouteLoading(true);
     clearRoute();
 
-    const browserOrigin = await getBrowserPosition();
-    if (!browserOrigin) {
+    const pos = await getBrowserPosition();
+    if (!pos) {
       setRouteError("Precise location is required to show directions.");
       setRouteLoading(false);
       return;
     }
 
-    applyGpsOrigin(await preciseGpsOriginWithLocationText(browserOrigin[1], browserOrigin[0]));
-    setUserLocationMarker(browserOrigin);
+    applyGpsOrigin(await preciseGpsOriginWithLocationText(pos.lngLat[1], pos.lngLat[0], pos.accuracy));
+    setUserLocationMarker(pos.lngLat);
 
     const url = "https://router.project-osrm.org/route/v1/driving/" +
-      browserOrigin[0] + "," + browserOrigin[1] + ";" + selected.lng + "," + selected.lat +
+      pos.lngLat[0] + "," + pos.lngLat[1] + ";" + selected.lng + "," + selected.lat +
       "?overview=full&geometries=geojson&steps=false";
 
     try {

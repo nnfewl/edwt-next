@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { type LocationOrigin } from "./location-types";
 
 const GPS_ORIGIN_SESSION_KEY = "edwt:gps-origin";
@@ -88,6 +89,7 @@ export function preciseGpsOrigin(lat: number, lng: number, accuracyMeters?: numb
     label,
     source: "gps",
     accuracyLabel: formatAccuracy(accuracyMeters),
+    accuracyMeters: Number.isFinite(accuracyMeters) ? accuracyMeters : null,
   };
 }
 
@@ -138,10 +140,24 @@ export function writeSessionGpsOrigin(origin: LocationOrigin) {
         lng: origin.lng,
         label: origin.label,
         source: origin.source,
-        accuracyMeters: Number(origin.accuracyLabel.match(/\d+/)?.[0] ?? NaN),
+        accuracyMeters: origin.accuracyMeters ?? null,
       }),
     );
   } catch {
     // Session storage can fail in hardened/private browser contexts.
   }
+}
+
+export function useSessionGpsOrigin(): [LocationOrigin | null, (origin: LocationOrigin | null) => void] {
+  const [gpsOrigin, setGpsOrigin] = useState<LocationOrigin | null>(null);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      const stored = readSessionGpsOrigin();
+      if (stored) setGpsOrigin(stored);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  return [gpsOrigin, setGpsOrigin];
 }
