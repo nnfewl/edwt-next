@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { getPublicFacilities } from "../facilities-db";
+import { client as sharedClient } from "../../db/client";
 import { AppTopBar } from "../app-topbar";
 import { AutoRefresh } from "../auto-refresh";
 import { AnalyticsCharts } from "./analytics-charts";
@@ -183,126 +183,416 @@ const ANALYTICS_CACHE_TTL_MS = 30_000;
 let analyticsCache: { at: number; result: AnalyticsResult } | null = null;
 let analyticsInflight: Promise<AnalyticsResult> | null = null;
 
-function median(values: number[]) {
-  if (!values.length) return null;
-  const sorted = [...values].sort((a, b) => a - b);
-  const middle = Math.floor(sorted.length / 2);
-  if (sorted.length % 2) return sorted[middle];
-  return (sorted[middle - 1] + sorted[middle]) / 2;
-}
-
-function percentile(values: number[], ratio: number) {
-  if (!values.length) return null;
-  const sorted = [...values].sort((a, b) => a - b);
-  const index = Math.min(sorted.length - 1, Math.max(0, Math.ceil(sorted.length * ratio) - 1));
-  return sorted[index];
-}
-
-function analyticsType(type: string) {
-  return type === "UPCC" ? "upcc" : "ed";
-}
-
 async function queryAnalytics(): Promise<AnalyticsResult> {
+  const sql = sharedClient;
   const startedAt = Date.now();
-  console.log("[analytics] facility snapshot query start");
+  console.log("[analytics] query start");
 
   try {
-    const facilities = await getPublicFacilities();
-    console.log("[analytics] facility snapshot query done", { ms: Date.now() - startedAt, facilities: facilities.length });
+    const rawPollsExists = await sql<{ exists: boolean }[]>`
+      select to_regclass('public.raw_polls') is not null as exists
+    `;
+    console.log("[analytics] raw polls exists", Date.now() - startedAt);
+    const hasRawPolls = rawPollsExists[0]?.exists ?? false;
+    const tablesQuery = hasRawPolls
+      ? sql<TableCount[]>`
+        select 'locations' as table_name, count(*)::int as rows from locations
+        union all
+        select 'raw_polls' as table_name, count(*)::int as rows from raw_polls
+        union all
+        select 'wait_time_readings' as table_name, count(*)::int as rows from wait_time_readings
+        order by table_name
+      `
+      : sql<TableCount[]>`
+        select 'locations' as table_name, count(*)::int as rows from locations
+        union all
+        select 'raw_polls' as table_name, 0::int as rows
+        union all
+        select 'wait_time_readings' as table_name, count(*)::int as rows from wait_time_readings
+        order by table_name
+      `;
+    const pollCadenceQuery = hasRawPolls
+      ? sql<PollCadence[]>`
+        with intervals as (
+          select fetched_at, fetched_at - lag(fetched_at) over (order by fetched_at) as gap
+          from raw_polls
+        )
+        select
+          count(*)::int as polls,
+          min(fetched_at) as first_poll,
+          max(fetched_at) as last_poll,
+          round(avg(extract(epoch from gap))::numeric, 1)::float as avg_seconds_between_polls,
+          percentile_cont(0.5) within group (order by extract(epoch from gap))::float as median_seconds_between_polls,
+          max(extract(epoch from gap))::int as max_seconds_between_polls
+        from intervals
+        where gap is not null
+      `
+      : Promise.resolve([{ polls: 0, first_poll: null, last_poll: null, avg_seconds_between_polls: null, median_seconds_between_polls: null, max_seconds_between_polls: null }]);
 
-    const waitFacilities = facilities.filter((facility) => facility.waitMin !== null);
-    const groupedTypes = ["ed", "upcc"].map((type) => {
-      const typeFacilities = facilities.filter((facility) => analyticsType(facility.type) === type);
-      const waits = typeFacilities
-        .map((facility) => facility.waitMin)
-        .filter((value): value is number => value !== null);
-      return {
-        type,
-        locations: typeFacilities.length,
-        readings: waits.length,
-        avg_wait: waits.length ? waits.reduce((sum, value) => sum + value, 0) / waits.length : null,
-        median_wait: median(waits),
-        p90_wait: percentile(waits, 0.9),
-        max_wait: waits.length ? Math.max(...waits) : null,
-      } satisfies TypeSummary;
-    });
+    console.log("[analytics] aggregate queries start", Date.now() - startedAt);
+    const [
+      tables,
+      observedRange,
+      quality,
+      pollCadence,
+      freshness,
+      byType,
+      current,
+      highestAverage,
+      mostVolatile,
+      hourly,
+      trend,
+      distribution,
+      heatmap,
+      facilityRisk,
+      rankFlow,
+      typeTrend,
+      coverage,
+      alerts,
+      noReadings,
+    ] = await Promise.all([
+      tablesQuery,
+      sql<ObservedRange[]>`
+        select
+          min(observed_at) as first_observed,
+          max(observed_at) as last_observed,
+          min(reading_created_at) as first_source_reading,
+          max(reading_created_at) as last_source_reading
+        from wait_time_readings
+      `,
+      sql<ReadingQuality[]>`
+        select
+          count(*)::int as readings,
+          count(*) filter (where wait_time_minutes is not null)::int as with_wait_minutes,
+          count(*) filter (where elos_minutes is not null)::int as with_elos_minutes,
+          count(*) filter (where reading_created_at is not null)::int as with_source_timestamp,
+          count(distinct location_id)::int as locations_with_readings
+        from wait_time_readings
+      `,
+      pollCadenceQuery,
+      sql<Freshness[]>`
+        select
+          count(*)::int as readings,
+          round(avg(extract(epoch from (observed_at - reading_created_at)) / 60)::numeric, 1)::float as avg_minutes_source_lag,
+          percentile_cont(0.5) within group (order by extract(epoch from (observed_at - reading_created_at)) / 60)::float as median_minutes_source_lag,
+          percentile_cont(0.95) within group (order by extract(epoch from (observed_at - reading_created_at)) / 60)::float as p95_minutes_source_lag,
+          max(round((extract(epoch from (observed_at - reading_created_at)) / 60)::numeric, 1))::float as max_minutes_source_lag
+        from wait_time_readings
+        where reading_created_at is not null
+          and observed_at >= now() - interval '30 days'
+      `,
+      sql<TypeSummary[]>`
+        select
+          l.type,
+          count(distinct l.id)::int as locations,
+          count(w.id)::int as readings,
+          round(avg(w.wait_time_minutes)::numeric, 1)::float as avg_wait,
+          percentile_cont(0.5) within group (order by w.wait_time_minutes)::float as median_wait,
+          percentile_cont(0.9) within group (order by w.wait_time_minutes)::float as p90_wait,
+          max(w.wait_time_minutes)::int as max_wait
+        from locations l
+        left join wait_time_readings w on w.location_id = l.id
+          and w.observed_at >= now() - interval '30 days'
+        group by l.type
+        order by l.type
+      `,
+      sql<SnapshotRow[]>`
+        with latest as (
+          select distinct on (location_id)
+            location_id,
+            observed_at,
+            reading_created_at,
+            wait_time_minutes,
+            elos_minutes,
+            status
+          from wait_time_readings
+          order by location_id, observed_at desc
+        )
+        select
+          l.name,
+          l.type,
+          latest.observed_at,
+          latest.reading_created_at,
+          latest.wait_time_minutes,
+          latest.elos_minutes,
+          latest.status
+        from latest
+        join locations l on l.id = latest.location_id
+        order by latest.wait_time_minutes desc nulls last, l.name
+        limit 20
+      `,
+      sql<FacilitySummary[]>`
+        select
+          l.name,
+          l.type,
+          count(w.id)::int as readings,
+          min(w.observed_at) as first_observed,
+          max(w.observed_at) as last_observed,
+          round(avg(w.wait_time_minutes)::numeric, 1)::float as avg_wait,
+          percentile_cont(0.5) within group (order by w.wait_time_minutes)::float as median_wait,
+          percentile_cont(0.9) within group (order by w.wait_time_minutes)::float as p90_wait,
+          max(w.wait_time_minutes)::int as max_wait
+        from locations l
+        join wait_time_readings w on w.location_id = l.id
+        where w.wait_time_minutes is not null
+          and w.observed_at >= now() - interval '30 days'
+        group by l.id, l.name, l.type
+        having count(w.id) >= 50
+        order by avg(w.wait_time_minutes) desc
+        limit 12
+      `,
+      sql<FacilitySummary[]>`
+        select
+          l.name,
+          l.type,
+          count(w.id)::int as readings,
+          round(avg(w.wait_time_minutes)::numeric, 1)::float as avg_wait,
+          percentile_cont(0.5) within group (order by w.wait_time_minutes)::float as median_wait,
+          max(w.wait_time_minutes)::int as max_wait,
+          round(stddev_samp(w.wait_time_minutes)::numeric, 1)::float as stddev_wait
+        from locations l
+        join wait_time_readings w on w.location_id = l.id
+        where w.wait_time_minutes is not null
+          and w.observed_at >= now() - interval '30 days'
+        group by l.id, l.name, l.type
+        having count(w.id) >= 50
+        order by stddev_samp(w.wait_time_minutes) desc nulls last
+        limit 10
+      `,
+      sql<HourlyRow[]>`
+        select
+          extract(hour from observed_at at time zone 'America/Vancouver')::int as vancouver_hour,
+          count(*)::int as readings,
+          round(avg(wait_time_minutes)::numeric, 1)::float as avg_wait,
+          percentile_cont(0.5) within group (order by wait_time_minutes)::float as median_wait,
+          percentile_cont(0.9) within group (order by wait_time_minutes)::float as p90_wait
+        from wait_time_readings
+        where wait_time_minutes is not null
+          and observed_at >= now() - interval '30 days'
+        group by 1
+        order by 1
+      `,
+      sql<TrendRow[]>`
+        select
+          date_bin('30 minutes', observed_at, timestamp with time zone '2000-01-01') as bucket,
+          count(*)::int as readings,
+          round(avg(wait_time_minutes)::numeric, 1)::float as avg_wait,
+          percentile_cont(0.5) within group (order by wait_time_minutes)::float as median_wait,
+          percentile_cont(0.9) within group (order by wait_time_minutes)::float as p90_wait
+        from wait_time_readings
+        where wait_time_minutes is not null
+          and observed_at >= now() - interval '30 days'
+        group by 1
+        order by 1
+      `,
+      sql<DistributionRow[]>`
+        select
+          case
+            when wait_time_minutes < 60 then '<1h'
+            when wait_time_minutes < 120 then '1-2h'
+            when wait_time_minutes < 180 then '2-3h'
+            when wait_time_minutes < 240 then '3-4h'
+            when wait_time_minutes < 300 then '4-5h'
+            when wait_time_minutes < 360 then '5-6h'
+            else '6h+'
+          end as bucket,
+          case
+            when wait_time_minutes < 60 then 1
+            when wait_time_minutes < 120 then 2
+            when wait_time_minutes < 180 then 3
+            when wait_time_minutes < 240 then 4
+            when wait_time_minutes < 300 then 5
+            when wait_time_minutes < 360 then 6
+            else 7
+          end as bucket_order,
+          count(*)::int as readings
+        from wait_time_readings
+        where wait_time_minutes is not null
+          and observed_at >= now() - interval '30 days'
+        group by 1, 2
+        order by 2
+      `,
+      sql<HeatmapRow[]>`
+        with top_locations as (
+          select location_id
+          from wait_time_readings
+          where wait_time_minutes is not null
+            and observed_at >= now() - interval '30 days'
+          group by location_id
+          having count(*) >= 50
+          order by avg(wait_time_minutes) desc
+          limit 12
+        )
+        select
+          l.name,
+          l.type,
+          extract(hour from w.observed_at at time zone 'America/Vancouver')::int as vancouver_hour,
+          round(avg(w.wait_time_minutes)::numeric, 1)::float as avg_wait,
+          count(*)::int as readings
+        from top_locations t
+        join wait_time_readings w on w.location_id = t.location_id
+        join locations l on l.id = t.location_id
+        where w.wait_time_minutes is not null
+          and w.observed_at >= now() - interval '30 days'
+        group by l.name, l.type, 3
+        order by l.name, 3
+      `,
+      sql<FacilityRiskRow[]>`
+        with latest as (
+          select distinct on (location_id)
+            location_id,
+            wait_time_minutes as current_wait
+          from wait_time_readings
+          where wait_time_minutes is not null
+          order by location_id, observed_at desc
+        )
+        select
+          l.name,
+          l.type,
+          count(w.id)::int as readings,
+          max(latest.current_wait)::int as current_wait,
+          round(avg(w.wait_time_minutes)::numeric, 1)::float as avg_wait,
+          percentile_cont(0.5) within group (order by w.wait_time_minutes)::float as median_wait,
+          percentile_cont(0.9) within group (order by w.wait_time_minutes)::float as p90_wait,
+          round(stddev_samp(w.wait_time_minutes)::numeric, 1)::float as stddev_wait
+        from locations l
+        join wait_time_readings w on w.location_id = l.id
+        left join latest on latest.location_id = l.id
+        where w.wait_time_minutes is not null
+          and w.observed_at >= now() - interval '30 days'
+        group by l.id, l.name, l.type
+        having count(w.id) >= 10
+        order by avg(w.wait_time_minutes) desc
+      `,
+      sql<RankFlowRow[]>`
+        with bucketed as (
+          select
+            date_bin('2 hours', observed_at, timestamp with time zone '2000-01-01') as bucket,
+            location_id,
+            avg(wait_time_minutes)::float as avg_wait,
+            count(*)::int as readings
+          from wait_time_readings
+          where wait_time_minutes is not null
+            and observed_at >= now() - interval '30 days'
+          group by 1, 2
+          having count(*) >= 2
+        ), ranked as (
+          select
+            bucket,
+            location_id,
+            avg_wait,
+            row_number() over (partition by bucket order by avg_wait desc nulls last) as rank
+          from bucketed
+        )
+        select
+          ranked.bucket,
+          l.name,
+          ranked.rank::int as rank,
+          round(ranked.avg_wait::numeric, 1)::float as avg_wait
+        from ranked
+        join locations l on l.id = ranked.location_id
+        where ranked.rank <= 8
+        order by ranked.bucket, ranked.rank
+      `,
+      sql<TypeTrendRow[]>`
+        select
+          date_bin('2 hours', w.observed_at, timestamp with time zone '2000-01-01') as bucket,
+          l.type,
+          percentile_cont(0.5) within group (order by w.wait_time_minutes)::float as median_wait,
+          percentile_cont(0.9) within group (order by w.wait_time_minutes)::float as p90_wait,
+          count(*)::int as readings
+        from wait_time_readings w
+        join locations l on l.id = w.location_id
+        where w.wait_time_minutes is not null
+          and w.observed_at >= now() - interval '30 days'
+        group by 1, 2
+        order by 1, 2
+      `,
+      sql<CoverageRow[]>`
+        with bounds as (
+          select max(observed_at) as max_observed from wait_time_readings
+        )
+        select
+          l.name,
+          l.type,
+          count(w.id)::int as readings,
+          round((extract(epoch from (max(w.observed_at) - min(w.observed_at))) / 3600)::numeric, 1)::float as hours_covered,
+          round((extract(epoch from ((select max_observed from bounds) - max(w.observed_at))) / 60)::numeric, 1)::float as freshness_minutes
+        from locations l
+        left join wait_time_readings w on w.location_id = l.id and w.wait_time_minutes is not null
+        group by l.id, l.name, l.type
+        order by readings desc, l.name
+      `,
+      sql<AlertRow[]>`
+        with latest as (
+          select distinct on (location_id)
+            location_id,
+            wait_time_minutes as current_wait
+          from wait_time_readings
+          where wait_time_minutes is not null
+          order by location_id, observed_at desc
+        ), baseline as (
+          select
+            location_id,
+            count(*)::int as readings,
+            avg(wait_time_minutes)::float as avg_wait,
+            stddev_samp(wait_time_minutes)::float as stddev_wait
+          from wait_time_readings
+          where wait_time_minutes is not null
+            and observed_at >= now() - interval '30 days'
+          group by location_id
+          having count(*) >= 50 and stddev_samp(wait_time_minutes) > 0
+        )
+        select
+          l.name,
+          l.type,
+          latest.current_wait::int as current_wait,
+          round(baseline.avg_wait::numeric, 1)::float as avg_wait,
+          round(baseline.stddev_wait::numeric, 1)::float as stddev_wait,
+          round(((latest.current_wait - baseline.avg_wait) / baseline.stddev_wait)::numeric, 2)::float as z_score,
+          round((latest.current_wait - baseline.avg_wait)::numeric, 1)::float as delta_from_avg,
+          baseline.readings
+        from latest
+        join baseline on baseline.location_id = latest.location_id
+        join locations l on l.id = latest.location_id
+        where latest.current_wait > baseline.avg_wait
+        order by ((latest.current_wait - baseline.avg_wait) / baseline.stddev_wait) desc
+        limit 10
+      `,
+      sql<NoReadingLocation[]>`
+        select l.name, l.type, l.show_wait_times, l.show_status, l.wait_time_fallback
+        from locations l
+        left join wait_time_readings w on w.location_id = l.id
+        where w.id is null
+        order by l.type, l.name
+      `,
+    ]);
 
-    const current = facilities
-      .map((facility) => ({
-        name: facility.name,
-        type: analyticsType(facility.type),
-        observed_at: null,
-        reading_created_at: null,
-        wait_time_minutes: facility.waitMin,
-        elos_minutes: null,
-        status: facility.open ? "open" : "closed",
-      }))
-      .sort((a, b) => (b.wait_time_minutes ?? -1) - (a.wait_time_minutes ?? -1));
-
-    const facilitySummaries = waitFacilities
-      .map((facility) => ({
-        name: facility.name,
-        type: analyticsType(facility.type),
-        readings: 1,
-        first_observed: null,
-        last_observed: null,
-        avg_wait: facility.waitMin,
-        median_wait: facility.waitMin,
-        p90_wait: facility.waitMin,
-        max_wait: facility.waitMin,
-        stddev_wait: null,
-      }))
-      .sort((a, b) => (b.avg_wait ?? 0) - (a.avg_wait ?? 0));
-
+    console.log("[analytics] aggregate queries done", Date.now() - startedAt);
     return {
       data: {
-        tables: [
-          { table_name: "locations", rows: facilities.length },
-          { table_name: "raw_polls", rows: 0 },
-          { table_name: "wait_time_readings", rows: waitFacilities.length },
-        ],
-        observedRange: { first_observed: null, last_observed: null, first_source_reading: null, last_source_reading: null },
-        quality: {
-          readings: facilities.length,
-          with_wait_minutes: waitFacilities.length,
-          with_elos_minutes: 0,
-          with_source_timestamp: 0,
-          locations_with_readings: waitFacilities.length,
-        },
-        pollCadence: { polls: 0, first_poll: null, last_poll: null, avg_seconds_between_polls: null, median_seconds_between_polls: null, max_seconds_between_polls: null },
-        freshness: { readings: 0, avg_minutes_source_lag: null, median_minutes_source_lag: null, p95_minutes_source_lag: null, max_minutes_source_lag: null },
-        byType: groupedTypes,
+        tables,
+        observedRange: observedRange[0] ?? null,
+        quality: quality[0] ?? null,
+        pollCadence: pollCadence[0] ?? null,
+        freshness: freshness[0] ?? null,
+        byType,
         current,
-        highestAverage: facilitySummaries.slice(0, 12),
-        mostVolatile: [],
-        hourly: [],
-        trend: [],
-        distribution: [],
-        heatmap: [],
-        facilityRisk: [],
-        rankFlow: [],
-        typeTrend: [],
-        coverage: facilities.map((facility) => ({
-          name: facility.name,
-          type: analyticsType(facility.type),
-          readings: facility.waitMin === null ? 0 : 1,
-          hours_covered: null,
-          freshness_minutes: null,
-        })),
-        alerts: [],
-        noReadings: facilities
-          .filter((facility) => facility.waitMin === null)
-          .map((facility) => ({
-            name: facility.name,
-            type: analyticsType(facility.type),
-            show_wait_times: null,
-            show_status: null,
-            wait_time_fallback: facility.waitText,
-          })),
+        highestAverage,
+        mostVolatile,
+        hourly,
+        trend,
+        distribution,
+        heatmap,
+        facilityRisk,
+        rankFlow,
+        typeTrend,
+        coverage,
+        alerts,
+        noReadings,
       },
     };
   } catch (error) {
-    console.error("[analytics] facility snapshot query failed", error);
     return { error: error instanceof Error ? error.message : "Unknown database error" };
   }
 }
