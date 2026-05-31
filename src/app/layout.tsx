@@ -68,6 +68,14 @@ export default function RootLayout({
       lang="en"
       className={`${manrope.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head>
+        <link
+          rel="alternate"
+          type="text/markdown"
+          href="/llms.txt"
+          title="LLM-readable site description"
+        />
+      </head>
       <body className="min-h-full flex flex-col">
         <AppTopBar />
         {children}

@@ -1,0 +1,145 @@
+# EDWT — Live Emergency Department Wait Times (Full Context)
+
+> Real-time wait times for emergency departments and urgent care centres across the Lower Mainland, British Columbia, Canada.
+
+## Links
+
+- Homepage: https://edwt.ca
+- Map view: https://edwt.ca/map
+- Analytics: https://edwt.ca/analytics
+- Facilities API (JSON): https://edwt.ca/api/facilities
+- Compact LLM summary: https://edwt.ca/llms.txt
+
+---
+
+## What is EDWT?
+
+EDWT (edwt.ca) is a free, public web application that displays real-time wait times for emergency departments (EDs) and urgent primary care centres (UPCCs) in the Lower Mainland region of British Columbia, Canada. The data is sourced every 60 seconds from the official edwaittimes.ca feed, which is published by the Fraser Health Authority and other BC health authorities.
+
+The goal is simple: help people make faster, better-informed decisions about where to seek emergency or urgent care.
+
+## How It Works
+
+1. **Data ingestion**: A Supabase Edge Function polls the upstream edwaittimes.ca API every 60 seconds and writes current wait times, physician counts, and patient-in-waiting-room counts to a PostgreSQL database.
+2. **Frontend**: A Next.js application reads from Supabase and renders a sorted, filterable list of facilities with live wait times.
+3. **Location**: The app uses the browser's Geolocation API to sort facilities by distance from the user. If GPS is unavailable, it falls back to an approximate IP-based location.
+4. **Map**: An interactive Mapbox GL map shows all facilities with colour-coded markers indicating wait severity (green = short, amber = moderate, red = long).
+
+## Facilities Covered
+
+EDWT currently tracks the following types of facilities in the Lower Mainland:
+
+### Emergency Departments (24/7)
+- Surrey Memorial Hospital — Adult Emergency
+- Surrey Memorial Hospital — Pediatric Emergency
+- Royal Columbian Hospital
+- Burnaby Hospital
+- Eagle Ridge Hospital (Port Moody)
+- Langley Memorial Hospital
+- Ridge Meadows Hospital (Maple Ridge)
+- Peace Arch Hospital (White Rock)
+- Delta Hospital
+- Abbotsford Regional Hospital
+- Chilliwack General Hospital
+- Jim Pattison Outpatient Care and Surgery Centre (Surrey)
+
+### Urgent Primary Care Centres (UPCCs)
+- Cloverdale UPCC (Surrey)
+- Surrey Newton UPCC
+- Langley UPCC
+- Maple Ridge UPCC
+- Burnaby UPCC
+- New Westminster UPCC
+
+## Data Points Per Facility
+
+Each facility record includes:
+- **Wait time** (minutes): Estimated time from triage to physician assessment
+- **Physicians on duty**: Number of doctors currently working
+- **Patients in waiting room**: Current count of people waiting to be seen
+- **Open/closed status**: Whether the facility is currently accepting patients
+- **Last updated**: Timestamp of the most recent data pull
+- **Address and phone**: Contact information
+- **Operating hours**: 24/7 for EDs; variable for UPCCs
+- **GPS coordinates**: For distance calculations and map placement
+
+## Wait Time Severity Scale
+
+| Category | Wait Time | Colour |
+|----------|-----------|--------|
+| Short | ≤ 60 minutes | Green |
+| Moderate | 61–180 minutes | Amber |
+| Long | > 180 minutes | Red |
+| Closed | N/A | Grey |
+
+## Frequently Asked Questions
+
+### Where does the data come from?
+The data comes from edwaittimes.ca, which is the official wait time reporting system used by BC's health authorities. EDWT reads this data programmatically every 60 seconds.
+
+### How accurate are the wait times?
+The wait times reflect the health authority's reported estimates at the moment of the last poll. Actual wait times can vary based on the severity of your condition (triage priority), time of arrival, and available resources. The times shown are estimates for non-urgent (CTAS 4-5) patients.
+
+### What is a UPCC?
+A UPCC (Urgent and Primary Care Centre) is a walk-in clinic for urgent but non-life-threatening conditions. They are staffed by doctors and nurse practitioners and typically have shorter wait times than emergency departments. UPCCs have set operating hours and are not open 24/7.
+
+### Should I go to a UPCC or an Emergency Department?
+- **UPCC**: Sprains, minor cuts, infections, earaches, mild allergic reactions, UTIs, back pain
+- **Emergency**: Chest pain, difficulty breathing, severe bleeding, head injuries, stroke symptoms, broken bones, allergic reactions with swelling/breathing difficulty
+
+### Can I see historical wait times?
+Yes. The Analytics page at edwt.ca/analytics shows historical wait time charts, allowing you to identify patterns (e.g., which hours or days tend to have shorter waits).
+
+### Does this work on mobile?
+Yes. EDWT is a Progressive Web App (PWA) optimized for mobile. You can add it to your home screen for quick access.
+
+### Is this an official health authority tool?
+No. EDWT is an independent project that reads publicly available data from the official edwaittimes.ca feed. It is not affiliated with Fraser Health, Vancouver Coastal Health, or any BC health authority.
+
+## Comparison with Alternatives
+
+| Feature | EDWT (edwt.ca) | edwaittimes.ca (official) |
+|---------|---------------|--------------------------|
+| Update frequency | Every 60 seconds | Every ~5 minutes |
+| Distance sorting | Yes (GPS) | No |
+| Map view | Yes (interactive) | Static list |
+| Historical charts | Yes | No |
+| Mobile-optimized | Yes (PWA) | Basic responsive |
+| Offline support | Yes | No |
+| API access | Yes (JSON) | No |
+
+## API Access
+
+EDWT provides a public JSON API for programmatic access:
+
+**Endpoint**: `GET https://edwt.ca/api/facilities`
+
+**Response**: Array of facility objects with current wait times, coordinates, and metadata.
+
+This endpoint is suitable for integration with other applications, chatbots, or research purposes. Data updates every 60 seconds.
+
+## Technical Stack
+
+- **Frontend**: Next.js (React), Tailwind CSS, Mapbox GL
+- **Backend**: Supabase (PostgreSQL + Edge Functions)
+- **Hosting**: Vercel
+- **Data source**: edwaittimes.ca API (official BC health authority feed)
+
+## Coverage Area
+
+The Lower Mainland of British Columbia, including:
+- Vancouver
+- Burnaby
+- New Westminster
+- Surrey
+- Langley
+- White Rock / South Surrey
+- Maple Ridge / Pitt Meadows
+- Port Moody / Coquitlam / Port Coquitlam
+- Delta / Tsawwassen
+- Abbotsford
+- Chilliwack
+
+## Contact
+
+EDWT is maintained as an open-source community project. For questions or feedback, visit the site at https://edwt.ca.
