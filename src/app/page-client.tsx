@@ -824,68 +824,70 @@ export function ERNowPageClient({
               Recommended for you
             </span>
             <div className="pick-body">
-              <h2 className="pick-name">
-                {shortest.name}
-                <span className="pick-sub">{shortest.subtitle}</span>
-              </h2>
-              <p className="pick-reason">
-                Shortest reported wait among open facilities — about a{" "}
-                {fmtMins(shortest.waitMin ?? 0)} expected wait
-                {shortest.inWaitingRoom > 0 && (
-                  <> with <b>{shortest.inWaitingRoom} people</b> in the waiting room</>
-                )}
-                . ~{shortest.distanceKm} km from your location.
-              </p>
-              <div className="pick-meta">
-                <span>
-                  <Icon name="clock" size={13} /> {shortest.hours}
-                </span>
-                <span>
-                  <Icon name="users" size={13} /> {shortest.audience}
-                </span>
-                {shortest.physiciansOnDuty > 0 && (
+              <div className="pick-info">
+                <h2 className="pick-name">
+                  {shortest.name}
+                  <span className="pick-sub">{shortest.subtitle}</span>
+                </h2>
+                <p className="pick-reason">
+                  Shortest reported wait among open facilities — about a{" "}
+                  {fmtMins(shortest.waitMin ?? 0)} expected wait
+                  {shortest.inWaitingRoom > 0 && (
+                    <> with <b>{shortest.inWaitingRoom} people</b> in the waiting room</>
+                  )}
+                  . ~{shortest.distanceKm} km from your location.
+                </p>
+                <div className="pick-meta">
                   <span>
-                    <Icon name="stethoscope" size={13} /> {shortest.physiciansOnDuty}{" "}
-                    clinicians on duty
+                    <Icon name="clock" size={13} /> {shortest.hours}
                   </span>
+                  <span>
+                    <Icon name="users" size={13} /> {shortest.audience}
+                  </span>
+                  {shortest.physiciansOnDuty > 0 && (
+                    <span>
+                      <Icon name="stethoscope" size={13} /> {shortest.physiciansOnDuty}{" "}
+                      clinicians on duty
+                    </span>
+                  )}
+                </div>
+                <div className="actions" style={{ marginTop: 20 }}>
+                  <a
+                    className="action-btn primary"
+                    href={mapFacilityUrl(shortest, true)}
+                    aria-label={`Directions to ${shortest.name}`}
+                    title="Directions"
+                  >
+                    <Icon name="directions" size={14} /> <span className="action-label">Directions</span>
+                  </a>
+                  <button
+                    className="action-btn"
+                    type="button"
+                    onClick={() => setSelected(shortest)}
+                    aria-label={`Full details for ${shortest.name}`}
+                    title="Full details"
+                  >
+                    <Icon name="info" size={14} /> <span className="action-label">Full details</span>
+                  </button>
+                </div>
+              </div>
+              <div className={"wait " + (!shortest.open ? "is-closed" : "")} data-sev={severityFor(shortest.waitMin)} aria-label={shortest.open ? undefined : shortest.name + " is closed"}>
+                {shortest.open ? (
+                  <>
+                    <div className="wait-num">{shortest.waitText}</div>
+                    <div className="wait-label">
+                      <span className="sev-dot" />
+                      {facilityWaitStatusLabel(shortest)}
+                    </div>
+                    <div className="updated">Updated {shortest.lastUpdated}</div>
+                  </>
+                ) : (
+                  <div className="closed-state">
+                    <ClosedIllustration className="closed-illustration closed-hero" />
+                    <strong>Closed</strong>
+                  </div>
                 )}
               </div>
-              <div className="actions" style={{ marginTop: 20 }}>
-                <a
-                  className="action-btn primary"
-                  href={mapFacilityUrl(shortest, true)}
-                  aria-label={`Directions to ${shortest.name}`}
-                  title="Directions"
-                >
-                  <Icon name="directions" size={14} /> <span className="action-label">Directions</span>
-                </a>
-                <button
-                  className="action-btn"
-                  type="button"
-                  onClick={() => setSelected(shortest)}
-                  aria-label={`Full details for ${shortest.name}`}
-                  title="Full details"
-                >
-                  <Icon name="info" size={14} /> <span className="action-label">Full details</span>
-                </button>
-              </div>
-            </div>
-            <div className={"wait " + (!shortest.open ? "is-closed" : "")} data-sev={severityFor(shortest.waitMin)} aria-label={shortest.open ? undefined : shortest.name + " is closed"}>
-              {shortest.open ? (
-                <>
-                  <div className="wait-num">{shortest.waitText}</div>
-                  <div className="wait-label">
-                    <span className="sev-dot" />
-                    {facilityWaitStatusLabel(shortest)}
-                  </div>
-                  <div className="updated">Updated {shortest.lastUpdated}</div>
-                </>
-              ) : (
-                <div className="closed-state">
-                  <ClosedIllustration className="closed-illustration closed-hero" />
-                  <strong>Closed</strong>
-                </div>
-              )}
             </div>
           </div>
         )}
