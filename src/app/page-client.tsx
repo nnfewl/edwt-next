@@ -37,6 +37,7 @@ import {
 import { ClosedIllustration } from "./closed-illustration";
 import { AppTopBar } from "./app-topbar";
 import { withOriginDistances } from "./geo-distance";
+import { preciseGpsOriginWithLocationText, readSessionGpsOrigin, writeSessionGpsOrigin } from "./location-session";
 import { type LocationOrigin } from "./location-types";
 import "./styles.css";
 
@@ -579,7 +580,7 @@ export function ERNowPageClient({
 
   const activeSort = SORTS.find((s) => s.id === sort) ?? SORTS[0];
   const locationModeLabel = origin.source === "gps" ? "Precise location" : "Approximate location";
-  const locationText = origin.source === "gps" ? "Browser GPS location" : origin.label;
+  const locationText = origin.label;
   const locationStatus = geoStatus === "denied"
     ? "Location permission was denied"
     : geoStatus === "insecure"
@@ -606,14 +607,14 @@ export function ERNowPageClient({
 
     setGeoStatus("locating");
     navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setGpsOrigin({
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-          label: "Precise location",
-          source: "gps",
-          accuracyLabel: "browser GPS",
-        });
+      async (position) => {
+        const nextOrigin = await preciseGpsOriginWithLocationText(
+          position.coords.latitude,
+          position.coords.longitude,
+          position.coords.accuracy,
+        );
+        setGpsOrigin(nextOrigin);
+        writeSessionGpsOrigin(nextOrigin);
         setGeoStatus("idle");
       },
       (error) => {
@@ -622,6 +623,14 @@ export function ERNowPageClient({
       { enableHighAccuracy: true, maximumAge: 60_000, timeout: 8_000 },
     );
   };
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      const storedOrigin = readSessionGpsOrigin();
+      if (storedOrigin) setGpsOrigin(storedOrigin);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   const facilitiesWithDistance = useMemo(
     () => withOriginDistances(facilities, origin),

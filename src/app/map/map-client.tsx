@@ -9,6 +9,7 @@ import { type Facility, facilityWaitStatusLabel, severityFor } from "../data";
 import { ClosedIllustration } from "../closed-illustration";
 import { AppTopBar } from "../app-topbar";
 import { withOriginDistances } from "../geo-distance";
+import { preciseGpsOriginWithLocationText, readSessionGpsOrigin, writeSessionGpsOrigin } from "../location-session";
 import { type LocationOrigin } from "../location-types";
 import "./styles.css";
 
@@ -560,26 +561,13 @@ export function MapClient({
     setRouteError(null);
   }, []);
 
-  const showUserLocation = useCallback(async () => {
+  const applyGpsOrigin = useCallback((nextOrigin: LocationOrigin) => {
+    setGpsOrigin(nextOrigin);
+    writeSessionGpsOrigin(nextOrigin);
+  }, []);
+
+  const setUserLocationMarker = useCallback((browserOrigin: [number, number]) => {
     if (!map.current) return;
-
-    setLocating(true);
-    setRouteError(null);
-    const browserOrigin = await getBrowserPosition();
-    setLocating(false);
-
-    if (!browserOrigin) {
-      setRouteError("Precise location is required to show your location on the map.");
-      return;
-    }
-
-    setGpsOrigin({
-      lat: browserOrigin[1],
-      lng: browserOrigin[0],
-      label: "Precise location",
-      source: "gps",
-      accuracyLabel: "browser GPS",
-    });
 
     if (!userLocationMarker.current) {
       const markerNode = document.createElement("div");
@@ -594,9 +582,26 @@ export function MapClient({
     } else {
       userLocationMarker.current.setLngLat(browserOrigin);
     }
+  }, []);
+
+  const showUserLocation = useCallback(async () => {
+    if (!map.current) return;
+
+    setLocating(true);
+    setRouteError(null);
+    const browserOrigin = await getBrowserPosition();
+    setLocating(false);
+
+    if (!browserOrigin) {
+      setRouteError("Precise location is required to show your location on the map.");
+      return;
+    }
+
+    applyGpsOrigin(await preciseGpsOriginWithLocationText(browserOrigin[1], browserOrigin[0]));
+    setUserLocationMarker(browserOrigin);
 
     map.current.easeTo({ center: browserOrigin, zoom: Math.max(map.current.getZoom(), 12.8), duration: 700 });
-  }, []);
+  }, [applyGpsOrigin, setUserLocationMarker]);
 
   useEffect(() => {
     showUserLocationRef.current = showUserLocation;
@@ -611,6 +616,19 @@ export function MapClient({
     button.classList.toggle("is-locating", locating);
   }, [locating, mapReady]);
 
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      const storedOrigin = readSessionGpsOrigin();
+      if (storedOrigin) setGpsOrigin(storedOrigin);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!mapReady || !gpsOrigin || gpsOrigin.source !== "gps") return;
+    setUserLocationMarker([gpsOrigin.lng, gpsOrigin.lat]);
+  }, [gpsOrigin, mapReady, setUserLocationMarker]);
+
   const showDirections = useCallback(async () => {
     if (!map.current || !selected) return;
 
@@ -624,27 +642,8 @@ export function MapClient({
       return;
     }
 
-    setGpsOrigin({
-      lat: browserOrigin[1],
-      lng: browserOrigin[0],
-      label: "Precise location",
-      source: "gps",
-      accuracyLabel: "browser GPS",
-    });
-
-    if (!userLocationMarker.current) {
-      const markerNode = document.createElement("div");
-      markerNode.className = "user-location-marker";
-      markerNode.setAttribute("aria-label", "Your location");
-      const pinNode = document.createElement("span");
-      pinNode.className = "user-location-pin";
-      markerNode.append(pinNode);
-      userLocationMarker.current = new maplibregl.Marker({ element: markerNode, anchor: "bottom" })
-        .setLngLat(browserOrigin)
-        .addTo(map.current);
-    } else {
-      userLocationMarker.current.setLngLat(browserOrigin);
-    }
+    applyGpsOrigin(await preciseGpsOriginWithLocationText(browserOrigin[1], browserOrigin[0]));
+    setUserLocationMarker(browserOrigin);
 
     const url = "https://router.project-osrm.org/route/v1/driving/" +
       browserOrigin[0] + "," + browserOrigin[1] + ";" + selected.lng + "," + selected.lat +
@@ -699,7 +698,7 @@ export function MapClient({
     } finally {
       setRouteLoading(false);
     }
-  }, [clearRoute, selected]);
+  }, [applyGpsOrigin, clearRoute, selected, setUserLocationMarker]);
 
   useEffect(() => {
     const timer = window.setTimeout(clearRoute, 0);
