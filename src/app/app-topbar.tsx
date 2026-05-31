@@ -88,7 +88,7 @@ export function AppTopBar() {
           <span>EDWT</span>
         </Link>
 
-        <nav className="app-nav-tabs" aria-label="Primary" ref={navRef}>
+        <nav className={`app-nav-tabs${indicator.ready ? " is-ready" : ""}`} aria-label="Primary" ref={navRef}>
           <span
             className={`app-nav-indicator${indicator.ready ? " is-ready" : ""}${indicator.animate ? " is-animated" : ""}`}
             style={{ width: indicator.width, transform: `translateX(${indicator.left}px)` }}
@@ -99,6 +99,7 @@ export function AppTopBar() {
               href={item.href}
               key={item.id}
               className={active === item.id ? "active" : ""}
+              aria-current={active === item.id ? "page" : undefined}
               ref={(node) => {
                 linkRefs.current[item.id] = node;
               }}
