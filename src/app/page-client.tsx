@@ -2,7 +2,9 @@
 
 import {
   useEffect,
+  useLayoutEffect,
   useMemo,
+  useRef,
   useState,
   type CSSProperties,
   type ReactNode,
@@ -214,14 +216,19 @@ const HeroMap = () => (
     <div className="hero-map-grid">
       {HERO_TILE_ROWS.map((y) =>
         HERO_TILE_COLS.map((x) => (
-          <img
-            key={`${x}-${y}`}
-            src={`https://basemaps.cartocdn.com/light_all/${HERO_TILE_Z}/${x}/${y}.png`}
-            width={256}
-            height={256}
-            alt=""
-            draggable={false}
-          />
+          <picture key={`${x}-${y}`}>
+            <source
+              media="(max-width: 760px)"
+              srcSet={`https://basemaps.cartocdn.com/light_nolabels/${HERO_TILE_Z}/${x}/${y}.png`}
+            />
+            <img
+              src={`https://basemaps.cartocdn.com/light_all/${HERO_TILE_Z}/${x}/${y}.png`}
+              width={256}
+              height={256}
+              alt=""
+              draggable={false}
+            />
+          </picture>
         )),
       )}
     </div>
@@ -527,6 +534,13 @@ const SORTS = [
 
 type SortId = (typeof SORTS)[number]["id"];
 
+type SlidingIndicator = {
+  left: number;
+  width: number;
+  ready: boolean;
+  animate: boolean;
+};
+
 function filterMatch(f: Facility, id: FilterId): boolean {
   switch (id) {
     case "all":
@@ -582,6 +596,32 @@ export function ERNowPageClient({
   const [sort, setSort] = useState<SortId>("wait");
   const [sortSheetOpen, setSortSheetOpen] = useState(false);
   const [selected, setSelected] = useState<Facility | null>(null);
+  const filterRowRef = useRef<HTMLDivElement | null>(null);
+  const sortOptionsRef = useRef<HTMLDivElement | null>(null);
+  const filterRefs = useRef<Record<FilterId, HTMLButtonElement | null>>({
+    all: null,
+    emergency: null,
+    upcc: null,
+    pediatric: null,
+    open: null,
+  });
+  const sortRefs = useRef<Record<SortId, HTMLButtonElement | null>>({
+    wait: null,
+    distance: null,
+    name: null,
+  });
+  const [filterIndicator, setFilterIndicator] = useState<SlidingIndicator>({
+    left: 0,
+    width: 0,
+    ready: false,
+    animate: false,
+  });
+  const [sortIndicator, setSortIndicator] = useState<SlidingIndicator>({
+    left: 0,
+    width: 0,
+    ready: false,
+    animate: false,
+  });
   // Store ONLY a GPS override locally; fall back to the prop so server-side IP
   // geolocation updates flow in on refresh without resetting a user's GPS choice.
   const [gpsOrigin, setGpsOrigin] = useSessionGpsOrigin();
@@ -602,6 +642,74 @@ export function ERNowPageClient({
       clearInterval(id);
     };
   }, []);
+
+  useLayoutEffect(() => {
+    const measure = () => {
+      const button = filterRefs.current[filter];
+      if (!button) return null;
+      return { left: button.offsetLeft, width: button.offsetWidth };
+    };
+
+    const current = measure();
+    if (!current) return undefined;
+
+    let firstFrame = 0;
+    setFilterIndicator((state) => {
+      if (state.ready) return { ...current, ready: true, animate: true };
+      firstFrame = window.requestAnimationFrame(() => {
+        setFilterIndicator((state) => ({ ...state, animate: true }));
+      });
+      return { ...current, ready: true, animate: false };
+    });
+
+    const activeButton = filterRefs.current[filter];
+    const resizeObserver = new ResizeObserver(() => {
+      const next = measure();
+      if (next) setFilterIndicator({ ...next, ready: true, animate: false });
+    });
+
+    if (filterRowRef.current) resizeObserver.observe(filterRowRef.current);
+    if (activeButton) resizeObserver.observe(activeButton);
+
+    return () => {
+      window.cancelAnimationFrame(firstFrame);
+      resizeObserver.disconnect();
+    };
+  }, [filter]);
+
+  useLayoutEffect(() => {
+    const measure = () => {
+      const button = sortRefs.current[sort];
+      if (!button) return null;
+      return { left: button.offsetLeft, width: button.offsetWidth };
+    };
+
+    const current = measure();
+    if (!current) return undefined;
+
+    let firstFrame = 0;
+    setSortIndicator((state) => {
+      if (state.ready) return { ...current, ready: true, animate: true };
+      firstFrame = window.requestAnimationFrame(() => {
+        setSortIndicator((state) => ({ ...state, animate: true }));
+      });
+      return { ...current, ready: true, animate: false };
+    });
+
+    const activeButton = sortRefs.current[sort];
+    const resizeObserver = new ResizeObserver(() => {
+      const next = measure();
+      if (next) setSortIndicator({ ...next, ready: true, animate: false });
+    });
+
+    if (sortOptionsRef.current) resizeObserver.observe(sortOptionsRef.current);
+    if (activeButton) resizeObserver.observe(activeButton);
+
+    return () => {
+      window.cancelAnimationFrame(firstFrame);
+      resizeObserver.disconnect();
+    };
+  }, [sort]);
 
   const activeSort = SORTS.find((s) => s.id === sort) ?? SORTS[0];
   const locationModeLabel = origin.source === "gps" ? "Precise location" : "Approximate location";
@@ -927,7 +1035,17 @@ export function ERNowPageClient({
 
         {/* Filter toolbar */}
         <div className="toolbar">
-          <div className="chip-row" role="group" aria-label="Facility filters">
+          <div
+            className={`chip-row${filterIndicator.ready ? " is-ready" : ""}`}
+            role="group"
+            aria-label="Facility filters"
+            ref={filterRowRef}
+          >
+            <span
+              className={`chip-active-indicator${filterIndicator.ready ? " is-ready" : ""}${filterIndicator.animate ? " is-animated" : ""}`}
+              style={{ width: filterIndicator.width, transform: `translateX(${filterIndicator.left}px)` }}
+              aria-hidden="true"
+            />
             {FILTERS.map((f) => (
               <button
                 key={f.id}
@@ -935,6 +1053,9 @@ export function ERNowPageClient({
                 type="button"
                 aria-pressed={filter === f.id}
                 onClick={() => setFilter(f.id)}
+                ref={(node) => {
+                  filterRefs.current[f.id] = node;
+                }}
               >
                 {f.label}
                 <span className="count">{counts[f.id]}</span>
@@ -944,7 +1065,15 @@ export function ERNowPageClient({
           <div className="spacer-flex" />
           <div className="sort-control" role="group" aria-label="Sort facilities">
             <span className="sort-label">Sort</span>
-            <div className="sort-options">
+            <div
+              className={`sort-options${sortIndicator.ready ? " is-ready" : ""}`}
+              ref={sortOptionsRef}
+            >
+              <span
+                className={`sort-active-indicator${sortIndicator.ready ? " is-ready" : ""}${sortIndicator.animate ? " is-animated" : ""}`}
+                style={{ width: sortIndicator.width, transform: `translateX(${sortIndicator.left}px)` }}
+                aria-hidden="true"
+              />
               {SORTS.map((s) => (
                 <button
                   key={s.id}
@@ -954,6 +1083,9 @@ export function ERNowPageClient({
                   aria-label={s.label}
                   title={s.label}
                   onClick={() => setSort(s.id)}
+                  ref={(node) => {
+                    sortRefs.current[s.id] = node;
+                  }}
                 >
                   <Icon name={s.icon} size={13} />
                   <span>{s.shortLabel}</span>
