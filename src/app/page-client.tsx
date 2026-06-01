@@ -618,6 +618,15 @@ export function ERNowPageClient({
     : origin.source === "gps"
       ? "Precise location enabled"
       : "Use precise location";
+  const heroDate = now?.toLocaleDateString(undefined, {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  }) ?? "Monday, January 1";
+  const heroTime = now?.toLocaleTimeString([], {
+    hour: "numeric",
+    minute: "2-digit",
+  }) ?? "12:00 AM";
 
   const requestPreciseLocation = () => {
     if (!window.isSecureContext) {
@@ -763,24 +772,11 @@ export function ERNowPageClient({
                 <Icon name="gps" size={15} />
               </button>
             </div>
-            {now && (
-              <div style={{ display: "flex", gap: 8 }}>
-                <span>
-                  {now.toLocaleDateString(undefined, {
-                    weekday: "long",
-                    month: "long",
-                    day: "numeric",
-                  })}
-                </span>
-                <span>·</span>
-                <span>
-                  {now.toLocaleTimeString([], {
-                    hour: "numeric",
-                    minute: "2-digit",
-                  })}
-                </span>
-              </div>
-            )}
+            <div className={`hero-clock ${now ? "" : "is-pending"}`} aria-hidden={!now}>
+              <span>{heroDate}</span>
+              <span>·</span>
+              <span>{heroTime}</span>
+            </div>
           </div>
         </section>
 

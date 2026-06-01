@@ -311,6 +311,28 @@
   font-size: 13px;
   color: var(--muted);
 }
+.er-now-root .hero-clock {
+  display: flex;
+  gap: 8px;
+  min-height: 18px;
+  line-height: 18px;
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease,
+    visibility 0ms linear;
+}
+.er-now-root .hero-clock.is-pending {
+  opacity: 0;
+  transform: translateY(2px);
+  visibility: hidden;
+}
+@media (prefers-reduced-motion: reduce) {
+  .er-now-root .hero-clock {
+    transition: none;
+  }
+}
 
 /* Location card */
 .er-now-root .locator {
