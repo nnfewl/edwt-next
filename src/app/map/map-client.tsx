@@ -6,7 +6,6 @@ import { faCrosshairs, faLocationArrow, faPhone } from "@fortawesome/free-solid-
 import maplibregl, { type GeoJSONSource, type LngLatLike, type Map as MapLibreMap } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { type Facility, facilityWaitStatusLabel, severityFor } from "../data";
-import { ClosedIllustration } from "../closed-illustration";
 import { withOriginDistances } from "../geo-distance";
 import { preciseGpsOriginWithLocationText, readSessionGpsOrigin, useSessionGpsOrigin, writeSessionGpsOrigin } from "../location-session";
 import { type LocationOrigin } from "../location-types";
@@ -776,10 +775,10 @@ export function MapClient({
                     </div>
                   )
                 ) : (
-                  <div className="closed-state closed-map-state">
-                    <ClosedIllustration className="closed-illustration closed-map" />
+                  <>
                     <strong>Closed</strong>
-                  </div>
+                    <span className="selected-wait-status">Facility is closed</span>
+                  </>
                 )}
               </div>
               <dl>
