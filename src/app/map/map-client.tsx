@@ -8,7 +8,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { type Facility, facilityWaitStatusLabel, severityFor } from "../data";
 import { ClosedIllustration } from "../closed-illustration";
 import { withOriginDistances } from "../geo-distance";
-import { preciseGpsOriginWithLocationText, useSessionGpsOrigin, writeSessionGpsOrigin } from "../location-session";
+import { preciseGpsOriginWithLocationText, readSessionGpsOrigin, useSessionGpsOrigin, writeSessionGpsOrigin } from "../location-session";
 import { type LocationOrigin } from "../location-types";
 import "./styles.css";
 
@@ -591,20 +591,29 @@ export function MapClient({
   const showUserLocation = useCallback(async () => {
     if (!map.current) return;
 
-    setLocating(true);
-    setRouteError(null);
-    const pos = await getBrowserPosition();
-    setLocating(false);
+    const stored = readSessionGpsOrigin();
+    let lngLat: [number, number];
 
-    if (!pos) {
-      setRouteError("Precise location is required to show your location on the map.");
-      return;
+    if (stored) {
+      lngLat = [stored.lng, stored.lat];
+      setUserLocationMarker(lngLat);
+    } else {
+      setLocating(true);
+      setRouteError(null);
+      const pos = await getBrowserPosition();
+      setLocating(false);
+
+      if (!pos) {
+        setRouteError("Precise location is required to show your location on the map.");
+        return;
+      }
+
+      lngLat = pos.lngLat;
+      applyGpsOrigin(await preciseGpsOriginWithLocationText(pos.lngLat[1], pos.lngLat[0], pos.accuracy));
+      setUserLocationMarker(lngLat);
     }
 
-    applyGpsOrigin(await preciseGpsOriginWithLocationText(pos.lngLat[1], pos.lngLat[0], pos.accuracy));
-    setUserLocationMarker(pos.lngLat);
-
-    map.current.easeTo({ center: pos.lngLat, zoom: Math.max(map.current.getZoom(), 12.8), duration: 700 });
+    map.current.easeTo({ center: lngLat, zoom: Math.max(map.current.getZoom(), 12.8), duration: 700 });
   }, [applyGpsOrigin, setUserLocationMarker]);
 
   useEffect(() => {
@@ -631,18 +640,26 @@ export function MapClient({
     setRouteLoading(true);
     clearRoute();
 
-    const pos = await getBrowserPosition();
-    if (!pos) {
-      setRouteError("Precise location is required to show directions.");
-      setRouteLoading(false);
-      return;
+    const stored = readSessionGpsOrigin();
+    let lngLat: [number, number];
+
+    if (stored) {
+      lngLat = [stored.lng, stored.lat];
+      setUserLocationMarker(lngLat);
+    } else {
+      const pos = await getBrowserPosition();
+      if (!pos) {
+        setRouteError("Precise location is required to show directions.");
+        setRouteLoading(false);
+        return;
+      }
+      lngLat = pos.lngLat;
+      applyGpsOrigin(await preciseGpsOriginWithLocationText(pos.lngLat[1], pos.lngLat[0], pos.accuracy));
+      setUserLocationMarker(lngLat);
     }
 
-    applyGpsOrigin(await preciseGpsOriginWithLocationText(pos.lngLat[1], pos.lngLat[0], pos.accuracy));
-    setUserLocationMarker(pos.lngLat);
-
     const url = "https://router.project-osrm.org/route/v1/driving/" +
-      pos.lngLat[0] + "," + pos.lngLat[1] + ";" + selected.lng + "," + selected.lat +
+      lngLat[0] + "," + lngLat[1] + ";" + selected.lng + "," + selected.lat +
       "?overview=full&geometries=geojson&steps=false";
 
     try {
