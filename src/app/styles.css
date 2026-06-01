@@ -241,11 +241,48 @@
 
 /* ---------- Hero ---------- */
 .er-now-root .hero {
+  position: relative;
   display: grid;
   grid-template-columns: 1.1fr 0.9fr;
   gap: 40px;
   align-items: end;
   margin-bottom: 28px;
+  overflow: hidden;
+}
+.er-now-root .hero > *:not(.hero-map) {
+  position: relative;
+  z-index: 1;
+}
+.er-now-root .hero-map {
+  position: absolute;
+  inset: -40px -32px -40px 15%;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  opacity: 0.55;
+  -webkit-mask-image:
+    linear-gradient(to right, transparent 0%, rgba(0,0,0,0.4) 18%, #000 40%, #000 85%, transparent 100%),
+    linear-gradient(to bottom, transparent 0%, #000 15%, #000 75%, transparent 100%);
+  -webkit-mask-composite: destination-in;
+  mask-image:
+    linear-gradient(to right, transparent 0%, rgba(0,0,0,0.4) 18%, #000 40%, #000 85%, transparent 100%),
+    linear-gradient(to bottom, transparent 0%, #000 15%, #000 75%, transparent 100%);
+  mask-composite: intersect;
+}
+.er-now-root .hero-map-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 256px);
+  grid-template-rows: repeat(3, 256px);
+  width: max-content;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+.er-now-root .hero-map-grid img {
+  display: block;
+  width: 256px;
+  height: 256px;
 }
 .er-now-root .hero h1 {
   font-family: var(--font-display);
@@ -1234,6 +1271,9 @@
   }
   .er-now-root .hero {
     grid-template-columns: 1fr;
+  }
+  .er-now-root .hero-map {
+    display: none;
   }
   .er-now-root .stats {
     grid-template-columns: repeat(2, 1fr);
@@ -2485,13 +2525,16 @@
 .er-now-root .facility .meta-row .distance-note svg {
   color: var(--teal);
 }
-/* Keep address + distance on one line: address truncates, distance stays put. */
+/* Keep distance + address on one line: distance leads, address truncates. */
 .er-now-root .facility .meta-row .location-line {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   min-width: 0;
   max-width: 100%;
+}
+.er-now-root .facility .location-line .distance-note {
+  flex: 0 0 auto;
 }
 .er-now-root .facility .location-line .address-line {
   flex: 0 1 auto;
@@ -2500,8 +2543,11 @@
   white-space: nowrap;
   text-overflow: ellipsis;
 }
-.er-now-root .facility .location-line .distance-note {
-  flex: 0 0 auto;
+.er-now-root .facility .location-line .distance-note::after {
+  content: "·";
+  margin-left: 3px;
+  color: var(--muted);
+  font-weight: 400;
 }
 
 .er-now-root .wave-bg {
@@ -2884,6 +2930,9 @@
     color: var(--teal-ink);
     font-size: 12px;
     font-weight: 750;
+  }
+  .er-now-root .facility .location-line .distance-note::after {
+    content: none;
   }
   .er-now-root .facility .distance-note svg {
     color: var(--teal);

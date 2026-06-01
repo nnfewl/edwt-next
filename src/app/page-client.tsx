@@ -203,6 +203,32 @@ const WaveBackground = ({
   );
 };
 
+// Real map tiles from CARTO Positron (same source as /map page).
+// Zoom 12, centered on Surrey/Lower Mainland — just <img> tags, no JS map library.
+const HERO_TILE_Z = 11;
+const HERO_TILE_COLS = [322, 323, 324, 325, 326];
+const HERO_TILE_ROWS = [700, 701, 702];
+
+const HeroMap = () => (
+  <div className="hero-map" aria-hidden="true">
+    <div className="hero-map-grid">
+      {HERO_TILE_ROWS.map((y) =>
+        HERO_TILE_COLS.map((x) => (
+          <img
+            key={`${x}-${y}`}
+            src={`https://basemaps.cartocdn.com/light_all/${HERO_TILE_Z}/${x}/${y}.png`}
+            width={256}
+            height={256}
+            alt=""
+            draggable={false}
+          />
+        )),
+      )}
+    </div>
+  </div>
+);
+
+
 /* ───────── facility card ─────────────────────────────────────────────────── */
 
 const FacilityCard = ({
@@ -242,11 +268,11 @@ const FacilityCard = ({
         <div className="meta-row">
           <span className="subtitle-meta">{f.subtitle}</span>
           <span className="location-line">
-            <span className="m address-line">{f.address}</span>
             <span className="distance-note" aria-label={`${f.distanceKm} km away`}>
               <Icon name="pin" size={12} />
               {f.distanceKm} km
             </span>
+            <span className="m address-line">{f.address}</span>
           </span>
           {f.open && (
             <>
@@ -705,6 +731,7 @@ export function ERNowPageClient({
       <main className="page">
         {/* Hero */}
         <section className="hero">
+          <HeroMap />
           <div>
             <h1>
               Find the <em>shortest</em>{" "}

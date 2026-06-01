@@ -169,6 +169,13 @@ function formatMinutes(value: number): string {
   return hour12 + ":" + String(minute).padStart(2, "0") + " " + suffix;
 }
 
+// Upstream addresses include ", BC, V4B 2R4" — strip province and postal code
+// since every facility is in BC and the extra text clutters the card meta line.
+function trimAddress(raw: string | null): string | null {
+  if (!raw) return null;
+  return raw.replace(/,\s*BC\b[^]*/i, "").trim();
+}
+
 function toFacility(row: DbFacilityRow): Facility | null {
   if (row.latitude == null || row.longitude == null) return null;
   const hours = hoursInfo(row);
@@ -185,7 +192,7 @@ function toFacility(row: DbFacilityRow): Facility | null {
     waitText: formatWait(row.wait_time_minutes, row.show_wait_times, hours.open),
     // Distance is computed on the client once the origin is known.
     distanceKm: 0,
-    address: row.address ?? "Address not available",
+    address: trimAddress(row.address) ?? "Address not available",
     phone: row.phone ?? "",
     hours: hours.label,
     lastUpdated: formatAge(row.reading_created_at ?? row.observed_at),
