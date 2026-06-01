@@ -72,16 +72,16 @@ function pressureRank(facilities: Facility[], selectedId: string | null) {
 }
 
 const HEALTH_AUTHORITIES = {
-  bcchildrens: { name: "BC Children's Hospital", faviconPath: "/health-authorities/bcchildrens.png" },
-  bcwomens: { name: "BC Women's Hospital", faviconPath: "/health-authorities/bcwomens.ico" },
-  fraserhealth: { name: "Fraser Health", faviconPath: "/health-authorities/fraserhealth.ico" },
-  providencehealthcare: { name: "Providence Health Care", faviconPath: "/health-authorities/providencehealthcare.ico" },
-  vch: { name: "Vancouver Coastal Health", faviconPath: "/health-authorities/vch.png" },
+  bcchildrens: { name: "BC Children's Hospital", faviconPath: "/health-authorities/bcchildrens.png", badgeBackground: "#ffffff" },
+  bcwomens: { name: "BC Women's Hospital", faviconPath: "/health-authorities/bcwomens.ico", badgeBackground: "#ffffff" },
+  fraserhealth: { name: "Fraser Health", faviconPath: "/health-authorities/fraserhealth.ico", badgeBackground: "#ffffff" },
+  providencehealthcare: { name: "Providence Health Care", faviconPath: "/health-authorities/providencehealthcare.ico", badgeBackground: "#ffffff" },
+  vch: { name: "Vancouver Coastal Health", faviconPath: "/health-authorities/vch.png", badgeBackground: "#0078AE" },
 } as const;
 
 type HealthAuthorityKey = keyof typeof HEALTH_AUTHORITIES;
 type Severity = ReturnType<typeof severityFor>;
-type HealthAuthority = { key: HealthAuthorityKey; name: string; faviconPath: string };
+type HealthAuthority = { key: HealthAuthorityKey; name: string; faviconPath: string; badgeBackground: string };
 
 const SEVERITIES: Severity[] = ["short", "medium", "long", "closed"];
 const SEVERITY_COLORS: Record<Severity, string> = {
@@ -167,7 +167,7 @@ async function createMarkerImage(authorityInfo: HealthAuthority, severity: Sever
   ctx.shadowOffsetY = 3;
   ctx.beginPath();
   ctx.arc(center, center, radius, 0, Math.PI * 2);
-  ctx.fillStyle = "#ffffff";
+  ctx.fillStyle = authorityInfo.badgeBackground;
   ctx.fill();
 
   ctx.shadowColor = "transparent";
@@ -267,7 +267,7 @@ function facilityMarkerData(facilities: Facility[]): FacilityMarkerData {
           icon: markerImageId(authority.key, severity),
           placementRank: placementRankFor(facility, severity),
           iconOffset: offset,
-          textOffset: [offset[0] / 12, 1.55 + offset[1] / 18],
+          textOffset: [offset[0] / 12, 1.95 + offset[1] / 18],
         },
       };
     }),
@@ -580,7 +580,7 @@ export function MapClient({
       const pinNode = document.createElement("span");
       pinNode.className = "user-location-pin";
       markerNode.append(pinNode);
-      userLocationMarker.current = new maplibregl.Marker({ element: markerNode, anchor: "bottom" })
+      userLocationMarker.current = new maplibregl.Marker({ element: markerNode, anchor: "center" })
         .setLngLat(browserOrigin)
         .addTo(map.current);
     } else {
