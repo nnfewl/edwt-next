@@ -430,10 +430,14 @@ export function MapClient({
 
   const mapNode = useRef<HTMLDivElement | null>(null);
   const map = useRef<MapLibreMap | null>(null);
+  const selectedCard = useRef<HTMLElement | null>(null);
+  const facilityScroll = useRef<HTMLDivElement | null>(null);
+  const selectedFacilityRow = useRef<HTMLButtonElement | null>(null);
   const userLocationMarker = useRef<maplibregl.Marker | null>(null);
   const locationControlButton = useRef<HTMLButtonElement | null>(null);
   const showUserLocationRef = useRef<() => void>(() => {});
   const autoRouteDone = useRef(false);
+  const didAutoScrollSelection = useRef(false);
   const [selectedId, setSelectedId] = useState(initialFacilityId ?? shortest?.id ?? facilitiesWithDistance[0]?.id ?? null);
   const selected = facilitiesWithDistance.find((facility) => facility.id === selectedId) ?? facilitiesWithDistance[0];
   const selectedHasWaitData = selected?.waitMin != null;
@@ -557,6 +561,66 @@ export function MapClient({
     setSelectedMarkerFilter(map.current, selectedId);
   }, [selectedId, mapReady]);
 
+  const mobileOverlayHeight = useCallback(() => {
+    if (!window.matchMedia("(max-width: 760px)").matches || !mapNode.current) return 0;
+
+    const mapRect = mapNode.current.getBoundingClientRect();
+    const cardBottom = selectedCard.current?.getBoundingClientRect().bottom ?? mapRect.top;
+    const railBottom = facilityScroll.current?.getBoundingClientRect().bottom ?? mapRect.top;
+    const overlayBottom = Math.max(cardBottom, railBottom);
+    return Math.max(0, Math.min(mapRect.bottom, overlayBottom) - mapRect.top);
+  }, []);
+
+  const mobileMapOffset = useCallback((): [number, number] => {
+    if (!mapNode.current) return [0, 0];
+
+    const overlayHeight = mobileOverlayHeight();
+    const maxOffset = mapNode.current.getBoundingClientRect().height * 0.3;
+    return [0, Math.min(maxOffset, overlayHeight / 2)];
+  }, [mobileOverlayHeight]);
+
+  const mobileMapPadding = useCallback((padding: number) => {
+    const overlayHeight = mobileOverlayHeight();
+    if (overlayHeight <= 0) return padding;
+
+    return {
+      top: Math.ceil(overlayHeight + padding),
+      right: padding,
+      bottom: padding,
+      left: padding,
+    };
+  }, [mobileOverlayHeight]);
+
+  const centerMapOn = useCallback((lngLat: [number, number], zoom: number, duration: number) => {
+    map.current?.easeTo({
+      center: lngLat,
+      zoom,
+      duration,
+      offset: mobileMapOffset(),
+    });
+  }, [mobileMapOffset]);
+
+  useEffect(() => {
+    const rail = facilityScroll.current;
+    const row = selectedFacilityRow.current;
+    if (!rail || !row) return;
+
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const behavior: ScrollBehavior = didAutoScrollSelection.current && !prefersReducedMotion ? "smooth" : "auto";
+
+    if (rail.scrollWidth > rail.clientWidth + 1) {
+      const railRect = rail.getBoundingClientRect();
+      const rowRect = row.getBoundingClientRect();
+      const paddingLeft = Number.parseFloat(window.getComputedStyle(rail).paddingLeft);
+      const targetLeft = rail.scrollLeft + rowRect.left - railRect.left - (Number.isFinite(paddingLeft) ? paddingLeft : 0);
+      rail.scrollTo({ left: Math.max(0, targetLeft), behavior });
+    } else {
+      row.scrollIntoView({ behavior, block: "nearest" });
+    }
+
+    didAutoScrollSelection.current = true;
+  }, [selectedId]);
+
   const clearRoute = useCallback(() => {
     if (map.current?.getLayer(ROUTE_LAYER_ID)) map.current.removeLayer(ROUTE_LAYER_ID);
     if (map.current?.getSource(ROUTE_SOURCE_ID)) map.current.removeSource(ROUTE_SOURCE_ID);
@@ -567,7 +631,7 @@ export function MapClient({
   const applyGpsOrigin = useCallback((nextOrigin: LocationOrigin) => {
     setGpsOrigin(nextOrigin);
     writeSessionGpsOrigin(nextOrigin);
-  }, []);
+  }, [setGpsOrigin]);
 
   const setUserLocationMarker = useCallback((browserOrigin: [number, number]) => {
     if (!map.current) return;
@@ -612,8 +676,8 @@ export function MapClient({
       setUserLocationMarker(lngLat);
     }
 
-    map.current.easeTo({ center: lngLat, zoom: Math.max(map.current.getZoom(), 12.8), duration: 700 });
-  }, [applyGpsOrigin, setUserLocationMarker]);
+    centerMapOn(lngLat, Math.max(map.current.getZoom(), 12.8), 700);
+  }, [applyGpsOrigin, centerMapOn, setUserLocationMarker]);
 
   useEffect(() => {
     showUserLocationRef.current = showUserLocation;
@@ -699,7 +763,7 @@ export function MapClient({
 
       const bounds = new maplibregl.LngLatBounds();
       nextRoute.geometry.coordinates.forEach((coord) => bounds.extend(coord as [number, number]));
-      map.current.fitBounds(bounds, { padding: 88, maxZoom: 13.5, duration: 700 });
+      map.current.fitBounds(bounds, { padding: mobileMapPadding(88), maxZoom: 13.5, duration: 700 });
       setRoute({
         distanceKm: nextRoute.distance / 1000,
         durationMin: nextRoute.duration / 60,
@@ -710,7 +774,7 @@ export function MapClient({
     } finally {
       setRouteLoading(false);
     }
-  }, [applyGpsOrigin, clearRoute, selected, setUserLocationMarker]);
+  }, [applyGpsOrigin, clearRoute, mobileMapPadding, selected, setUserLocationMarker]);
 
   useEffect(() => {
     const timer = window.setTimeout(clearRoute, 0);
@@ -749,7 +813,7 @@ export function MapClient({
           </div>
 
           {selected && (
-            <article className="selected-card" data-severity={severityFor(selected.waitMin)}>
+            <article ref={selectedCard} className="selected-card" data-severity={severityFor(selected.waitMin)}>
               <div className="selected-head">
                 <span className="type-pill">{selected.type}</span>
                 {selected.open && <span className="status-pill open">Open</span>}
@@ -794,7 +858,7 @@ export function MapClient({
                   <FontAwesomeIcon icon={faLocationArrow} aria-hidden="true" />
                   <span>{routeLoading ? "Routing..." : "Directions"}</span>
                 </button>
-                <button type="button" onClick={() => map.current?.easeTo({ center: [selected.lng, selected.lat], zoom: 13.2, duration: 650 })}>
+                <button type="button" onClick={() => centerMapOn([selected.lng, selected.lat], 13.2, 650)}>
                   <FontAwesomeIcon icon={faCrosshairs} aria-hidden="true" />
                   <span>Center map</span>
                 </button>
@@ -814,11 +878,12 @@ export function MapClient({
             </article>
           )}
 
-          <div className="facility-scroll">
+          <div className="facility-scroll" ref={facilityScroll}>
             {facilitiesWithDistance.map((facility) => (
               <button
                 key={facility.id}
                 type="button"
+                ref={facility.id === selectedId ? selectedFacilityRow : undefined}
                 className={"facility-row " + (facility.id === selectedId ? "active" : "")}
                 data-severity={severityFor(facility.waitMin)}
                 onClick={() => setSelectedId(facility.id)}
