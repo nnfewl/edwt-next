@@ -2791,11 +2791,15 @@
     transform: translateY(16px);
   }
 
-  /* ---- Filter / sort toolbar: opaque, light, still sticky ---- */
+  /* ---- Filter / sort toolbar: scroll strip + compact sort below ---- */
   .er-now-root .toolbar {
     position: sticky;
-    top: calc(46px + env(safe-area-inset-top));
+    top: calc(43px + env(safe-area-inset-top));
     z-index: 35;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
     margin: 0 -16px 16px;
     padding: 10px max(16px, env(safe-area-inset-right)) 10px
       max(16px, env(safe-area-inset-left));
@@ -2803,40 +2807,30 @@
     border-top: 0;
     border-bottom: 1px solid var(--line);
     backdrop-filter: none;
+    box-shadow: 0 -8px 0 0 var(--bg);
   }
-  /* Filter pills: individual outlined pills that wrap — no scrolling strip,
-     no crammed container. Container goes transparent; each chip is its own pill. */
+  .er-now-root .toolbar .spacer-flex {
+    display: none;
+  }
   .er-now-root .toolbar .chip-row {
-    display: flex;
-    flex-wrap: wrap;
     width: 100%;
-    overflow: visible;
-    gap: 8px;
-    padding: 0;
-    background: transparent;
-    border: 0;
-    -webkit-mask-image: none;
-    mask-image: none;
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 6px;
+    padding: 3px;
+    scrollbar-width: none;
+    overscroll-behavior-inline: contain;
+  }
+  .er-now-root .toolbar .chip-row::-webkit-scrollbar {
+    display: none;
   }
   .er-now-root .toolbar .chip {
     flex: 0 0 auto;
     min-height: 34px;
     padding: 7px 13px;
     font-size: 12.5px;
-    background: var(--surface);
-    border: 1px solid var(--line);
-    border-radius: 999px;
-  }
-  .er-now-root .toolbar .chip.active {
-    background: var(--ink);
-    color: var(--bg);
-    border-color: var(--ink);
-  }
-  .er-now-root .toolbar .chip .count {
-    background: rgba(0, 0, 0, 0.06);
-  }
-  .er-now-root .toolbar .chip.active .count {
-    background: rgba(255, 255, 255, 0.2);
+    white-space: nowrap;
   }
 
   /* ════ Facility list → airy rows, hairline dividers, no card chrome ════ */
@@ -2949,6 +2943,7 @@
     min-width: 0;
   }
   .er-now-root .facility .distance-note {
+    order: 1;
     flex: 0 0 auto;
     color: var(--teal-ink);
     font-size: 12px;
