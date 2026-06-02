@@ -352,6 +352,51 @@ function addFacilityLayers(m: MapLibreMap, data: FacilityMarkerData, selectedId:
   });
 }
 
+// The vector Positron-GL style is more conservative than CARTO's RASTER Positron
+// (`light_all`): it withholds residential ("minor") roads until z13/z15 and
+// service roads until z15, whereas the raster draws minor from z12 and service
+// from z13. The carto.streets vector tiles already carry that data (minor from
+// z12, service from z13), so we lower the matching layers' minzoom to mirror the
+// raster's density — a close match while keeping the smooth vector zoom + the
+// Positron palette. Targets are floored by what the tiles actually contain;
+// paths/rail/major roads are left at stock so the clean look isn't over-cluttered.
+// Road geometry (source-layer "transportation"): reveal earlier to mirror the
+// raster light_all. Floored by what the tiles carry (minor from z12, service z13).
+const ROAD_MINZOOM_TARGETS: Array<[RegExp, number]> = [
+  [/minor/, 12],            // residential streets
+  [/service/, 13],          // service roads/alleys
+  [/(_sec|secondary|tertiary)/, 11],
+];
+// Road NAME labels (source-layer "transportation_name"): stock Positron hides
+// these absurdly late (minor names at z16!) even though the name data exists much
+// earlier. Pull each class down to roughly its data floor so labels fill the
+// empty mid-zoom space. Collision still prevents overlap, so low zooms stay clean.
+const ROADNAME_MINZOOM_TARGETS: Array<[RegExp, number]> = [
+  [/minor/, 13],            // residential names — z13 is the data floor (none below)
+  [/(_sec|secondary|tertiary)/, 12],
+  [/pri/, 12],
+  [/major/, 11],
+];
+
+function lowerLayerMinzoom(m: MapLibreMap, layer: maplibregl.LayerSpecification, targets: Array<[RegExp, number]>) {
+  const target = targets.find(([re]) => re.test(layer.id))?.[1];
+  if (target === undefined) return;
+  const currentMin = layer.minzoom ?? 0;
+  // Only ever reveal earlier, never hide something already shown.
+  if (target < currentMin) m.setLayerZoomRange(layer.id, target, layer.maxzoom ?? 24);
+}
+
+function densifyPositronRoads(m: MapLibreMap) {
+  for (const layer of m.getStyle().layers) {
+    const sourceLayer = "source-layer" in layer ? layer["source-layer"] : undefined;
+    if (sourceLayer === "transportation" && layer.type !== "symbol") {
+      lowerLayerMinzoom(m, layer, ROAD_MINZOOM_TARGETS);
+    } else if (sourceLayer === "transportation_name") {
+      lowerLayerMinzoom(m, layer, ROADNAME_MINZOOM_TARGETS);
+    }
+  }
+}
+
 type BrowserPosition = { lngLat: [number, number]; accuracy: number | null };
 
 function getBrowserPosition(): Promise<BrowserPosition | null> {
@@ -532,6 +577,7 @@ export function MapClient({
       void (async () => {
         await addFacilityMarkerImages(m);
         if (disposed) return;
+        densifyPositronRoads(m);
         addFacilityLayers(m, facilityMarkerData(initialFacilitiesRef.current), initialSelectedIdRef.current);
         interactiveMarkerLayers.forEach((layerId) => {
           m.on("click", layerId, handleMarkerClick);
