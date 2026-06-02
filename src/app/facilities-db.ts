@@ -7,6 +7,7 @@ type DbFacilityRow = {
   type: string | null;
   address: string | null;
   phone: string | null;
+  website: string | null;
   audience: string | null;
   latitude: number | null;
   longitude: number | null;
@@ -169,11 +170,49 @@ function formatMinutes(value: number): string {
   return hour12 + ":" + String(minute).padStart(2, "0") + " " + suffix;
 }
 
-// Upstream addresses include ", BC, V4B 2R4" — strip province and postal code
-// since every facility is in BC and the extra text clutters the card meta line.
-function trimAddress(raw: string | null): string | null {
-  if (!raw) return null;
-  return raw.replace(/,\s*BC\b[^]*/i, "").trim();
+// Split a raw upstream address into display parts.
+// address      → raw as-is (desktop single line)
+// addressStreet → "920 West 10th Ave"      (mobile line 1)
+// addressCity   → "Vancouver, BC V5Z 1M9" (mobile line 2)
+function parseAddress(raw: string | null): {
+  address: string;
+  addressStreet: string;
+  addressCity: string;
+} {
+  const fallback = { address: "Address not available", addressStreet: "Address not available", addressCity: "" };
+  if (!raw) return fallback;
+
+  const address = raw.trim();
+
+  const bcIdx = raw.search(/\bBC\b/i);
+  if (bcIdx === -1) {
+    return { address, addressStreet: address, addressCity: "" };
+  }
+
+  // Normalize "BC, V1V 1V1" or "BC  V1V 1V1" → "BC V1V 1V1"
+  const bcPart = raw.slice(bcIdx).replace(/^(BC)[,\s]+/i, "$1 ").trim();
+  // Everything before BC, trailing separators stripped
+  const beforeBC = raw.slice(0, bcIdx).replace(/[, ]+$/, "");
+
+  const lastComma = beforeBC.lastIndexOf(",");
+  let addressStreet: string;
+  let cityName: string;
+
+  if (lastComma === -1) {
+    const lastSpace = beforeBC.lastIndexOf(" ");
+    if (lastSpace === -1) return { address, addressStreet: address, addressCity: bcPart };
+    addressStreet = beforeBC.slice(0, lastSpace).trim();
+    cityName = beforeBC.slice(lastSpace + 1).trim();
+  } else {
+    addressStreet = beforeBC.slice(0, lastComma).trim();
+    cityName = beforeBC.slice(lastComma + 1).trim();
+  }
+
+  return {
+    address,
+    addressStreet,
+    addressCity: `${cityName}, ${bcPart}`,
+  };
 }
 
 function toFacility(row: DbFacilityRow): Facility | null {
@@ -192,8 +231,9 @@ function toFacility(row: DbFacilityRow): Facility | null {
     waitText: formatWait(row.wait_time_minutes, row.show_wait_times, hours.open),
     // Distance is computed on the client once the origin is known.
     distanceKm: 0,
-    address: trimAddress(row.address) ?? "Address not available",
+    ...parseAddress(row.address),
     phone: row.phone ?? "",
+    website: row.website || undefined,
     hours: hours.label,
     lastUpdated: formatAge(row.reading_created_at ?? row.observed_at),
     lat: row.latitude,
@@ -255,6 +295,7 @@ async function queryFacilities(): Promise<Facility[]> {
       l.type,
       l.address,
       l.phone,
+      l.website,
       l.audience,
       l.latitude,
       l.longitude,

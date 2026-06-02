@@ -12,7 +12,10 @@ export type Facility = {
   waitText: string;
   distanceKm: number;
   address: string;
+  addressStreet?: string;
+  addressCity?: string;
   phone: string;
+  website?: string;
   hours: string;
   lastUpdated: string;
   lat: number;

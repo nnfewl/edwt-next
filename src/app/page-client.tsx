@@ -12,6 +12,7 @@ import {
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faArrowUpRightFromSquare,
+  faGlobe,
   faChartLine,
   faCheck,
   faChevronDown,
@@ -61,7 +62,8 @@ type IconName =
   | "check"
   | "chevronDown"
   | "gps"
-  | "external";
+  | "external"
+  | "globe";
 
 const ICONS: Record<IconName, IconDefinition> = {
   pin: faLocationDot,
@@ -81,6 +83,7 @@ const ICONS: Record<IconName, IconDefinition> = {
   chevronDown: faChevronDown,
   gps: faLocationCrosshairs,
   external: faArrowUpRightFromSquare,
+  globe: faGlobe,
 };
 
 const Icon = ({
@@ -279,7 +282,15 @@ const FacilityCard = ({
               <Icon name="pin" size={12} />
               {f.distanceKm} km
             </span>
-            <span className="m address-line">{f.address}</span>
+            <span className="m address-line">
+              <span className="addr-desktop">{f.address}</span>
+              {f.addressStreet && (
+                <>
+                  <span className="addr-street">{f.addressStreet}</span>
+                  {f.addressCity && <span className="addr-city">{f.addressCity}</span>}
+                </>
+              )}
+            </span>
           </span>
           {f.open && (
             <>
@@ -395,6 +406,8 @@ const DetailsDrawer = ({
   const hasWaitData = f.waitMin != null;
   const stopBubble = (e: React.MouseEvent) => e.stopPropagation();
   const waitInline: CSSProperties = {
+    position: "relative",
+    overflow: "hidden",
     alignItems: "flex-start",
     textAlign: "left",
     margin: "14px 0 22px",
@@ -439,6 +452,7 @@ const DetailsDrawer = ({
           {f.open ? (
             hasWaitData ? (
               <>
+                <WaveBackground f={f} height={110} intensity={0.38} />
                 <div className="wait-num" style={{ fontSize: 80 }}>
                   {f.waitText}
                 </div>
@@ -487,25 +501,40 @@ const DetailsDrawer = ({
           {f.hours}
         </p>
 
-        <div style={{ display: "flex", gap: 8 }}>
-          <a
-            className="action-btn primary"
-            href={mapFacilityUrl(f, true)}
-            style={{ flex: 1, justifyContent: "center" }}
-            aria-label={`Directions to ${f.name}`}
-            title="Directions"
-          >
-            <Icon name="directions" size={14} /> <span className="action-label">Directions</span>
-          </a>
-          {f.phone && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ display: "flex", gap: 8 }}>
+            <a
+              className="action-btn primary"
+              href={mapFacilityUrl(f, true)}
+              style={{ flex: 1, justifyContent: "center" }}
+              aria-label={`Directions to ${f.name}`}
+              title="Directions"
+            >
+              <Icon name="directions" size={14} /> <span className="action-label">Directions</span>
+            </a>
+            {f.phone && (
+              <a
+                className="action-btn"
+                href={`tel:${f.phone}`}
+                style={{ flex: 1, justifyContent: "center" }}
+                aria-label={`Call ${f.name} at ${f.phone}`}
+                title={`Call ${f.phone}`}
+              >
+                <Icon name="phone" size={14} /> <span className="action-label">Call {f.phone}</span>
+              </a>
+            )}
+          </div>
+          {f.website && (
             <a
               className="action-btn"
-              href={`tel:${f.phone}`}
-              style={{ flex: 1, justifyContent: "center" }}
-              aria-label={`Call ${f.name} at ${f.phone}`}
-              title={`Call ${f.phone}`}
+              href={f.website}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ justifyContent: "center" }}
+              aria-label={`Website for ${f.name}`}
+              title="Website"
             >
-              <Icon name="phone" size={14} /> <span className="action-label">Call {f.phone}</span>
+              <Icon name="globe" size={14} /> <span className="action-label">Visit {f.name} website</span>
             </a>
           )}
         </div>
