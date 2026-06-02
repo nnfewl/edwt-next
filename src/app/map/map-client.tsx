@@ -459,6 +459,11 @@ export function MapClient({
         maxZoom: 16,
         maxBounds: REGION_BOUNDS,
         attributionControl: false,
+        // Tile cache holds maxTileCacheZoomLevels × (tiles in viewport). The
+        // default (5) is smaller than our 7→16 zoom span, so zooming in/out fast
+        // evicts older levels and re-fetches them (blank "blocks" flashing in).
+        // Caching the whole range keeps revisited levels resident → smooth.
+        maxTileCacheZoomLevels: 12,
         // A MapLibre style has a single glyphs endpoint. The CARTO basemap's
         // glyph server doesn't carry our brand font (Manrope), so route just the
         // "Manrope *" glyph requests to the self-hosted PBFs in /public/fonts and
