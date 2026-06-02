@@ -10,6 +10,9 @@ import (
 	"time"
 )
 
+// userAgent identifies the collector to the upstream feed.
+const userAgent = "edwtd/1.0 (+https://edwt.ca)"
+
 // WaitTime is the per-facility wait-time report embedded in a Location.
 type WaitTime struct {
 	ID              string  `json:"id"`
@@ -65,6 +68,9 @@ func Fetch(ctx context.Context, client *http.Client, url string) (FetchResult, e
 		return FetchResult{}, err
 	}
 	req.Header.Set("Accept", "application/json")
+	// Identify ourselves rather than the default Go-http-client UA, which the
+	// upstream's Azure Front Door is prone to throttle/reset.
+	req.Header.Set("User-Agent", userAgent)
 	res, err := client.Do(req)
 	if err != nil {
 		return FetchResult{}, err

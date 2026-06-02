@@ -41,6 +41,48 @@ func TestEvaluateAfterSuccessfulPollReportsUpstreamHealthy(t *testing.T) {
 	}
 }
 
+// A single transient fetch failure must not flip upstream unhealthy when a
+// debounce threshold is configured — this is what caused incident.io to flap
+// firing/resolved on every upstream network blip.
+func TestEvaluateBelowFailThresholdReportsUpstreamHealthy(t *testing.T) {
+	s := NewStatus()
+	s.MarkSource(false)
+	s.MarkSource(false) // two consecutive failures, threshold is 3
+	e := Evaluator{Status: s, ArchiveEnabled: false, SourceFailThreshold: 3}
+	for _, c := range e.Evaluate(context.Background()) {
+		if c.Name == "upstream" && !c.Healthy {
+			t.Fatalf("upstream unhealthy after 2 fails under threshold 3: %+v", c)
+		}
+	}
+}
+
+func TestEvaluateAtFailThresholdReportsUpstreamUnhealthy(t *testing.T) {
+	s := NewStatus()
+	s.MarkSource(false)
+	s.MarkSource(false)
+	s.MarkSource(false) // reaches threshold of 3
+	e := Evaluator{Status: s, ArchiveEnabled: false, SourceFailThreshold: 3}
+	for _, c := range e.Evaluate(context.Background()) {
+		if c.Name == "upstream" && c.Healthy {
+			t.Fatalf("upstream should be unhealthy at fail threshold 3: %+v", c)
+		}
+	}
+}
+
+func TestSourceSuccessResetsFailCount(t *testing.T) {
+	s := NewStatus()
+	s.MarkSource(false)
+	s.MarkSource(false)
+	s.MarkSource(true)  // recovery resets the streak
+	s.MarkSource(false) // a fresh blip — well under threshold again
+	e := Evaluator{Status: s, ArchiveEnabled: false, SourceFailThreshold: 3}
+	for _, c := range e.Evaluate(context.Background()) {
+		if c.Name == "upstream" && !c.Healthy {
+			t.Fatalf("a success should reset the fail streak: %+v", c)
+		}
+	}
+}
+
 // Regression for the archive component's analogous phantom-firing: at cold
 // start, lastArchive is zero but no poll has run yet, so the staleness check
 // must NOT report archive as unhealthy.

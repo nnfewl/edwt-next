@@ -7,11 +7,30 @@ LDFLAGS     := -s -w
 BUILD_FLAGS := -trimpath -ldflags="$(LDFLAGS)"
 IMAGE       := edwt-worker
 
+# Raspberry Pi 4 (aarch64) deploy target. Override on the CLI if these change,
+# e.g. `make deploy-pi PI_HOST=pi@raspberrypi.local`.
+PI_HOST     := pi@10.0.0.73
+PI_BIN      := /usr/local/bin/edwtd
+
 .DEFAULT_GOAL := build
 
 .PHONY: build
 build: ## Build the stripped, trimmed binary into bin/
 	go build $(BUILD_FLAGS) -o $(BIN_DIR)/$(BINARY) $(PKG)
+
+.PHONY: build-pi
+build-pi: ## Cross-compile the aarch64 (Raspberry Pi 4) binary into bin/
+	GOOS=linux GOARCH=arm64 go build $(BUILD_FLAGS) -o $(BIN_DIR)/$(BINARY)-arm64 $(PKG)
+
+.PHONY: deploy-pi
+deploy-pi: build-pi ## Build arm64, copy to the Pi, swap the binary, and restart edwtd
+	scp -q $(BIN_DIR)/$(BINARY)-arm64 $(PI_HOST):/tmp/edwtd.new
+	ssh $(PI_HOST) 'set -e; \
+		sudo cp -a $(PI_BIN) $(PI_BIN).bak; \
+		sudo install -m0755 -o root -g root /tmp/edwtd.new $(PI_BIN); \
+		sudo systemctl restart edwtd; \
+		rm -f /tmp/edwtd.new; \
+		sleep 5; systemctl is-active edwtd'
 
 .PHONY: run
 run: ## Run the worker (reads env / .env from the shell)

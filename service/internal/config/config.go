@@ -10,15 +10,16 @@ import (
 
 // Config is the fully-resolved worker configuration.
 type Config struct {
-	SourceURL         string        // upstream feed
-	PollInterval      time.Duration // between polls
-	DatabaseURL       string        // Supabase (or local) Postgres DSN
-	WriteDB           bool          // second-writer DB path (default true)
-	HTTPAddr          string        // metrics/health/api listen addr
-	ReadyMaxStaleness time.Duration // /readyz fails if last archive older than this
-	ArchiveDir        string        // local-disk archive root (always on; R2 is best-effort on top)
-	R2                R2Config
-	IncidentIO        IncidentIOConfig
+	SourceURL           string        // upstream feed
+	PollInterval        time.Duration // between polls
+	DatabaseURL         string        // Supabase (or local) Postgres DSN
+	WriteDB             bool          // second-writer DB path (default true)
+	HTTPAddr            string        // metrics/health/api listen addr
+	ReadyMaxStaleness   time.Duration // /readyz fails if last archive older than this
+	SourceFailThreshold int           // consecutive failed fetches before upstream is flagged unhealthy
+	ArchiveDir          string        // local-disk archive root (always on; R2 is best-effort on top)
+	R2                  R2Config
+	IncidentIO          IncidentIOConfig
 }
 
 // IncidentIOConfig drives the incident.io HTTP alert-source integration.
@@ -59,12 +60,13 @@ func (r R2Config) Endpoint() string {
 // Load reads configuration from the environment, applying defaults.
 func Load() (Config, error) {
 	c := Config{
-		SourceURL:         envOr("EDWT_SOURCE_URL", "https://www.edwaittimes.ca/api/wait-times"),
-		DatabaseURL:       os.Getenv("DATABASE_URL"),
-		WriteDB:           envBool("EDWT_WRITE_DB", true),
-		HTTPAddr:          envOr("EDWT_HTTP_ADDR", ":8080"),
-		ReadyMaxStaleness: envDuration("EDWT_READY_MAX_STALENESS", 3*time.Minute),
-		ArchiveDir:        envOr("EDWT_ARCHIVE_DIR", "./archive"),
+		SourceURL:           envOr("EDWT_SOURCE_URL", "https://www.edwaittimes.ca/api/wait-times"),
+		DatabaseURL:         os.Getenv("DATABASE_URL"),
+		WriteDB:             envBool("EDWT_WRITE_DB", true),
+		HTTPAddr:            envOr("EDWT_HTTP_ADDR", ":8080"),
+		ReadyMaxStaleness:   envDuration("EDWT_READY_MAX_STALENESS", 3*time.Minute),
+		SourceFailThreshold: envInt("EDWT_SOURCE_FAIL_THRESHOLD", 3),
+		ArchiveDir:          envOr("EDWT_ARCHIVE_DIR", "./archive"),
 		R2: R2Config{
 			AccountID:       os.Getenv("R2_ACCOUNT_ID"),
 			AccessKeyID:     os.Getenv("R2_ACCESS_KEY_ID"),

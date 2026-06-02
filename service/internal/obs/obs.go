@@ -76,7 +76,8 @@ type Status struct {
 	lastPollUnix    atomic.Int64
 	lastArchiveUnix atomic.Int64
 	sourceOK        atomic.Bool
-	sourcePolled    atomic.Bool // set true on the first MarkSource (success or fail)
+	sourceFails     atomic.Int64 // consecutive failed fetches; reset to 0 on success
+	sourcePolled    atomic.Bool  // set true on the first MarkSource (success or fail)
 }
 
 // NewStatus returns a Status with the start time set to now.
@@ -93,12 +94,21 @@ func (s *Status) MarkArchive() { s.lastArchiveUnix.Store(time.Now().Unix()) }
 // attempted a poll yet" from "the last attempt failed".
 func (s *Status) MarkSource(ok bool) {
 	s.sourceOK.Store(ok)
+	if ok {
+		s.sourceFails.Store(0)
+	} else {
+		s.sourceFails.Add(1)
+	}
 	s.sourcePolled.Store(true)
 }
 
 // SourcePolled reports whether at least one upstream fetch has been attempted.
 // Used by the evaluator to suppress phantom-unhealthy state on a fresh start.
 func (s *Status) SourcePolled() bool { return s.sourcePolled.Load() }
+
+// ConsecutiveSourceFails returns the number of upstream fetches that have failed
+// in a row since the last success.
+func (s *Status) ConsecutiveSourceFails() int { return int(s.sourceFails.Load()) }
 
 func (s *Status) lastArchive() time.Time { return unixOrZero(s.lastArchiveUnix.Load()) }
 func (s *Status) lastPoll() time.Time    { return unixOrZero(s.lastPollUnix.Load()) }
@@ -135,15 +145,25 @@ type Evaluator struct {
 	DB             Pinger // nil when not writing to a DB
 	MaxStaleness   time.Duration
 	ArchiveEnabled bool
+	// SourceFailThreshold is the number of consecutive failed fetches before
+	// upstream is reported unhealthy. Values < 1 are treated as 1 (every
+	// failure counts) so a zero-value Evaluator keeps the old behaviour.
+	SourceFailThreshold int
 }
 
 // Evaluate returns the current health of each component.
 func (e Evaluator) Evaluate(ctx context.Context) []Component {
 	// Treat upstream as healthy until the first poll has been attempted, so a
 	// fresh restart doesn't fire a phantom `firing` on the reconciler's first
-	// tick (sourceOK defaults to false). Once MarkSource has been called even
-	// once, sourceOK reflects reality.
-	upstream := e.Status.sourceOK.Load() || !e.Status.SourcePolled()
+	// tick. Once polling has started, debounce on consecutive failures: a single
+	// transient fetch error (timeout, connection reset) must not flap an
+	// incident — only a sustained run of failures means the source is really
+	// down.
+	threshold := e.SourceFailThreshold
+	if threshold < 1 {
+		threshold = 1
+	}
+	upstream := !e.Status.SourcePolled() || e.Status.ConsecutiveSourceFails() < threshold
 
 	// Cold-start window: until the first poll has been attempted, the archive
 	// hasn't had a chance to write either, so its empty lastArchive isn't a
@@ -168,12 +188,13 @@ func (e Evaluator) Evaluate(ctx context.Context) []Component {
 
 // ServerDeps wires the metrics/health/status HTTP server.
 type ServerDeps struct {
-	Addr           string
-	Registry       *prometheus.Registry
-	Status         *Status
-	DB             Pinger // nil when not writing to a DB
-	MaxStaleness   time.Duration
-	ArchiveEnabled bool
+	Addr                string
+	Registry            *prometheus.Registry
+	Status              *Status
+	DB                  Pinger // nil when not writing to a DB
+	MaxStaleness        time.Duration
+	ArchiveEnabled      bool
+	SourceFailThreshold int
 }
 
 // NewServer builds the metrics/health/status HTTP server.
@@ -215,10 +236,11 @@ func NewServer(d ServerDeps) *http.Server {
 
 func (d ServerDeps) evaluator() Evaluator {
 	return Evaluator{
-		Status:         d.Status,
-		DB:             d.DB,
-		MaxStaleness:   d.MaxStaleness,
-		ArchiveEnabled: d.ArchiveEnabled,
+		Status:              d.Status,
+		DB:                  d.DB,
+		MaxStaleness:        d.MaxStaleness,
+		ArchiveEnabled:      d.ArchiveEnabled,
+		SourceFailThreshold: d.SourceFailThreshold,
 	}
 }
 
