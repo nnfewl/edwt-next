@@ -9,7 +9,11 @@
   --amber: #d97706;
   --red: #dc2626;
   --closed: #64748b;
-  min-height: 100vh;
+  /* Sits below the 65px global .app-topbar, so subtract it — matching
+     .map-shell's calc(100dvh - 65px). Plain 100vh double-counts the header
+     and leaves a ~65px empty band of page background under the map. */
+  min-height: calc(100vh - 65px);
+  min-height: calc(100dvh - 65px);
   background: var(--bg);
   color: var(--ink);
 }

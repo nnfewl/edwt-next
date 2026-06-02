@@ -32,29 +32,16 @@ type RouteState = {
   originLabel: string;
 } | null;
 
-// CARTO Positron keeps the clinical map quieter than Voyager.
+// CARTO Positron as VECTOR tiles: the same quiet, clinical Positron look as the
+// old raster basemap, but GPU-rendered so zoom stays smooth and sharp at every
+// fractional level (raster bitmaps blur and pop between integer zooms). Public
+// CDN, no API key. NOTE: the on-map attribution control is intentionally omitted
+// (it blocked the floating panels); CARTO/OpenMapTiles/OSM still require credit,
+// so surface it elsewhere (e.g. a footer/about) before launch.
 // NOTE: `router.project-osrm.org` is OSRM's public demo and is NOT suitable for
 // production traffic; replace with a self-hosted OSRM, Maptiler, or Mapbox
 // directions endpoint before any real launch.
-const mapStyle: maplibregl.StyleSpecification = {
-  version: 8,
-  sources: {
-    cartoPositron: {
-      type: "raster",
-      tiles: ["https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png"],
-      tileSize: 256,
-      attribution:
-        '© <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a> · © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>',
-    },
-  },
-  layers: [
-    {
-      id: "carto-positron",
-      type: "raster",
-      source: "cartoPositron",
-    },
-  ],
-};
+const MAP_STYLE_URL = "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
 
 function waitText(value: number | null) {
   if (value == null) return "No data";
@@ -347,7 +334,9 @@ function addFacilityLayers(m: MapLibreMap, data: FacilityMarkerData, selectedId:
     layout: {
       "text-field": ["get", "waitText"],
       "text-size": ["interpolate", ["linear"], ["zoom"], 11.1, 10, 13, 12],
-      "text-font": ["Open Sans Bold", "Arial Unicode MS Bold"],
+      // Manrope Bold = the site's brand font (--font-manrope), self-hosted as SDF
+      // glyph PBFs in /public/fonts and routed via the map's transformRequest.
+      "text-font": ["Manrope Bold"],
       "text-anchor": "top",
       "text-offset": ["get", "textOffset"],
       "text-allow-overlap": false,
@@ -463,13 +452,23 @@ export function MapClient({
     try {
       map.current = new maplibregl.Map({
         container: mapNode.current,
-        style: mapStyle,
+        style: MAP_STYLE_URL,
         center: VANCOUVER_CENTER,
         zoom: 10.2,
         minZoom: 7,
         maxZoom: 16,
         maxBounds: REGION_BOUNDS,
         attributionControl: false,
+        // A MapLibre style has a single glyphs endpoint. The CARTO basemap's
+        // glyph server doesn't carry our brand font (Manrope), so route just the
+        // "Manrope *" glyph requests to the self-hosted PBFs in /public/fonts and
+        // let every other fontstack (the basemap's own labels) flow to CARTO.
+        transformRequest: (url, resourceType) => {
+          if (resourceType === "Glyphs" && url.includes("/fonts/Manrope")) {
+            return { url: window.location.origin + url.slice(url.indexOf("/fonts/")) };
+          }
+          return undefined;
+        },
       });
     } catch {
       const fallbackTimer = window.setTimeout(() => {
@@ -479,6 +478,14 @@ export function MapClient({
     }
     const m = map.current;
     m.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+    // A remote style/tile fetch failing surfaces here rather than throwing in the
+    // constructor. Only fall back if the basemap never loaded — transient tile
+    // errors after the style is up shouldn't blank an otherwise-working map.
+    m.on("error", () => {
+      if (!m.isStyleLoaded()) {
+        setMapUnavailable("Map rendering is unavailable right now. Facility details are still available below.");
+      }
+    });
     const locationControl: maplibregl.IControl = {
       onAdd() {
         const container = document.createElement("div");
