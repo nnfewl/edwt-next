@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { client as sharedClient } from "../../db/client";
+import { HeroMapBackdrop } from "../hero-map-backdrop";
 
 export const metadata: Metadata = {
   title: "Wait-Time Analytics",
@@ -762,6 +763,16 @@ function EmptyFallback({ children }: { children: ReactNode }) {
   return <p className="analytics-empty">{children}</p>;
 }
 
+function AnalyticsHeroMap() {
+  return (
+    <HeroMapBackdrop
+      className="analytics-hero-map"
+      pictureClassName="analytics-hero-map-picture"
+      imageClassName="analytics-hero-map-image"
+    />
+  );
+}
+
 export default async function AnalyticsPage({
   searchParams,
 }: {
@@ -833,6 +844,7 @@ export default async function AnalyticsPage({
       <AutoRefresh intervalMs={300_000} />
       <main className="analytics-page">
         <section className="analytics-hero">
+          <AnalyticsHeroMap />
           <div className="analytics-hero-copy">
             <div className="analytics-kicker"><span aria-hidden="true" /> Live wait-time analytics</div>
             <h1>Wait-time analytics</h1>

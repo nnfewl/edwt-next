@@ -39,6 +39,7 @@ import {
 } from "./data";
 import { ClosedIllustration } from "./closed-illustration";
 import { withOriginDistances } from "./geo-distance";
+import { HeroMapBackdrop } from "./hero-map-backdrop";
 import { preciseGpsOrigin, preciseGpsOriginWithLocationText, useSessionGpsOrigin, writeSessionGpsOrigin } from "./location-session";
 import { type LocationOrigin } from "./location-types";
 import "./styles.css";
@@ -208,34 +209,12 @@ const WaveBackground = ({
   );
 };
 
-// Real map tiles from CARTO Positron (same source as /map page).
-// Zoom 12, centered on Surrey/Lower Mainland — just <img> tags, no JS map library.
-const HERO_TILE_Z = 11;
-const HERO_TILE_COLS = [322, 323, 324, 325, 326];
-const HERO_TILE_ROWS = [700, 701, 702];
-
 const HeroMap = () => (
-  <div className="hero-map" aria-hidden="true">
-    <div className="hero-map-grid">
-      {HERO_TILE_ROWS.map((y) =>
-        HERO_TILE_COLS.map((x) => (
-          <picture key={`${x}-${y}`}>
-            <source
-              media="(max-width: 760px)"
-              srcSet={`https://basemaps.cartocdn.com/light_nolabels/${HERO_TILE_Z}/${x}/${y}.png`}
-            />
-            <img
-              src={`https://basemaps.cartocdn.com/light_all/${HERO_TILE_Z}/${x}/${y}.png`}
-              width={256}
-              height={256}
-              alt=""
-              draggable={false}
-            />
-          </picture>
-        )),
-      )}
-    </div>
-  </div>
+  <HeroMapBackdrop
+    className="hero-map"
+    pictureClassName="hero-map-picture"
+    imageClassName="hero-map-image"
+  />
 );
 
 
