@@ -83,15 +83,59 @@ func TestSourceSuccessResetsFailCount(t *testing.T) {
 	}
 }
 
-// Regression for the archive component's analogous phantom-firing: at cold
-// start, lastArchive is zero but no poll has run yet, so the staleness check
-// must NOT report archive as unhealthy.
+// At cold start no archive write has been attempted, so the archiver must not
+// report unhealthy.
 func TestEvaluateBeforeFirstPollDoesNotReportArchiveUnhealthy(t *testing.T) {
 	s := NewStatus()
-	e := Evaluator{Status: s, ArchiveEnabled: true, MaxStaleness: 1}
+	e := Evaluator{Status: s, ArchiveEnabled: true, ArchiveFailThreshold: 3}
 	for _, c := range e.Evaluate(context.Background()) {
 		if c.Name == "archive" && !c.Healthy {
-			t.Fatalf("archive reported unhealthy before any MarkSource call: %+v", c)
+			t.Fatalf("archive reported unhealthy before any write: %+v", c)
+		}
+	}
+}
+
+// The bug: a run of failed upstream polls never reaches the archive write, yet
+// the old freshness check aged `lastArchive` past the staleness window and
+// flagged the archiver unhealthy — a false outage on a component that never
+// failed. Archive health must depend on actual write outcomes, not data
+// freshness, so upstream flakiness leaves it healthy.
+func TestArchiveHealthyWhenUpstreamFailsWithoutWriteAttempt(t *testing.T) {
+	s := NewStatus()
+	s.MarkSource(false)
+	s.MarkSource(false)
+	s.MarkSource(false) // upstream down; the archiver was never even invoked
+	e := Evaluator{Status: s, ArchiveEnabled: true, ArchiveFailThreshold: 3}
+	for _, c := range e.Evaluate(context.Background()) {
+		if c.Name == "archive" && !c.Healthy {
+			t.Fatalf("archive must stay healthy when no write failed: %+v", c)
+		}
+	}
+}
+
+func TestArchiveUnhealthyAfterConsecutiveWriteFailures(t *testing.T) {
+	s := NewStatus()
+	s.MarkArchive(false)
+	s.MarkArchive(false)
+	s.MarkArchive(false) // three real write failures, threshold 3
+	e := Evaluator{Status: s, ArchiveEnabled: true, ArchiveFailThreshold: 3}
+	for _, c := range e.Evaluate(context.Background()) {
+		if c.Name == "archive" && c.Healthy {
+			t.Fatalf("archive should be unhealthy after 3 write failures: %+v", c)
+		}
+	}
+}
+
+func TestArchiveWriteSuccessResetsFailCount(t *testing.T) {
+	s := NewStatus()
+	s.MarkArchive(false)
+	s.MarkArchive(false)
+	s.MarkArchive(true)  // a successful write clears the streak
+	s.MarkArchive(false) // a lone failure again — well under threshold
+	e := Evaluator{Status: s, ArchiveEnabled: true, ArchiveFailThreshold: 3}
+	for _, c := range e.Evaluate(context.Background()) {
+		if c.Name == "archive" && !c.Healthy {
+			t.Fatalf("a successful write should reset the fail streak: %+v", c)
 		}
 	}
 }

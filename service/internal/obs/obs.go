@@ -77,6 +77,7 @@ type Status struct {
 	lastArchiveUnix atomic.Int64
 	sourceOK        atomic.Bool
 	sourceFails     atomic.Int64 // consecutive failed fetches; reset to 0 on success
+	archiveFails    atomic.Int64 // consecutive failed archive writes; reset to 0 on success
 	sourcePolled    atomic.Bool  // set true on the first MarkSource (success or fail)
 }
 
@@ -86,8 +87,22 @@ func NewStatus() *Status { return &Status{startedAt: time.Now()} }
 // MarkPoll records a successful poll at the current time.
 func (s *Status) MarkPoll() { s.lastPollUnix.Store(time.Now().Unix()) }
 
-// MarkArchive records a successful archive at the current time.
-func (s *Status) MarkArchive() { s.lastArchiveUnix.Store(time.Now().Unix()) }
+// MarkArchive records the outcome of an archive write. A success stamps the
+// time (for the status view) and clears the failure streak; a failure extends
+// it. Archive health is judged by this streak, not by data freshness, so a
+// quiet archiver during an upstream outage (no writes attempted) stays healthy.
+func (s *Status) MarkArchive(ok bool) {
+	if ok {
+		s.lastArchiveUnix.Store(time.Now().Unix())
+		s.archiveFails.Store(0)
+	} else {
+		s.archiveFails.Add(1)
+	}
+}
+
+// ConsecutiveArchiveFails returns the number of archive writes that have failed
+// in a row since the last success.
+func (s *Status) ConsecutiveArchiveFails() int { return int(s.archiveFails.Load()) }
 
 // MarkSource records whether the last upstream fetch succeeded. The first call
 // also flips sourcePolled, so the evaluator can distinguish "we haven't
@@ -143,12 +158,14 @@ type Component struct {
 type Evaluator struct {
 	Status         *Status
 	DB             Pinger // nil when not writing to a DB
-	MaxStaleness   time.Duration
 	ArchiveEnabled bool
 	// SourceFailThreshold is the number of consecutive failed fetches before
 	// upstream is reported unhealthy. Values < 1 are treated as 1 (every
 	// failure counts) so a zero-value Evaluator keeps the old behaviour.
 	SourceFailThreshold int
+	// ArchiveFailThreshold is the number of consecutive failed archive writes
+	// before archive is reported unhealthy. Values < 1 are treated as 1.
+	ArchiveFailThreshold int
 }
 
 // Evaluate returns the current health of each component.
@@ -165,12 +182,16 @@ func (e Evaluator) Evaluate(ctx context.Context) []Component {
 	}
 	upstream := !e.Status.SourcePolled() || e.Status.ConsecutiveSourceFails() < threshold
 
-	// Cold-start window: until the first poll has been attempted, the archive
-	// hasn't had a chance to write either, so its empty lastArchive isn't a
-	// real signal. After SourcePolled flips, the freshness check kicks in.
-	la := e.Status.lastArchive()
-	archive := !e.ArchiveEnabled || !e.Status.SourcePolled() ||
-		(!la.IsZero() && time.Since(la) <= e.MaxStaleness)
+	// Archive health tracks whether writes are actually failing, NOT data
+	// freshness. A stale archive during an upstream outage means there was
+	// simply nothing to write — that's the source's problem, not the archiver's
+	// — so it must not flag a phantom archive outage. Only a run of real write
+	// failures (disk error) trips it.
+	archiveThreshold := e.ArchiveFailThreshold
+	if archiveThreshold < 1 {
+		archiveThreshold = 1
+	}
+	archive := !e.ArchiveEnabled || e.Status.ConsecutiveArchiveFails() < archiveThreshold
 
 	db := true
 	if e.DB != nil {
@@ -181,20 +202,20 @@ func (e Evaluator) Evaluate(ctx context.Context) []Component {
 
 	return []Component{
 		{Name: "upstream", DisplayName: "Data source", Healthy: upstream, Detail: "edwaittimes feed fetch"},
-		{Name: "archive", DisplayName: "Data archive", Healthy: archive, Detail: "R2 archive freshness"},
+		{Name: "archive", DisplayName: "Data archive", Healthy: archive, Detail: "archive write health"},
 		{Name: "database", DisplayName: "Database", Healthy: db, Detail: "Supabase connectivity"},
 	}
 }
 
 // ServerDeps wires the metrics/health/status HTTP server.
 type ServerDeps struct {
-	Addr                string
-	Registry            *prometheus.Registry
-	Status              *Status
-	DB                  Pinger // nil when not writing to a DB
-	MaxStaleness        time.Duration
-	ArchiveEnabled      bool
-	SourceFailThreshold int
+	Addr                 string
+	Registry             *prometheus.Registry
+	Status               *Status
+	DB                   Pinger // nil when not writing to a DB
+	ArchiveEnabled       bool
+	SourceFailThreshold  int
+	ArchiveFailThreshold int
 }
 
 // NewServer builds the metrics/health/status HTTP server.
@@ -217,9 +238,12 @@ func NewServer(d ServerDeps) *http.Server {
 			}
 		}
 		if d.ArchiveEnabled {
-			la := d.Status.lastArchive()
-			if la.IsZero() || time.Since(la) > d.MaxStaleness {
-				http.Error(w, "archive stale", http.StatusServiceUnavailable)
+			threshold := d.ArchiveFailThreshold
+			if threshold < 1 {
+				threshold = 1
+			}
+			if d.Status.ConsecutiveArchiveFails() >= threshold {
+				http.Error(w, "archive writes failing", http.StatusServiceUnavailable)
 				return
 			}
 		}
@@ -236,11 +260,11 @@ func NewServer(d ServerDeps) *http.Server {
 
 func (d ServerDeps) evaluator() Evaluator {
 	return Evaluator{
-		Status:              d.Status,
-		DB:                  d.DB,
-		MaxStaleness:        d.MaxStaleness,
-		ArchiveEnabled:      d.ArchiveEnabled,
-		SourceFailThreshold: d.SourceFailThreshold,
+		Status:               d.Status,
+		DB:                   d.DB,
+		ArchiveEnabled:       d.ArchiveEnabled,
+		SourceFailThreshold:  d.SourceFailThreshold,
+		ArchiveFailThreshold: d.ArchiveFailThreshold,
 	}
 }
 

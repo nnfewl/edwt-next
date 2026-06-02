@@ -67,12 +67,13 @@ func (p *Poller) RunOnce(ctx context.Context) (Outcome, error) {
 		key := archive.Key(start, fr.Body)
 		if err := p.arch.Put(ctx, key, fr.Body); err != nil {
 			p.m.ArchiveTotal.WithLabelValues("error").Inc()
+			p.status.MarkArchive(false)
 			p.log.Error("archive failed", "key", key, "err", err)
 		} else {
 			p.m.ArchiveTotal.WithLabelValues("ok").Inc()
 			p.m.ArchiveBytes.Add(float64(len(fr.Body)))
 			p.m.LastArchive.SetToCurrentTime()
-			p.status.MarkArchive()
+			p.status.MarkArchive(true)
 			out.Archived = true
 		}
 	}

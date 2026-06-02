@@ -81,20 +81,20 @@ func main() {
 	p := poller.New(cfg.SourceURL, &http.Client{Timeout: 30 * time.Second}, arch, db, metrics, status, log)
 
 	srv := obs.NewServer(obs.ServerDeps{
-		Addr:                cfg.HTTPAddr,
-		Registry:            reg,
-		Status:              status,
-		DB:                  pinger,
-		MaxStaleness:        cfg.ReadyMaxStaleness,
-		ArchiveEnabled:      arch != nil,
-		SourceFailThreshold: cfg.SourceFailThreshold,
+		Addr:                 cfg.HTTPAddr,
+		Registry:             reg,
+		Status:               status,
+		DB:                   pinger,
+		ArchiveEnabled:       arch != nil,
+		SourceFailThreshold:  cfg.SourceFailThreshold,
+		ArchiveFailThreshold: cfg.ArchiveFailThreshold,
 	})
 
 	// incident.io status push (optional) — evaluates the same component health
 	// as /api/status and fires/resolves alerts on transitions.
 	if cfg.IncidentIO.Enabled() {
 		rec := notify.NewReconciler(
-			obs.Evaluator{Status: status, DB: pinger, MaxStaleness: cfg.ReadyMaxStaleness, ArchiveEnabled: arch != nil, SourceFailThreshold: cfg.SourceFailThreshold},
+			obs.Evaluator{Status: status, DB: pinger, ArchiveEnabled: arch != nil, SourceFailThreshold: cfg.SourceFailThreshold, ArchiveFailThreshold: cfg.ArchiveFailThreshold},
 			notify.NewIncidentIO(cfg.IncidentIO.URL(), cfg.IncidentIO.Token),
 			cfg.IncidentIO.ReconcileInterval,
 			log,

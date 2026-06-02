@@ -7,8 +7,8 @@ edwtd_source_url: "https://www.edwaittimes.ca/api/wait-times"
 edwtd_poll_interval_ms: 60000
 edwtd_write_db: true
 edwtd_http_addr: ":8080"
-edwtd_ready_max_staleness: "3m"
-edwtd_source_fail_threshold: 3   # consecutive failed fetches before "Data source" alerts
+edwtd_source_fail_threshold: 3    # consecutive failed fetches before "Data source" alerts
+edwtd_archive_fail_threshold: 3   # consecutive failed archive writes before "Data archive" alerts
 edwtd_r2_bucket: "edwt-raw"
 
 # --- secrets (do not commit unencrypted) ---
