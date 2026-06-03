@@ -31,11 +31,16 @@ function clamp(v: number, lo: number, hi: number) {
   return Math.max(lo, Math.min(hi, v));
 }
 
+const DISPLAY_W = 1280;
+const DISPLAY_H = 768;
+
 function heroMapPanStyle(
   lat: number,
   lng: number,
 ): Record<string, string> | undefined {
   const p = geoToDisplayPx(lat, lng);
+  if (p.x < 0 || p.x > DISPLAY_W || p.y < 0 || p.y > DISPLAY_H)
+    return undefined;
   const dx = clamp(DISPLAY_CX - p.x, -MAX_SHIFT_PX, MAX_SHIFT_PX);
   const dy = clamp(DISPLAY_CY - p.y, -MAX_SHIFT_PX, MAX_SHIFT_PX);
   if (Math.abs(dx) < 2 && Math.abs(dy) < 2) return undefined;

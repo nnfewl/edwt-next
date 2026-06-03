@@ -8,10 +8,10 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { type Facility, facilityWaitStatusLabel, severityFor } from "../data";
 import { withOriginDistances } from "../geo-distance";
 import { preciseGpsOriginWithLocationText, readSessionGpsOrigin, useSessionGpsOrigin, writeSessionGpsOrigin } from "../location-session";
-import { type LocationOrigin } from "../location-types";
+import { FALLBACK_LOCATION_ORIGIN, type LocationOrigin } from "../location-types";
 import "./styles.css";
 
-const VANCOUVER_CENTER: LngLatLike = [-122.84, 49.18];
+const DEFAULT_CENTER: LngLatLike = [FALLBACK_LOCATION_ORIGIN.lng, FALLBACK_LOCATION_ORIGIN.lat];
 // Keep the camera over southwestern BC (where every facility sits) so users
 // can't pan/zoom out to the rest of the world. [[west, south], [east, north]].
 const REGION_BOUNDS: [[number, number], [number, number]] = [[-125.8, 48.4], [-119.6, 51.3]];
@@ -498,7 +498,7 @@ export function MapClient({
       map.current = new maplibregl.Map({
         container: mapNode.current,
         style: MAP_STYLE_URL,
-        center: VANCOUVER_CENTER,
+        center: DEFAULT_CENTER,
         zoom: 10.2,
         minZoom: 7,
         maxZoom: 16,

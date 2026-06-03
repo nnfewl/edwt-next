@@ -10,9 +10,9 @@ export type LocationOrigin = {
 };
 
 export const FALLBACK_LOCATION_ORIGIN: LocationOrigin = {
-  lat: 49.14,
-  lng: -122.84,
-  label: "Approx. Surrey, BC",
+  lat: 49.21,
+  lng: -122.91,
+  label: "Approx. Metro Vancouver",
   source: "fallback",
   accuracyLabel: "default Lower Mainland area",
 };
