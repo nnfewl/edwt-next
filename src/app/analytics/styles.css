@@ -785,6 +785,57 @@
   }
 }
 
+/* Skeleton loading state */
+
+@keyframes analytics-shimmer {
+  0% { opacity: 0.4; }
+  50% { opacity: 1; }
+  100% { opacity: 0.4; }
+}
+
+@keyframes analytics-fade-in {
+  from { opacity: 0.5; }
+  to { opacity: 1; }
+}
+
+.analytics-skeleton-bar {
+  display: block;
+  border-radius: 6px;
+  background: var(--bg-2);
+  animation: analytics-shimmer 1.6s ease-in-out infinite;
+}
+
+.analytics-skeleton-fade {
+  animation: analytics-fade-in 0.3s ease-out;
+}
+
+.analytics-skeleton-chart-placeholder {
+  height: 300px;
+  margin-top: 14px;
+  display: flex;
+  align-items: flex-end;
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  overflow: hidden;
+}
+
+.analytics-skeleton-chart-svg {
+  width: 100%;
+  height: 100%;
+  animation: analytics-shimmer 2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .analytics-skeleton-bar,
+  .analytics-skeleton-chart-svg {
+    animation: none;
+  }
+
+  .analytics-skeleton-fade {
+    animation: none;
+  }
+}
+
 @media (max-width: 760px) {
   .analytics-page {
     width: min(100% - 32px, 1360px);
