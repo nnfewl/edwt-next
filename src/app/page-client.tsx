@@ -209,13 +209,6 @@ const WaveBackground = ({
   );
 };
 
-const HeroMap = () => (
-  <HeroMapBackdrop
-    className="hero-map"
-    pictureClassName="hero-map-picture"
-    imageClassName="hero-map-image"
-  />
-);
 
 
 /* ───────── facility card ─────────────────────────────────────────────────── */
@@ -856,7 +849,13 @@ export function ERNowPageClient({
       <main className="page">
         {/* Hero */}
         <section className="hero">
-          <HeroMap />
+          <HeroMapBackdrop
+            className="hero-map"
+            pictureClassName="hero-map-picture"
+            imageClassName="hero-map-image"
+            originLat={origin.source !== "fallback" ? origin.lat : undefined}
+            originLng={origin.source !== "fallback" ? origin.lng : undefined}
+          />
           <div>
             <h1>
               Find the <em>shortest</em>{" "}

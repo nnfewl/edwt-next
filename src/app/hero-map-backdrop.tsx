@@ -2,16 +2,63 @@ type HeroMapBackdropProps = {
   className: string;
   pictureClassName: string;
   imageClassName: string;
+  originLat?: number;
+  originLng?: number;
 };
+
+// Tile grid: zoom 11, cols 322-326, rows 700-702, @2x (512px tiles)
+// Stitched image: 2560×1536 native, displayed at 1280×768
+const Z_N = 2048; // 2^11
+const TX0 = 322;
+const TY0 = 700;
+const TILE_PX = 512;
+const DISPLAY_CX = 640; // 1280 / 2
+const DISPLAY_CY = 384; // 768 / 2
+const MAX_SHIFT_PX = 50;
+
+function geoToDisplayPx(lat: number, lng: number) {
+  const tileX = ((lng + 180) / 360) * Z_N;
+  const r = (lat * Math.PI) / 180;
+  const tileY =
+    ((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2) * Z_N;
+  return {
+    x: ((tileX - TX0) * TILE_PX) / 2,
+    y: ((tileY - TY0) * TILE_PX) / 2,
+  };
+}
+
+function clamp(v: number, lo: number, hi: number) {
+  return Math.max(lo, Math.min(hi, v));
+}
+
+function heroMapPanStyle(
+  lat: number,
+  lng: number,
+): Record<string, string> | undefined {
+  const p = geoToDisplayPx(lat, lng);
+  const dx = clamp(DISPLAY_CX - p.x, -MAX_SHIFT_PX, MAX_SHIFT_PX);
+  const dy = clamp(DISPLAY_CY - p.y, -MAX_SHIFT_PX, MAX_SHIFT_PX);
+  if (Math.abs(dx) < 2 && Math.abs(dy) < 2) return undefined;
+  return {
+    transform: `translate(calc(-50% + ${Math.round(dx)}px), calc(-50% + ${Math.round(dy)}px))`,
+  };
+}
 
 export function HeroMapBackdrop({
   className,
   pictureClassName,
   imageClassName,
+  originLat,
+  originLng,
 }: HeroMapBackdropProps) {
+  const panStyle =
+    originLat != null && originLng != null
+      ? heroMapPanStyle(originLat, originLng)
+      : undefined;
+
   return (
     <div className={className} aria-hidden="true">
-      <picture className={pictureClassName}>
+      <picture className={pictureClassName} style={panStyle}>
         <source media="(max-width: 760px)" type="image/avif" srcSet="/hero-map-nolabels.avif" />
         <source media="(max-width: 760px)" type="image/webp" srcSet="/hero-map-nolabels.webp" />
         <source media="(max-width: 760px)" srcSet="/hero-map-nolabels.png" />
