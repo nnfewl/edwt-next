@@ -167,6 +167,11 @@ function sparseTicks<T>(items: T[], desired = 6) {
 
 const fontFamily = "var(--font-manrope), Manrope, system-ui, sans-serif";
 
+const chartAnimation = {
+  duration: 800,
+  easing: "easeOutQuart" as const,
+};
+
 const basePlugins = {
   legend: {
     labels: {
@@ -338,7 +343,7 @@ export function AnalyticsCharts({ current, distribution, heatmap, facilityRisk, 
       indexAxis: "y",
       responsive: true,
       maintainAspectRatio: false,
-      animation: false,
+      animation: chartAnimation,
       plugins: {
         ...basePlugins,
         legend: { display: false },
@@ -384,7 +389,7 @@ export function AnalyticsCharts({ current, distribution, heatmap, facilityRisk, 
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      animation: false,
+      animation: { ...chartAnimation, duration: 1000 },
       interaction: { intersect: false, mode: "index" },
       plugins: {
         ...basePlugins,
@@ -426,7 +431,7 @@ export function AnalyticsCharts({ current, distribution, heatmap, facilityRisk, 
       indexAxis: "y",
       responsive: true,
       maintainAspectRatio: false,
-      animation: false,
+      animation: chartAnimation,
       plugins: {
         ...basePlugins,
         tooltip: {
@@ -482,7 +487,7 @@ export function AnalyticsCharts({ current, distribution, heatmap, facilityRisk, 
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      animation: false,
+      animation: { ...chartAnimation, duration: 600 },
       plugins: {
         ...basePlugins,
         tooltip: {
@@ -546,7 +551,7 @@ export function AnalyticsCharts({ current, distribution, heatmap, facilityRisk, 
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      animation: false,
+      animation: { ...chartAnimation, duration: 600 },
       plugins: {
         ...basePlugins,
         tooltip: {
@@ -583,7 +588,7 @@ export function AnalyticsCharts({ current, distribution, heatmap, facilityRisk, 
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      animation: false,
+      animation: chartAnimation,
       plugins: { ...basePlugins, legend: { display: false } },
       scales: {
         x: { ...commonScales, grid: { display: false } },
@@ -676,7 +681,7 @@ export function AnalyticsCharts({ current, distribution, heatmap, facilityRisk, 
       indexAxis: "y",
       responsive: true,
       maintainAspectRatio: false,
-      animation: false,
+      animation: chartAnimation,
       plugins: { ...basePlugins, legend: { display: false } },
       scales: {
         x: { ...commonScales, beginAtZero: true, ticks: { ...commonScales.ticks, callback: compactNumber }, title: { ...commonScales.title, display: true, text: "readings" } },
