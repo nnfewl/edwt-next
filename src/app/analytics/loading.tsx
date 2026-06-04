@@ -9,12 +9,12 @@ function SkeletonMetricCard({ tone }: { tone: "teal" | "green" | "amber" | "cora
   return (
     <article className={`analytics-metric analytics-tone-${tone} analytics-skeleton-fade`}>
       <span className="analytics-metric-mark" aria-hidden="true" />
-      <SkeletonBar width="80px" height="11px" />
+      <SkeletonBar width="80px" height="13px" />
       <div style={{ marginTop: 8 }}>
         <SkeletonBar width="90px" height="34px" />
       </div>
       <div style={{ marginTop: 10 }}>
-        <SkeletonBar width="160px" height="13px" />
+        <SkeletonBar width="160px" height="20px" />
       </div>
     </article>
   );
@@ -23,12 +23,12 @@ function SkeletonMetricCard({ tone }: { tone: "teal" | "green" | "amber" | "cora
 function SkeletonInsightCard({ tone }: { tone: "teal" | "green" | "amber" | "coral" }) {
   return (
     <article className={`analytics-insight analytics-tone-${tone} analytics-skeleton-fade`}>
-      <SkeletonBar width="120px" height="11px" />
+      <SkeletonBar width="120px" height="13px" />
       <div style={{ marginTop: 7 }}>
-        <SkeletonBar width="180px" height="17px" />
+        <SkeletonBar width="180px" height="21px" />
       </div>
       <div style={{ marginTop: 6 }}>
-        <SkeletonBar width="220px" height="12px" />
+        <SkeletonBar width="220px" height="18px" />
       </div>
     </article>
   );
@@ -97,11 +97,11 @@ export default function AnalyticsLoading() {
           <aside className="analytics-window analytics-skeleton-fade" aria-label="Data window">
             <div>
               <span>Data window</span>
-              <strong><SkeletonBar width="200px" height="14px" /></strong>
+              <strong><SkeletonBar width="200px" height="19px" /></strong>
             </div>
             <div>
               <span>Latest source reading</span>
-              <strong><SkeletonBar width="160px" height="14px" /></strong>
+              <strong><SkeletonBar width="160px" height="19px" /></strong>
             </div>
           </aside>
         </section>

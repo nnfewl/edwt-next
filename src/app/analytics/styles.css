@@ -406,6 +406,13 @@
   display: block;
   height: 100%;
   border-radius: inherit;
+  transform-origin: left;
+  animation: analytics-bar-grow 0.8s ease-out;
+}
+
+@keyframes analytics-bar-grow {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
 }
 
 .analytics-bar-median { background: var(--teal); }
@@ -832,6 +839,10 @@
   }
 
   .analytics-skeleton-fade {
+    animation: none;
+  }
+
+  .analytics-bar-fill {
     animation: none;
   }
 }
