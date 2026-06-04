@@ -359,6 +359,9 @@ const DetailsDrawer = ({
   f: Facility | null;
   onClose: () => void;
 }) => {
+  const panelRef = useRef<HTMLElement>(null);
+  const dragState = useRef<{ startY: number; currentY: number; dragging: boolean }>({ startY: 0, currentY: 0, dragging: false });
+
   useEffect(() => {
     if (!f) return;
     const onKeyDown = (event: KeyboardEvent) => {
@@ -370,6 +373,51 @@ const DetailsDrawer = ({
     return () => {
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [f, onClose]);
+
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!f || !panel) return;
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (panel.scrollTop > 0) return;
+      dragState.current = { startY: e.touches[0].clientY, currentY: e.touches[0].clientY, dragging: false };
+    };
+    const onTouchMove = (e: TouchEvent) => {
+      const dy = e.touches[0].clientY - dragState.current.startY;
+      if (dy < 0) return;
+      if (!dragState.current.dragging && dy > 8) dragState.current.dragging = true;
+      if (dragState.current.dragging) {
+        e.preventDefault();
+        dragState.current.currentY = e.touches[0].clientY;
+        panel.style.transform = `translateY(${dy}px)`;
+        panel.style.transition = "none";
+      }
+    };
+    const onTouchEnd = () => {
+      if (!dragState.current.dragging) return;
+      const dy = dragState.current.currentY - dragState.current.startY;
+      if (dy > 100) {
+        panel.style.transition = "transform 200ms ease-out";
+        panel.style.transform = "translateY(100%)";
+        setTimeout(onClose, 200);
+      } else {
+        panel.style.transition = "transform 200ms ease-out";
+        panel.style.transform = "";
+      }
+      dragState.current.dragging = false;
+    };
+
+    panel.addEventListener("touchstart", onTouchStart, { passive: true });
+    panel.addEventListener("touchmove", onTouchMove, { passive: false });
+    panel.addEventListener("touchend", onTouchEnd);
+    return () => {
+      panel.removeEventListener("touchstart", onTouchStart);
+      panel.removeEventListener("touchmove", onTouchMove);
+      panel.removeEventListener("touchend", onTouchEnd);
+      panel.style.transform = "";
+      panel.style.transition = "";
     };
   }, [f, onClose]);
 
@@ -389,12 +437,14 @@ const DetailsDrawer = ({
   return (
     <div className="drawer-scrim" onClick={onClose}>
       <aside
+        ref={panelRef}
         className="drawer-panel"
         onClick={stopBubble}
         role="dialog"
         aria-modal="true"
         aria-labelledby="facility-details-title"
       >
+        <div className="drawer-handle" aria-hidden="true" />
         <div
           style={{
             display: "flex",
@@ -506,7 +556,7 @@ const DetailsDrawer = ({
               aria-label={`Website for ${f.name}`}
               title="Website"
             >
-              <Icon name="globe" size={14} /> <span className="action-label">Visit {f.name} website</span>
+              <Icon name="globe" size={14} /> <span className="action-label">Visit {f.name.replace("Urgent and Primary Care Centre", "UPCC")} website</span>
             </a>
           )}
         </div>
