@@ -223,7 +223,10 @@ function toFacility(row: DbFacilityRow): Facility | null {
 
   return {
     id: row.id,
-    name: row.name,
+    // Normalize UPCC name variants (handles "and"/"&", Centre/Center, flexible whitespace).
+    // If upstream introduces variations this regex doesn't catch, consider fuzzy matching
+    // (e.g. Levenshtein distance against "Urgent and Primary Care Centre") to normalize.
+    name: row.name.replace(/urgent\s+(?:(?:and|&)\s+)?primary\s+care\s+cent(?:re|er)/i, "UPCC"),
     subtitle: subtitleFor(row),
     type: row.type === "upcc" ? "UPCC" : "Emergency",
     audience: audienceLabel(row.audience),

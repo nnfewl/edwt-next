@@ -556,7 +556,7 @@ const DetailsDrawer = ({
               aria-label={`Website for ${f.name}`}
               title="Website"
             >
-              <Icon name="globe" size={14} /> <span className="action-label">Visit {f.name.replace("Urgent and Primary Care Centre", "UPCC")} website</span>
+              <Icon name="globe" size={14} /> <span className="action-label">Visit {f.name} website</span>
             </a>
           )}
         </div>

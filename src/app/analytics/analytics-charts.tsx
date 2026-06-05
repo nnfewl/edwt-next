@@ -154,8 +154,8 @@ function heatColor(value: MaybeNumber | undefined) {
 function facilityShortName(name: string) {
   return name
     .replace(" Hospital", "")
+    .replace(/urgent\s+(?:(?:and|&)\s+)?primary\s+care\s+cent(?:re|er)/i, "UPCC")
     .replace("Health Care Centre", "HCC")
-    .replace("Urgent and Primary Care Centre", "UPCC")
     .replace("Centre", "Ctr");
 }
 
