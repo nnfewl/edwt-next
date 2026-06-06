@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { AutoRefresh } from "../auto-refresh";
 import { getPublicFacilities } from "../facilities-db";
 import { getApproximateLocationOrigin } from "../location-origin";
-import { MapClient } from "./map-client";
+import { MapClientLazy } from "./map-client-lazy";
 
 export const metadata: Metadata = {
   title: "Facility Map",
@@ -33,7 +33,7 @@ export default async function MapPage({ searchParams }: MapPageProps) {
   return (
     <>
       <AutoRefresh />
-      <MapClient
+      <MapClientLazy
         facilities={facilities}
         initialOrigin={initialOrigin}
         initialFacilityId={firstParam(params.facility)}
