@@ -1,8 +1,9 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { Suspense } from "react";
 
-export const MapClientLazy = dynamic(
+const MapClientDynamic = dynamic(
   () => import("./map-client").then((m) => m.MapClient),
   {
     ssr: false,
@@ -11,3 +12,11 @@ export const MapClientLazy = dynamic(
     ),
   },
 );
+
+export function MapClientLazy(props: React.ComponentProps<typeof MapClientDynamic>) {
+  return (
+    <Suspense>
+      <MapClientDynamic {...props} />
+    </Suspense>
+  );
+}
