@@ -573,6 +573,10 @@ export function MapClient({
     let markerEventsBound = false;
     let disposed = false;
 
+    const readyTimeout = window.setTimeout(() => {
+      if (!disposed) setMapUnavailable("Map is taking too long to load. Facility details are still available below.");
+    }, 10_000);
+
     const onLoad = () => {
       void (async () => {
         await addFacilityMarkerImages(m);
@@ -585,6 +589,7 @@ export function MapClient({
           m.on("mouseleave", layerId, handleMarkerLeave);
         });
         markerEventsBound = true;
+        window.clearTimeout(readyTimeout);
         setMapReady(true);
       })();
     };
@@ -594,6 +599,7 @@ export function MapClient({
 
     return () => {
       disposed = true;
+      window.clearTimeout(readyTimeout);
       if (markerEventsBound) {
         interactiveMarkerLayers.forEach((layerId) => {
           m.off("click", layerId, handleMarkerClick);
@@ -959,6 +965,22 @@ export function MapClient({
 
         <div className="map-canvas-wrap">
           <div ref={mapNode} className="map-canvas" />
+          {!mapUnavailable && (
+            <div className={"map-loading-overlay" + (mapReady ? " is-ready" : "")} aria-hidden="true">
+              <div className="map-pin-loader">
+                <div className="map-pin-icon">
+                  <svg viewBox="0 0 24 34" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 0C5.373 0 0 5.373 0 12c0 7.2 12 22 12 22s12-14.8 12-22C24 5.373 18.627 0 12 0z" fill="currentColor"/>
+                    <circle cx="12" cy="12" r="4.5" fill="white"/>
+                  </svg>
+                </div>
+                <div className="map-pin-shadow" />
+                <div className="map-pin-ring" />
+                <div className="map-pin-ring" />
+                <div className="map-pin-ring" />
+              </div>
+            </div>
+          )}
           {mapUnavailable && (
             <div className="map-fallback" role="status">
               <strong>Map unavailable</strong>
