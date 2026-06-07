@@ -29,7 +29,7 @@ export default withSentryConfig(nextConfig, {
 
   org: "nnfewl",
 
-  project: "javascript-nextjs",
+  project: "edwt-next",
 
   // Only print logs for uploading source maps in CI
   silent: !process.env.CI,

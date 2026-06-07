@@ -28,9 +28,7 @@
       ansible.builtin.assert:
         that:
           - edwtd_database_url is defined and edwtd_database_url | length > 0
-          - edwtd_r2_account_id | default('') | length > 0
-          - edwtd_r2_bucket | default('') | length > 0
-        fail_msg: "Set edwtd_database_url and the R2_* vars in vars.yml"
+        fail_msg: "Set edwtd_database_url in vars.yml"
 
     - name: System group
       ansible.builtin.group:
