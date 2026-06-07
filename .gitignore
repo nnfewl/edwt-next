@@ -51,3 +51,6 @@ next-env.d.ts
 # ansible deploy (real inventory + secrets)
 /service/deploy/ansible/inventory.ini
 /service/deploy/ansible/vars.yml
+
+# Sentry Config File
+.env.sentry-build-plugin
