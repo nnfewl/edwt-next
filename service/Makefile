@@ -3,7 +3,8 @@
 BINARY      := edwtd
 PKG         := ./cmd/edwtd
 BIN_DIR     := bin
-LDFLAGS     := -s -w
+RELEASE     := $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
+LDFLAGS     := -s -w -X main.release=$(RELEASE)
 BUILD_FLAGS := -trimpath -ldflags="$(LDFLAGS)"
 IMAGE       := edwt-worker
 
