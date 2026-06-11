@@ -5,7 +5,8 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCrosshairs, faLocationArrow, faPhone } from "@fortawesome/free-solid-svg-icons";
 import maplibregl, { type GeoJSONSource, type LngLatLike, type Map as MapLibreMap } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { type Facility, facilityWaitStatusLabel, severityFor } from "../data";
+import { useTranslations } from "next-intl";
+import { type Facility, facilityWaitStatusLabelKey, severityFor } from "../data";
 import { withOriginDistances } from "../geo-distance";
 import { preciseGpsOriginWithLocationText, readSessionGpsOrigin, useSessionGpsOrigin, writeSessionGpsOrigin } from "../location-session";
 import { FALLBACK_LOCATION_ORIGIN, type LocationOrigin } from "../location-types";
@@ -43,8 +44,8 @@ type RouteState = {
 // directions endpoint before any real launch.
 const MAP_STYLE_URL = "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
 
-function waitText(value: number | null) {
-  if (value == null) return "No data";
+function waitText(value: number | null, noDataLabel = "No data") {
+  if (value == null) return noDataLabel;
   if (value >= 60) return Math.floor(value / 60) + "h " + Math.round(value % 60) + "m";
   return Math.round(value) + "m";
 }
@@ -444,6 +445,10 @@ export function MapClient({
   initialFacilityId: string | null;
   routeRequested: boolean;
 }) {
+  const t = useTranslations("map");
+  const tc = useTranslations("common");
+  const tf = useTranslations("facilities");
+
   // GPS override pattern: store only the user-granted location locally so the
   // server's IP-geolocated `initialOrigin` can update through router.refresh()
   // without clobbering a user's precise-location choice.
@@ -522,7 +527,7 @@ export function MapClient({
       });
     } catch {
       const fallbackTimer = window.setTimeout(() => {
-        setMapUnavailable("Map rendering is unavailable in this browser. Facility details are still available below.");
+        setMapUnavailable("unavailable");
       }, 0);
       return () => window.clearTimeout(fallbackTimer);
     }
@@ -533,7 +538,7 @@ export function MapClient({
     // errors after the style is up shouldn't blank an otherwise-working map.
     m.on("error", () => {
       if (!m.isStyleLoaded()) {
-        setMapUnavailable("Map rendering is unavailable right now. Facility details are still available below.");
+        setMapUnavailable("unavailable");
       }
     });
     const locationControl: maplibregl.IControl = {
@@ -574,7 +579,7 @@ export function MapClient({
     let disposed = false;
 
     const readyTimeout = window.setTimeout(() => {
-      if (!disposed) setMapUnavailable("Map is taking too long to load. Facility details are still available below.");
+      if (!disposed) setMapUnavailable("unavailable");
     }, 10_000);
 
     const onLoad = () => {
@@ -703,7 +708,7 @@ export function MapClient({
     if (!userLocationMarker.current) {
       const markerNode = document.createElement("div");
       markerNode.className = "user-location-marker";
-      markerNode.setAttribute("aria-label", "Your location");
+      markerNode.setAttribute("aria-label", t("yourLocation"));
       const pinNode = document.createElement("span");
       pinNode.className = "user-location-pin";
       markerNode.append(pinNode);
@@ -713,7 +718,7 @@ export function MapClient({
     } else {
       userLocationMarker.current.setLngLat(browserOrigin);
     }
-  }, []);
+  }, [t]);
 
   const showUserLocation = useCallback(async () => {
     if (!map.current) return;
@@ -731,7 +736,7 @@ export function MapClient({
       setLocating(false);
 
       if (!pos) {
-        setRouteError("Precise location is required to show your location on the map.");
+        setRouteError("location-required-map");
         return;
       }
 
@@ -751,10 +756,10 @@ export function MapClient({
     const button = locationControlButton.current;
     if (!button) return;
     button.disabled = !mapReady || locating;
-    button.title = locating ? "Finding your location" : "Show your location";
-    button.setAttribute("aria-label", locating ? "Finding your location" : "Show your location");
+    button.title = locating ? t("findingLocation") : t("showYourLocation");
+    button.setAttribute("aria-label", locating ? t("findingLocation") : t("showYourLocation"));
     button.classList.toggle("is-locating", locating);
-  }, [locating, mapReady]);
+  }, [locating, mapReady, t]);
 
   useEffect(() => {
     if (!mapReady || !gpsOrigin || gpsOrigin.source !== "gps") return;
@@ -776,7 +781,7 @@ export function MapClient({
     } else {
       const pos = await getBrowserPosition();
       if (!pos) {
-        setRouteError("Precise location is required to show directions.");
+        setRouteError("location-required-directions");
         setRouteLoading(false);
         return;
       }
@@ -831,14 +836,14 @@ export function MapClient({
       setRoute({
         distanceKm: nextRoute.distance / 1000,
         durationMin: nextRoute.duration / 60,
-        originLabel: "precise location",
+        originLabel: t("yourLocation"),
       });
     } catch (error) {
       setRouteError(error instanceof Error ? error.message : "Could not calculate directions");
     } finally {
       setRouteLoading(false);
     }
-  }, [applyGpsOrigin, clearRoute, mobileMapPadding, selected, setUserLocationMarker]);
+  }, [applyGpsOrigin, clearRoute, mobileMapPadding, selected, setUserLocationMarker, t]);
 
   useEffect(() => {
     const timer = window.setTimeout(clearRoute, 0);
@@ -856,89 +861,89 @@ export function MapClient({
       <section className="map-shell">
         <aside className="map-sidebar" aria-label="Facility map controls">
           <div className="map-copy">
-            <p className="eyebrow">{facilitiesWithDistance.length} reporting</p>
-            <h1>Nearby facilities</h1>
+            <p className="eyebrow">{t("reporting", { count: facilitiesWithDistance.length })}</p>
+            <h1>{t("nearbyFacilities")}</h1>
             <p>
-              Wait-time markers are colored by severity. Pick a facility to inspect the current wait, distance, and directions.
+              {t("mapSidebarDesc")}
             </p>
           </div>
 
           <div className="map-stats">
             <div>
-              <span>Shortest open wait</span>
-              <strong>{shortest ? waitText(shortest.waitMin) : "No data"}</strong>
-              <small>{shortest?.name ?? (openFacilities.length ? "No posted waits" : "No open facilities")}</small>
+              <span>{t("shortestOpenWait")}</span>
+              <strong>{shortest ? waitText(shortest.waitMin, tc("noData")) : tc("noData")}</strong>
+              <small>{shortest?.name ?? (openFacilities.length ? t("noPostedWaits") : t("noOpenFacilities"))}</small>
             </div>
             <div>
-              <span>Highest pressure</span>
-              <strong>{longest ? waitText(longest.waitMin) : "No data"}</strong>
-              <small>{longest?.name ?? (openFacilities.length ? "No posted waits" : "No open facilities")}</small>
+              <span>{t("highestPressure")}</span>
+              <strong>{longest ? waitText(longest.waitMin, tc("noData")) : tc("noData")}</strong>
+              <small>{longest?.name ?? (openFacilities.length ? t("noPostedWaits") : t("noOpenFacilities"))}</small>
             </div>
           </div>
 
           {selected && (
             <article ref={selectedCard} className="selected-card" data-severity={severityFor(selected.waitMin)}>
               <div className="selected-head">
-                <span className="type-pill">{selected.type}</span>
-                {selected.open && <span className="status-pill open">Open</span>}
+                <span className="type-pill">{tc(selected.type === "Emergency" ? "emergency" : "upcc")}</span>
+                {selected.open && <span className="status-pill open">{tc("open")}</span>}
               </div>
               <h2>{selected.name}</h2>
               <p>{selected.subtitle} · {selected.audience}</p>
               <div
                 className={"selected-wait " + (!selected.open ? "is-closed" : !selectedHasWaitData ? "is-no-data" : "")}
-                aria-label={!selected.open ? selected.name + " is closed" : !selectedHasWaitData ? selected.name + " has no posted wait data" : undefined}
+                aria-label={!selected.open ? selected.name + " – " + tc("closed") : !selectedHasWaitData ? selected.name + " – " + tc("noData") : undefined}
               >
                 {selected.open ? (
                   selectedHasWaitData ? (
                     <>
                       <strong>{selected.waitText}</strong>
                       <span className="selected-wait-status">
-                        {facilityWaitStatusLabel(selected)} · updated {selected.lastUpdated}
+                        {tc(facilityWaitStatusLabelKey(selected))} · {tc("updated", { time: selected.lastUpdated })}
                       </span>
                     </>
                   ) : (
                     <div className="no-data-state no-data-map-state">
-                      <strong>No data</strong>
-                      <span>No wait posted</span>
+                      <strong>{tc("noData")}</strong>
+                      <span>{t("noPostedWaits")}</span>
                     </div>
                   )
                 ) : (
                   <>
-                    <strong>Closed</strong>
-                    <span className="selected-wait-status">Facility is closed</span>
+                    <strong>{tc("closed")}</strong>
+                    <span className="selected-wait-status">{t("facilityIsClosed")}</span>
                   </>
                 )}
               </div>
               <dl>
-                <div><dt>Distance</dt><dd>{selected.distanceKm} km</dd></div>
-                {selected.inWaitingRoom > 0 && <div><dt>Waiting</dt><dd>{selected.inWaitingRoom}</dd></div>}
-                {selected.physiciansOnDuty > 0 && <div><dt>On duty</dt><dd>{selected.physiciansOnDuty}</dd></div>}
+                <div><dt>{t("distance")}</dt><dd>{selected.distanceKm} km</dd></div>
+                {selected.inWaitingRoom > 0 && <div><dt>{t("waiting")}</dt><dd>{selected.inWaitingRoom}</dd></div>}
+                {selected.physiciansOnDuty > 0 && <div><dt>{t("onDuty")}</dt><dd>{selected.physiciansOnDuty}</dd></div>}
               </dl>
               {selectedInTopPressure && (
-                <div className="pressure-note">This site is currently in the top pressure group.</div>
+                <div className="pressure-note">{t("topPressureNote")}</div>
               )}
               <div className="selected-actions">
                 <button type="button" onClick={showDirections} disabled={routeLoading}>
                   <FontAwesomeIcon icon={faLocationArrow} aria-hidden="true" />
-                  <span>{routeLoading ? "Routing..." : "Directions"}</span>
+                  <span>{routeLoading ? t("routing") : t("directions")}</span>
                 </button>
                 <button type="button" onClick={() => centerMapOn([selected.lng, selected.lat], 13.2, 650)}>
                   <FontAwesomeIcon icon={faCrosshairs} aria-hidden="true" />
-                  <span>Center map</span>
+                  <span>{t("centerMap")}</span>
                 </button>
                 {selected.phone && (
                   <a href={"tel:" + selected.phone}>
                     <FontAwesomeIcon icon={faPhone} aria-hidden="true" />
-                    <span>Call</span>
+                    <span>{tf("call")}</span>
                   </a>
                 )}
               </div>
               {route && (
                 <div className="route-note">
-                  Route from {route.originLabel}: {route.distanceKm.toFixed(1)} km · {Math.round(route.durationMin)} min drive
+                  {t("routeFrom", { origin: route.originLabel, distance: route.distanceKm.toFixed(1), duration: Math.round(route.durationMin).toString() })}
                 </div>
               )}
-              {routeError && <div className="route-note error">{routeError}</div>}
+              {routeError && <div className="route-note error">{routeError === "location-required-directions" ? t("locationRequired") : routeError === "location-required-map" ? t("showLocationRequired") : routeError}</div>}
             </article>
           )}
 
@@ -983,8 +988,7 @@ export function MapClient({
           )}
           {mapUnavailable && (
             <div className="map-fallback" role="status">
-              <strong>Map unavailable</strong>
-              <span>{mapUnavailable}</span>
+              <strong>{t("mapUnavailable")}</strong>
             </div>
           )}
         </div>
