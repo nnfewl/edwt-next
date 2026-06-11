@@ -209,16 +209,16 @@ export function severityFor(min: number | null): Severity {
   return "long";
 }
 
-export function severityLabel(min: number | null): string {
-  if (min == null) return "No data";
-  if (min <= 60) return "Short wait";
-  if (min <= 180) return "Moderate wait";
-  return "Long wait";
+export function severityLabelKey(min: number | null): string {
+  if (min == null) return "noData";
+  if (min <= 60) return "shortWait";
+  if (min <= 180) return "moderateWait";
+  return "longWait";
 }
 
-export function facilityWaitStatusLabel(facility: Pick<Facility, "open" | "waitMin">): string {
-  if (!facility.open) return "Closed";
-  return severityLabel(facility.waitMin);
+export function facilityWaitStatusLabelKey(facility: Pick<Facility, "open" | "waitMin">): string {
+  if (!facility.open) return "closed";
+  return severityLabelKey(facility.waitMin);
 }
 
 export type HistoryPoint = { observedAt: string; min: number };
