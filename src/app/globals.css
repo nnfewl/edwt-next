@@ -328,3 +328,25 @@ body {
     color: var(--bg, #f8fafc);
   }
 }
+
+.app-locale-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: background 150ms, border-color 150ms;
+  flex-shrink: 0;
+}
+.app-locale-toggle:hover {
+  background: var(--line);
+  border-color: var(--muted);
+}

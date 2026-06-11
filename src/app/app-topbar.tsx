@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useLayoutEffect, useRef, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faBars, faChartLine, faHospital, faList, faMapLocationDot } from "@fortawesome/free-solid-svg-icons";
+import { useLocale, useTranslations } from "next-intl";
 
 type AppTopBarActive = "list" | "map" | "analytics";
 
@@ -16,10 +17,10 @@ type NavIndicator = {
 };
 
 const NAV_ITEMS = [
-  { id: "list", href: "/", label: "Facilities", icon: faList },
-  { id: "map", href: "/map", label: "Map", icon: faMapLocationDot },
-  { id: "analytics", href: "/analytics", label: "Analytics", icon: faChartLine },
-] satisfies Array<{ id: AppTopBarActive; href: string; label: string; icon: typeof faList }>;
+  { id: "list", href: "/", labelKey: "facilities", icon: faList },
+  { id: "map", href: "/map", labelKey: "map", icon: faMapLocationDot },
+  { id: "analytics", href: "/analytics", labelKey: "analytics", icon: faChartLine },
+] satisfies Array<{ id: AppTopBarActive; href: string; labelKey: string; icon: typeof faList }>;
 
 function activeFromPathname(pathname: string): AppTopBarActive {
   if (pathname.startsWith("/map")) return "map";
@@ -27,7 +28,30 @@ function activeFromPathname(pathname: string): AppTopBarActive {
   return "list";
 }
 
+function LocaleToggle() {
+  const locale = useLocale();
+  const router = useRouter();
+  const nextLocale = locale === "en" ? "fr" : "en";
+
+  const switchLocale = () => {
+    document.cookie = `NEXT_LOCALE=${nextLocale};path=/;max-age=31536000;samesite=lax`;
+    router.refresh();
+  };
+
+  return (
+    <button
+      className="app-locale-toggle"
+      type="button"
+      onClick={switchLocale}
+      aria-label={nextLocale === "fr" ? "Passer au français" : "Switch to English"}
+    >
+      {nextLocale.toUpperCase()}
+    </button>
+  );
+}
+
 export function AppTopBar() {
+  const t = useTranslations("nav");
   const pathname = usePathname();
   const active = activeFromPathname(pathname);
   const menuRef = useRef<HTMLDetailsElement>(null);
@@ -104,7 +128,7 @@ export function AppTopBar() {
                 linkRefs.current[item.id] = node;
               }}
             >
-              <FontAwesomeIcon icon={item.icon} aria-hidden="true" /> {item.label}
+              <FontAwesomeIcon icon={item.icon} aria-hidden="true" /> {t(item.labelKey)}
             </Link>
           ))}
         </nav>
@@ -115,21 +139,22 @@ export function AppTopBar() {
           </summary>
           <div className="app-mobile-menu-panel" role="menu">
             <Link href="/" className={active === "list" ? "active" : ""} onClick={closeMenu}>
-              <FontAwesomeIcon icon={faList} aria-hidden="true" /> Facilities
+              <FontAwesomeIcon icon={faList} aria-hidden="true" /> {t("facilities")}
             </Link>
             <Link href="/map" className={active === "map" ? "active" : ""} onClick={closeMenu}>
-              <FontAwesomeIcon icon={faMapLocationDot} aria-hidden="true" /> Map
+              <FontAwesomeIcon icon={faMapLocationDot} aria-hidden="true" /> {t("map")}
             </Link>
             <Link href="/analytics" className={active === "analytics" ? "active" : ""} onClick={closeMenu}>
-              <FontAwesomeIcon icon={faChartLine} aria-hidden="true" /> Analytics
+              <FontAwesomeIcon icon={faChartLine} aria-hidden="true" /> {t("analytics")}
             </Link>
           </div>
         </details>
 
         <div className="app-topbar-spacer" />
+        <LocaleToggle />
         <div className="app-live-pill">
           <span aria-hidden="true" />
-          Live wait times
+          {t("liveWaitTimes")}
         </div>
       </div>
     </header>
