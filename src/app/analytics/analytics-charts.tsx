@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, type ReactNode } from "react";
+import { useTranslations } from "next-intl";
 import Chart from "chart.js/auto";
 import type { ChartConfiguration, ChartType, Plugin } from "chart.js";
 
@@ -316,6 +317,8 @@ const heatmapCellPlugin: Plugin = {
 };
 
 export function AnalyticsCharts({ current, distribution, heatmap, facilityRisk, typeTrend, coverage }: Props) {
+  const t = useTranslations("charts");
+
   const currentRanking = useMemo(() => current
     .filter((point) => point.wait !== null)
     .slice(0, 14)
@@ -330,7 +333,7 @@ export function AnalyticsCharts({ current, distribution, heatmap, facilityRisk, 
     data: {
       labels: currentRanking.map((point) => point.facility),
       datasets: [{
-        label: "Current wait time",
+        label: t("currentWaitTime"),
         data: currentRanking.map((point) => point.wait),
         backgroundColor: currentRanking.map((point) => point.color),
         borderRadius: 6,
@@ -350,24 +353,24 @@ export function AnalyticsCharts({ current, distribution, heatmap, facilityRisk, 
         tooltip: {
           ...basePlugins.tooltip,
           callbacks: {
-            label: (item) => `Current wait time: ${minutes(Number(item.raw))}`,
+            label: (item) => `${t("currentWaitTime")}: ${minutes(Number(item.raw))}`,
           },
         },
       },
       scales: {
-        x: { ...commonScales, beginAtZero: true, ticks: { ...commonScales.ticks, callback: axisMinutes }, title: { ...commonScales.title, display: true, text: "current wait time" } },
+        x: { ...commonScales, beginAtZero: true, ticks: { ...commonScales.ticks, callback: axisMinutes }, title: { ...commonScales.title, display: true, text: t("currentWaitTime") } },
         y: { ...commonScales, grid: { display: false } },
       },
     },
-  }), [currentRanking]);
+  }), [currentRanking, t]);
 
   const typeTrendLabels = useMemo(() => Array.from(new Set(typeTrend.map((point) => shortTime(point.bucket)))), [typeTrend]);
   const typeTrendTicks = useMemo(() => new Set(sparseTicks(typeTrendLabels, 5)), [typeTrendLabels]);
   const typeTrendSeries = useMemo(() => [
-    { label: "ED median wait time", type: "ed", metric: "median", color: colors.coral },
-    { label: "ED P90 wait time", type: "ed", metric: "p90", color: colors.red },
-    { label: "UPCC median wait time", type: "upcc", metric: "median", color: colors.teal },
-    { label: "UPCC P90 wait time", type: "upcc", metric: "p90", color: colors.cyan },
+    { label: t("edMedianWait"), type: "ed", metric: "median", color: colors.coral },
+    { label: t("edP90Wait"), type: "ed", metric: "p90", color: colors.red },
+    { label: t("upccMedianWait"), type: "upcc", metric: "median", color: colors.teal },
+    { label: t("upccP90Wait"), type: "upcc", metric: "p90", color: colors.cyan },
   ].map((series) => ({
     label: series.label,
     data: typeTrendLabels.map((label) => {
@@ -381,7 +384,7 @@ export function AnalyticsCharts({ current, distribution, heatmap, facilityRisk, 
     pointHoverRadius: 4,
     tension: 0.36,
     spanGaps: true,
-  })), [typeTrend, typeTrendLabels]);
+  })), [typeTrend, typeTrendLabels, t]);
 
   const trendConfig = useMemo<ChartConfiguration>(() => ({
     type: "line",
@@ -465,7 +468,7 @@ export function AnalyticsCharts({ current, distribution, heatmap, facilityRisk, 
     data: {
       datasets: [
         {
-          label: "Usual median wait time",
+          label: "Usual median",
           data: currentVsUsual.map((point, index) => ({ x: point.median, y: index })) as XYDatum[],
           backgroundColor: colors.muted,
           borderColor: colors.surface,
@@ -474,7 +477,7 @@ export function AnalyticsCharts({ current, distribution, heatmap, facilityRisk, 
           pointHoverRadius: 6,
         },
         {
-          label: "Current wait time",
+          label: t("currentWaitTime"),
           data: currentVsUsual.map((point, index) => ({ x: point.current, y: index })) as XYDatum[],
           backgroundColor: currentVsUsual.map((point) => point.color),
           borderColor: colors.surface,
@@ -515,7 +518,7 @@ export function AnalyticsCharts({ current, distribution, heatmap, facilityRisk, 
       },
     },
     plugins: [dumbbellConnectorPlugin],
-  }), [currentVsUsual]);
+  }), [currentVsUsual, t]);
 
   const riskPoints = useMemo(() => facilityRisk
     .filter((point) => point.readings >= 100)
@@ -693,53 +696,53 @@ export function AnalyticsCharts({ current, distribution, heatmap, facilityRisk, 
   return (
     <div className="analytics-charts">
       <section className="analytics-chart-grid analytics-chart-grid-featured">
-        <ChartShell title="Current access pressure" eyebrow="Longest current wait times, severity-colored by threshold.">
+        <ChartShell title={t("currentAccessPressure")} eyebrow={t("currentAccessPressureDesc")}>
           <ChartCanvas config={currentPressureConfig} frameClassName="analytics-chart-frame analytics-chart-frame-tall" />
           <div className="analytics-legend-inline">
-            <span><i className="analytics-dot-short" />under 1h</span>
-            <span><i className="analytics-dot-watch" />2h+</span>
-            <span><i className="analytics-dot-high" />4h+</span>
-            <span><i className="analytics-dot-severe" />6h+</span>
+            <span><i className="analytics-dot-short" />{t("under1h")}</span>
+            <span><i className="analytics-dot-watch" />{t("over2h")}</span>
+            <span><i className="analytics-dot-high" />{t("over4h")}</span>
+            <span><i className="analytics-dot-severe" />{t("over6h")}</span>
           </div>
         </ChartShell>
 
-        <ChartShell title="ED vs UPCC trend" eyebrow="Median wait time and P90 wait time by care type, shown separately for clearer tail risk.">
+        <ChartShell title={t("edVsUpccTrend")} eyebrow={t("edVsUpccTrendDesc")}>
           <ChartCanvas config={trendConfig} frameClassName="analytics-chart-frame analytics-chart-frame-tall analytics-chart-frame-wide" />
           <div className="analytics-legend-inline analytics-line-legend" aria-label="ED and UPCC wait-time trend legend">
-            <span><i className="analytics-line-ed-median" />ED median wait time</span>
-            <span><i className="analytics-line-ed-p90" />ED P90 wait time</span>
-            <span><i className="analytics-line-upcc-median" />UPCC median wait time</span>
-            <span><i className="analytics-line-upcc-p90" />UPCC P90 wait time</span>
+            <span><i className="analytics-line-ed-median" />{t("edMedianWait")}</span>
+            <span><i className="analytics-line-ed-p90" />{t("edP90Wait")}</span>
+            <span><i className="analytics-line-upcc-median" />{t("upccMedianWait")}</span>
+            <span><i className="analytics-line-upcc-p90" />{t("upccP90Wait")}</span>
           </div>
         </ChartShell>
       </section>
 
       <section className="analytics-chart-grid">
-        <ChartShell title="Sustained facility pressure" eyebrow="Facilities ranked by P90 wait time. Median wait time shows typical pressure; P90 wait time shows bad-day pressure.">
+        <ChartShell title={t("sustainedFacilityPressure")} eyebrow={t("sustainedFacilityPressureDesc")}>
           <ChartCanvas config={sustainedConfig} frameClassName="analytics-chart-frame analytics-chart-frame-tall" />
         </ChartShell>
 
-        <ChartShell title="Current wait time vs usual median" eyebrow="Neutral dot is site median wait time; colored dot is current wait time. The line shows the gap.">
+        <ChartShell title={t("currentVsMedian")} eyebrow={t("currentVsMedianDesc")}>
           <ChartCanvas config={dumbbellConfig} frameClassName="analytics-chart-frame analytics-chart-frame-tall" />
         </ChartShell>
       </section>
 
       <section className="analytics-chart-grid">
-        <ChartShell title="Tail-risk map" eyebrow="Median wait time vs P90 wait time by facility. Upper-right sites are typically slow and painful in the tail.">
+        <ChartShell title={t("tailRiskMap")} eyebrow={t("tailRiskMapDesc")}>
           <ChartCanvas config={riskConfig} frameClassName="analytics-chart-frame analytics-chart-frame-medium analytics-chart-frame-wide" />
         </ChartShell>
 
-        <ChartShell title="Wait-time distribution" eyebrow="How many readings land in each wait-time bucket, useful for long-tail pressure checks.">
+        <ChartShell title={t("waitDistribution")} eyebrow={t("waitDistributionDesc")}>
           <ChartCanvas config={distributionConfig} frameClassName="analytics-chart-frame analytics-chart-frame-medium" />
         </ChartShell>
       </section>
 
       <section className="analytics-chart-grid analytics-chart-grid-featured">
-        <ChartShell title="Facility-hour pattern" eyebrow="Top sustained-pressure facilities by local hour. Darker means higher average wait time." wide>
+        <ChartShell title={t("facilityHourPattern")} eyebrow={t("facilityHourPatternDesc")} wide>
           <ChartCanvas config={heatmapConfig} frameClassName="analytics-chart-frame analytics-chart-frame-tall analytics-chart-frame-extra-wide" />
         </ChartShell>
 
-        <ChartShell title="Coverage volume" eyebrow="Readings per facility. Low-volume facilities should be interpreted cautiously.">
+        <ChartShell title={t("coverageVolume")} eyebrow={t("coverageVolumeDesc")}>
           <ChartCanvas config={coverageConfig} frameClassName="analytics-chart-frame analytics-chart-frame-tall" />
         </ChartShell>
       </section>
