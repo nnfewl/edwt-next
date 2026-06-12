@@ -14,8 +14,8 @@ import { AutoRefresh } from "../auto-refresh";
 import { AnalyticsCharts } from "./analytics-charts";
 import "./styles.css";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+// ISR: serve a cached page instantly; regenerate in the background every 60s.
+export const revalidate = 60;
 // These analytics aggregations take longer than the default serverless budget.
 // Without this, Vercel kills the request before the queries finish → endless load.
 export const maxDuration = 60;
@@ -686,31 +686,8 @@ function AnalyticsHeroMap() {
   );
 }
 
-export default async function AnalyticsPage({
-  searchParams,
-}: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
-  const params = await searchParams;
+export default async function AnalyticsPage() {
   console.log("[analytics] page render start", new Date().toISOString());
-
-  // Emergency isolation path: /analytics?shell=1 renders without touching
-  // Postgres. Direct /analytics uses the lightweight facility snapshot.
-  if (params.shell === "1") {
-    console.log("[analytics] shell-only mode — skipping all DB queries");
-    return (
-      <div className="analytics-root">
-        <main className="analytics-page">
-          <section className="analytics-error-panel">
-            <p className="analytics-eyebrow">Analytics</p>
-            <h1>Analytics page is loading without data.</h1>
-            <p>The route rendered successfully without database queries. Data panels are temporarily disabled while production access is verified.</p>
-            <Link href="/" className="analytics-button">Back to facilities</Link>
-          </section>
-        </main>
-      </div>
-    );
-  }
 
   const result = await getAnalytics();
   console.log("[analytics] getAnalytics resolved", { hasError: !!result.error, hasData: !!result.data });
