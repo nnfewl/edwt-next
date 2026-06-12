@@ -482,6 +482,9 @@ export function MapClient({
   const [locating, setLocating] = useState(false);
   const [mapUnavailable, setMapUnavailable] = useState<string | null>(null);
   const [routeError, setRouteError] = useState<string | null>(null);
+  // Mobile: the card/rail overlay covers the top of the canvas, so the loading
+  // pin must center in the visible region below it — same idea as mobileMapOffset.
+  const [loaderPad, setLoaderPad] = useState(0);
   // Capture the initial facility list in a ref so the mount-only init effect
   // can read it for fitBounds without taking a dep that would tear the whole
   // map down (and reset pan/zoom + any active route) every time router.refresh
@@ -634,6 +637,21 @@ export function MapClient({
     const overlayBottom = Math.max(cardBottom, railBottom);
     return Math.max(0, Math.min(mapRect.bottom, overlayBottom) - mapRect.top);
   }, []);
+
+  useEffect(() => {
+    if (mapReady) return;
+    let raf = 0;
+    const measure = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => setLoaderPad(mobileOverlayHeight()));
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", measure);
+    };
+  }, [mapReady, mobileOverlayHeight]);
 
   const mobileMapOffset = useCallback((): [number, number] => {
     if (!mapNode.current) return [0, 0];
@@ -966,7 +984,11 @@ export function MapClient({
         <div className="map-canvas-wrap">
           <div ref={mapNode} className="map-canvas" />
           {!mapUnavailable && (
-            <div className={"map-loading-overlay" + (mapReady ? " is-ready" : "")} aria-hidden="true">
+            <div
+              className={"map-loading-overlay" + (mapReady ? " is-ready" : "")}
+              style={loaderPad > 0 ? { paddingTop: loaderPad } : undefined}
+              aria-hidden="true"
+            >
               <div className="map-pin-loader">
                 <div className="map-pin-icon">
                   <svg viewBox="0 0 24 34" fill="none" xmlns="http://www.w3.org/2000/svg">
