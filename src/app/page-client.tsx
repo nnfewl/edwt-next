@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Fragment,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -114,6 +115,8 @@ const WaveBackground = ({
   intensity = 0.48,
   actual,
   projected,
+  className,
+  gidSuffix = "",
 }: {
   f: Facility;
   height?: number;
@@ -121,6 +124,9 @@ const WaveBackground = ({
   /** When set, the wave plots today's readings on a midnight-to-midnight axis. */
   actual?: WavePoint[];
   projected?: WavePoint[];
+  className?: string;
+  /** Keeps gradient ids unique when two waves for one facility are stacked. */
+  gidSuffix?: string;
 }) => {
   if (f.waitMin == null) return null;
   // Pin today's wave to the left edge: extend the first reading back to midnight.
@@ -203,11 +209,11 @@ const WaveBackground = ({
     closed: { c: "var(--muted)", op: 0.06 },
   }[sev];
 
-  const gid = `wave-${f.id}`;
+  const gid = `wave-${f.id}${gidSuffix}`;
 
   return (
     <svg
-      className="wave-bg"
+      className={className ? `wave-bg ${className}` : "wave-bg"}
       viewBox={`0 0 ${W} ${H}`}
       preserveAspectRatio="none"
       aria-hidden="true"
@@ -348,18 +354,37 @@ const todaySoFar = (hist: HistoryPoint[] | undefined): WavePoint[] => {
 
 const TodayWave = ({ f, body }: { f: Facility; body: TodayResponse | null }) => {
   const hasToday = body != null && body.actual.length >= 2;
-  const provisional = hasToday ? [] : todaySoFar(f.history);
-  const showToday = hasToday || provisional.length >= 2;
+  const provisional = todaySoFar(f.history);
+  const preActual = provisional.length >= 2 ? provisional : undefined;
+  const showToday = hasToday || preActual != null;
 
   return (
     <>
-      <WaveBackground
-        f={f}
-        height={110}
-        intensity={0.85}
-        actual={hasToday ? body.actual : provisional.length >= 2 ? provisional : undefined}
-        projected={hasToday ? body.projected : undefined}
-      />
+      {hasToday ? (
+        // Crossfade: the pre-API wave stays mounted and fades out underneath
+        // while the refined wave (with the forecast) fades in — the two solid
+        // shapes are near-identical, so the swap reads as a soft morph.
+        <Fragment key={f.id}>
+          <WaveBackground
+            f={f}
+            height={110}
+            intensity={0.85}
+            actual={preActual}
+            className="wave-fade-out"
+            gidSuffix="-pre"
+          />
+          <WaveBackground
+            f={f}
+            height={110}
+            intensity={0.85}
+            actual={body.actual}
+            projected={body.projected}
+            className="wave-fade-in"
+          />
+        </Fragment>
+      ) : (
+        <WaveBackground f={f} height={110} intensity={0.85} actual={preActual} />
+      )}
       {(showToday || (f.history?.length ?? 0) >= 2) && (
         <div
           className="wave-caption"

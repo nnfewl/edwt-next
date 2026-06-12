@@ -930,6 +930,35 @@
   pointer-events: auto;
   cursor: help;
 }
+/* Crossfade when the refined /today wave replaces the seeded one: keyframes
+   omit the other end so each wave fades to/from its own inline opacity. */
+.er-now-root .wave-fade-in {
+  animation: wave-solid-in 400ms ease-out;
+}
+.er-now-root .wave-fade-out {
+  animation: wave-solid-out 400ms ease-out forwards;
+}
+@keyframes wave-solid-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes wave-solid-out {
+  to {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .er-now-root .wave-fade-in {
+    animation: none;
+  }
+  .er-now-root .wave-fade-out {
+    /* Without the animation the inline opacity would keep it visible and
+       double-stack the gradients under the refined wave. */
+    display: none;
+  }
+}
+
 /* Forecast wipe: the projection draws itself forward from the now line. */
 .er-now-root .wave-proj {
   animation: wave-proj-in 600ms ease-out both;
