@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import type { ReactNode } from "react";
 import { client as sharedClient } from "../../db/client";
 import { HeroMapBackdrop } from "../hero-map-backdrop";
@@ -507,9 +506,9 @@ async function queryAnalytics(): Promise<AnalyticsResult> {
   }
 }
 
-// Hard ceiling so the page can never hang: if the queries don't resolve in
-// time, return an error result and let the page render its error panel instead
-// of loading forever. Sits just under the function's maxDuration budget.
+// Hard ceiling so the page can never hang. The page throws on this result so
+// failed ISR regenerations keep serving the last successful cached page instead
+// of replacing it with a cached error document.
 const ANALYTICS_DEADLINE_MS = 45_000;
 
 function withDeadline(promise: Promise<AnalyticsResult>): Promise<AnalyticsResult> {
@@ -693,20 +692,7 @@ export default async function AnalyticsPage() {
   console.log("[analytics] getAnalytics resolved", { hasError: !!result.error, hasData: !!result.data });
 
   if (result.error || !result.data) {
-    return (
-      <div className="analytics-root">
-        <AutoRefresh intervalMs={300_000} />
-        <main className="analytics-page">
-          <section className="analytics-error-panel">
-            <p className="analytics-eyebrow">Database unavailable</p>
-            <h1>The analytics page could not read Postgres.</h1>
-            <p>Check <code>DATABASE_URL</code> or the environment file used to start Next, then refresh this page.</p>
-            <Link href="/" className="analytics-button">Back to facilities</Link>
-            <pre>{result.error}</pre>
-          </section>
-        </main>
-      </div>
-    );
+    throw new Error(`Analytics data unavailable: ${result.error ?? "No data returned"}`);
   }
 
   const data = result.data;
