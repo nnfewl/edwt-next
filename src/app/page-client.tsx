@@ -42,7 +42,7 @@ import { ClosedIllustration } from "./closed-illustration";
 import type { TodayResponse } from "./api/facilities/[id]/today/route";
 import { withOriginDistances } from "./geo-distance";
 import { HeroMapBackdrop } from "./hero-map-backdrop";
-import { preciseGpsOrigin, preciseGpsOriginWithLocationText, useSessionGpsOrigin, writeSessionGpsOrigin } from "./location-session";
+import { preciseGpsOrigin, preciseGpsOriginWithLocationText, readSessionGpsOrigin, useSessionGpsOrigin, writeSessionGpsOrigin } from "./location-session";
 import { type LocationOrigin } from "./location-types";
 import "./styles.css";
 
@@ -946,6 +946,27 @@ function fmtMins(m: number): string {
   return h ? `${h}h ${mm}m` : `${mm}m`;
 }
 
+function isLocationOrigin(value: unknown): value is LocationOrigin {
+  if (typeof value !== "object" || value === null) return false;
+  const origin = value as Partial<LocationOrigin>;
+  const validSource = origin.source === "ip" || origin.source === "gps" || origin.source === "fallback";
+  const validAccuracy =
+    origin.accuracyMeters === undefined ||
+    origin.accuracyMeters === null ||
+    (typeof origin.accuracyMeters === "number" && Number.isFinite(origin.accuracyMeters));
+
+  return (
+    typeof origin.lat === "number" &&
+    Number.isFinite(origin.lat) &&
+    typeof origin.lng === "number" &&
+    Number.isFinite(origin.lng) &&
+    typeof origin.label === "string" &&
+    validSource &&
+    typeof origin.accuracyLabel === "string" &&
+    validAccuracy
+  );
+}
+
 export function ERNowPageClient({
   facilities,
   initialOrigin,
@@ -983,10 +1004,12 @@ export function ERNowPageClient({
     ready: false,
     animate: false,
   });
-  // Store ONLY a GPS override locally; fall back to the prop so server-side IP
-  // geolocation updates flow in on refresh without resetting a user's GPS choice.
+  // Store ONLY a GPS override locally; the server-rendered fallback origin stays
+  // shared so the homepage can be cached across visitors. IP-derived origin is
+  // fetched after hydration through a tiny dynamic endpoint, and GPS still wins.
   const [gpsOrigin, setGpsOrigin] = useSessionGpsOrigin();
-  const origin: LocationOrigin = gpsOrigin ?? initialOrigin;
+  const [ipOrigin, setIpOrigin] = useState<LocationOrigin | null>(null);
+  const origin: LocationOrigin = gpsOrigin ?? ipOrigin ?? initialOrigin;
   const [geoStatus, setGeoStatus] = useState<"idle" | "locating" | "denied" | "unavailable" | "insecure">("idle");
   // Time is rendered client-side to avoid an SSR/CSR mismatch on the hero meta.
   const [now, setNow] = useState<Date | null>(null);
@@ -1003,6 +1026,31 @@ export function ERNowPageClient({
       clearInterval(id);
     };
   }, []);
+
+  useEffect(() => {
+    if (gpsOrigin) return undefined;
+
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => {
+      // Let the session GPS hook read storage first. If a precise origin exists,
+      // skip the IP lookup entirely rather than briefly replacing it.
+      if (readSessionGpsOrigin()) return;
+
+      fetch("/api/location-origin", { cache: "no-store", signal: controller.signal })
+        .then((response) => (response.ok ? response.json() as Promise<unknown> : null))
+        .then((payload) => {
+          if (isLocationOrigin(payload) && payload.source !== "gps") setIpOrigin(payload);
+        })
+        .catch(() => {
+          // Keep the shared fallback origin if the browser aborts or the endpoint fails.
+        });
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [gpsOrigin]);
 
   useLayoutEffect(() => {
     const measure = () => {

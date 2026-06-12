@@ -3,15 +3,14 @@ import { Suspense } from "react";
 import { AutoRefresh } from "./auto-refresh";
 import { getPublicFacilities } from "./facilities-db";
 import { HomeSkeleton } from "./home-skeleton";
-import { getApproximateLocationOrigin } from "./location-origin";
+import { FALLBACK_LOCATION_ORIGIN } from "./location-types";
 import { ERNowPageClient } from "./page-client";
 
 export const metadata: Metadata = {
   alternates: { canonical: "/" },
 };
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+export const revalidate = 30;
 
 const jsonLd = [
   {
@@ -52,14 +51,9 @@ const jsonLd = [
 ];
 
 async function FacilitiesSection() {
-  // Two reads, parallelized. Distance is computed on the client once the GPS
-  // override (if any) settles, so the DB query no longer takes origin.
-  const [initialOrigin, facilities] = await Promise.all([
-    getApproximateLocationOrigin(),
-    getPublicFacilities(),
-  ]);
+  const facilities = await getPublicFacilities();
 
-  return <ERNowPageClient facilities={facilities} initialOrigin={initialOrigin} />;
+  return <ERNowPageClient facilities={facilities} initialOrigin={FALLBACK_LOCATION_ORIGIN} />;
 }
 
 export default function ERNowPage() {
