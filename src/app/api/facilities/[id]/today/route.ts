@@ -99,8 +99,18 @@ export async function GET(
     order by 1
   `;
 
-  let baseline = await baselineFor(true);
-  if (baseline.length < 12) baseline = await baselineFor(false);
+  // Sparse facilities (hourly reporters) yield jagged hourly percentiles; a
+  // light 1-2-1 pass keeps the forecast ridge from lurching bucket to bucket.
+  const smooth = (rows: BaselineRow[]): BaselineRow[] =>
+    rows.map((r, i) => {
+      const prev = rows[i - 1] ?? r;
+      const next = rows[i + 1] ?? r;
+      const mix = (k: "p25" | "p50" | "p75") => 0.25 * prev[k] + 0.5 * r[k] + 0.25 * next[k];
+      return { ...r, p25: mix("p25"), p50: mix("p50"), p75: mix("p75") };
+    });
+
+  let baseline = smooth(await baselineFor(true));
+  if (baseline.length < 12) baseline = smooth(await baselineFor(false));
 
   const actual: TodayPoint[] = actualRows.map((r) => ({ t: r.t, min: Number(r.min) }));
   const nowMin = minutesSinceMidnight(new Date());

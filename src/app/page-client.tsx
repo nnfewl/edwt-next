@@ -132,9 +132,14 @@ const WaveBackground = ({
   pinnedWindowMax?: number;
 }) => {
   if (f.waitMin == null) return null;
-  // Pin today's wave to the left edge: extend the first reading back to midnight.
+  // A reporting gap longer than this is left blank instead of bridged with a
+  // confident-looking ramp — sparse rural EDs post roughly hourly and can go
+  // silent overnight for hours.
+  const GAP_SPLIT_MIN = 90;
+  // Pin today's wave to the left edge: extend the first reading back to
+  // midnight — unless the day starts with a long silent gap.
   const todayPts =
-    actual && actual.length > 0 && actual[0].t > 0
+    actual && actual.length > 0 && actual[0].t > 0 && actual[0].t <= GAP_SPLIT_MIN
       ? [{ t: 0, min: actual[0].min }, ...actual]
       : actual;
   const hist: WavePoint[] =
@@ -162,9 +167,11 @@ const WaveBackground = ({
   const baseline = H * 0.94;
   const y = (v: number) => Math.max(H * 0.08, baseline - amp(v));
 
-  // Catmull-Rom smoothing so the curve reads as breath, not jitter.
-  // Coordinates are rounded so server and client render identical path strings
-  // (raw Math.pow output can differ by 1 ulp between Node and the browser).
+  // Catmull-Rom smoothing so the curve reads as breath, not jitter. Control
+  // points are clamped to each segment's y-range so cliffs in the data can't
+  // overshoot into curls. Coordinates are rounded so server and client render
+  // identical path strings (raw Math.pow output can differ by 1 ulp between
+  // Node and the browser).
   const fmt = (n: number) => n.toFixed(2);
   const buildPath = (points: WavePoint[], offsetY: number, scale: number) => {
     const pts: [number, number][] = points.map((p) => [
@@ -177,10 +184,12 @@ const WaveBackground = ({
       const p1 = pts[i];
       const p2 = pts[i + 1];
       const p3 = pts[i + 2] || p2;
+      const yLo = Math.min(p1[1], p2[1]);
+      const yHi = Math.max(p1[1], p2[1]);
       const c1x = p1[0] + (p2[0] - p0[0]) / 6;
-      const c1y = p1[1] + (p2[1] - p0[1]) / 6;
+      const c1y = Math.min(yHi, Math.max(yLo, p1[1] + (p2[1] - p0[1]) / 6));
       const c2x = p2[0] - (p3[0] - p1[0]) / 6;
-      const c2y = p2[1] - (p3[1] - p1[1]) / 6;
+      const c2y = Math.min(yHi, Math.max(yLo, p2[1] - (p3[1] - p1[1]) / 6));
       d += ` C ${fmt(c1x)} ${fmt(c1y)}, ${fmt(c2x)} ${fmt(c2y)}, ${fmt(p2[0])} ${fmt(p2[1])}`;
     }
     const first = fmt(pts[0][0]);
@@ -188,8 +197,23 @@ const WaveBackground = ({
     return { line: d, area: `${d} L ${last} ${H} L ${first} ${H} Z` };
   };
 
-  const back = buildPath(hist, 8, 0.85);
-  const front = buildPath(hist, 0, 1);
+  // Split today's readings into contiguous runs; long silent stretches stay
+  // blank. The 12h card wave uses index-spaced points, so it never splits.
+  const runs: WavePoint[][] = [];
+  {
+    let cur: WavePoint[] = [];
+    for (const p of hist) {
+      if (cur.length > 0 && actual && p.t - cur[cur.length - 1].t > GAP_SPLIT_MIN) {
+        runs.push(cur);
+        cur = [];
+      }
+      cur.push(p);
+    }
+    runs.push(cur);
+  }
+  const segs = runs.filter((r) => r.length >= 2);
+  const backs = segs.map((r) => buildPath(r, 8, 0.85));
+  const fronts = segs.map((r) => buildPath(r, 0, 1));
 
   const lastPt = hist[hist.length - 1];
   // Pin the projection to the right edge: extend the last point to midnight.
@@ -245,17 +269,23 @@ const WaveBackground = ({
           <stop offset="100%" stopColor={palette.c} stopOpacity={0.01} />
         </linearGradient>
       </defs>
-      <path d={back.area} fill={`url(#${gid})`} />
-      <path d={front.area} fill={`url(#${gid}-front)`} />
-      <path
-        d={front.line}
-        fill="none"
-        stroke={palette.c}
-        strokeWidth={1 + currentPressure * 1.05}
-        strokeOpacity={0.22 + currentPressure * 0.26}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      {backs.map((b, i) => (
+        <path key={`b${i}`} d={b.area} fill={`url(#${gid})`} />
+      ))}
+      {fronts.map((p, i) => (
+        <Fragment key={`s${i}`}>
+          <path d={p.area} fill={`url(#${gid}-front)`} />
+          <path
+            d={p.line}
+            fill="none"
+            stroke={palette.c}
+            strokeWidth={1 + currentPressure * 1.05}
+            strokeOpacity={0.22 + currentPressure * 0.26}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </Fragment>
+      ))}
       {proj && (
         <g className="wave-proj" key={f.id}>
           <path d={proj.area} fill={`url(#${gid}-ghost)`} />
