@@ -414,6 +414,18 @@ function getBrowserPosition(): Promise<BrowserPosition | null> {
   });
 }
 
+function isLocationOrigin(value: unknown): value is LocationOrigin {
+  if (typeof value !== "object" || value === null) return false;
+  const origin = value as Partial<LocationOrigin>;
+  return (
+    typeof origin.lat === "number" &&
+    typeof origin.lng === "number" &&
+    typeof origin.label === "string" &&
+    typeof origin.source === "string" &&
+    typeof origin.accuracyLabel === "string"
+  );
+}
+
 function createFontAwesomeSvg(icon: typeof faLocationArrow) {
   const [width, height, , , pathData] = icon.icon;
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -448,7 +460,8 @@ export function MapClient({
   // server's IP-geolocated `initialOrigin` can update through router.refresh()
   // without clobbering a user's precise-location choice.
   const [gpsOrigin, setGpsOrigin] = useSessionGpsOrigin();
-  const origin: LocationOrigin = gpsOrigin ?? initialOrigin;
+  const [ipOrigin, setIpOrigin] = useState<LocationOrigin | null>(null);
+  const origin: LocationOrigin = gpsOrigin ?? ipOrigin ?? initialOrigin;
   const facilitiesWithDistance = useMemo(
     () => withOriginDistances(facilities, origin),
     [facilities, origin],
@@ -493,6 +506,29 @@ export function MapClient({
   // fitBounds wants. The reconciliation effect below picks up later changes.
   const initialFacilitiesRef = useRef(facilities);
   const initialSelectedIdRef = useRef(selectedId);
+
+  useEffect(() => {
+    if (gpsOrigin) return undefined;
+
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => {
+      if (readSessionGpsOrigin()) return;
+
+      fetch("/api/location-origin", { cache: "no-store", signal: controller.signal })
+        .then((response) => (response.ok ? response.json() as Promise<unknown> : null))
+        .then((payload) => {
+          if (isLocationOrigin(payload) && payload.source !== "gps") setIpOrigin(payload);
+        })
+        .catch(() => {
+          // Keep the shared fallback origin if the browser aborts or the endpoint fails.
+        });
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [gpsOrigin]);
 
   useEffect(() => {
     if (!mapNode.current || map.current) return;

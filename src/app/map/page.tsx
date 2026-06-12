@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { AutoRefresh } from "../auto-refresh";
 import { getPublicFacilities } from "../facilities-db";
-import { getApproximateLocationOrigin } from "../location-origin";
+import { FALLBACK_LOCATION_ORIGIN } from "../location-types";
 import { MapClientLazy } from "./map-client-lazy";
 
 export const metadata: Metadata = {
@@ -11,21 +11,17 @@ export const metadata: Metadata = {
   alternates: { canonical: "/map" },
 };
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+export const revalidate = 30;
 
 export default async function MapPage() {
-  const [initialOrigin, facilities] = await Promise.all([
-    getApproximateLocationOrigin(),
-    getPublicFacilities(),
-  ]);
+  const facilities = await getPublicFacilities();
 
   return (
     <>
       <AutoRefresh />
       <MapClientLazy
         facilities={facilities}
-        initialOrigin={initialOrigin}
+        initialOrigin={FALLBACK_LOCATION_ORIGIN}
       />
     </>
   );
