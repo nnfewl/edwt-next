@@ -535,6 +535,131 @@
   animation: none;
 }
 
+.map-shell-loading {
+  background: var(--bg);
+}
+
+.map-shell-loading .map-sidebar,
+.map-shell-loading .selected-card,
+.map-shell-loading .map-stats div,
+.map-shell-loading .facility-row {
+  pointer-events: none;
+}
+
+.map-loading-bar,
+.map-loading-pill,
+.map-loading-actions span {
+  display: block;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #e8edf1 0%, #f5f7f9 42%, #e3e9ee 78%);
+  background-size: 220% 100%;
+  animation: map-loading-shimmer 1.4s ease-in-out infinite;
+}
+
+.map-loading-stats span,
+.map-loading-stats strong,
+.map-loading-stats small {
+  color: transparent;
+}
+
+.map-loading-bar-short {
+  width: 48%;
+  height: 12px;
+}
+
+.map-loading-bar-value {
+  width: 64%;
+  height: 28px;
+  margin: 8px 0;
+}
+
+.map-loading-bar-label {
+  width: 78%;
+  height: 11px;
+}
+
+.map-loading-card {
+  display: grid;
+  gap: 12px;
+}
+
+.map-loading-pill {
+  width: 62px;
+  height: 22px;
+}
+
+.map-loading-pill-small {
+  width: 48px;
+}
+
+.map-loading-title {
+  width: 82%;
+  height: 24px;
+  border-radius: 8px;
+}
+
+.map-loading-subtitle {
+  width: 58%;
+  height: 13px;
+  border-radius: 8px;
+}
+
+.map-loading-wait {
+  width: 54%;
+  height: 56px;
+  border-radius: 12px;
+}
+
+.map-loading-wait-label {
+  width: 72%;
+  height: 12px;
+  margin-top: 10px;
+  border-radius: 8px;
+}
+
+.map-loading-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.map-loading-actions span {
+  height: 38px;
+  border-radius: 10px;
+}
+
+.map-loading-row .row-main {
+  display: grid;
+  gap: 7px;
+}
+
+.map-loading-row .row-main strong {
+  width: min(210px, 72%);
+  height: 14px;
+}
+
+.map-loading-row .row-main small {
+  width: min(150px, 54%);
+  height: 11px;
+}
+
+.map-loading-row-wait {
+  width: 48px;
+  height: 16px;
+}
+
+.map-loading-canvas {
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.74) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(255, 255, 255, 0.74) 1px, transparent 1px),
+    linear-gradient(135deg, #e8f0ed 0%, #f7f8fa 48%, #dfeae7 100%);
+  background-size: 72px 72px, 72px 72px, 100% 100%;
+}
+
+.map-shell-loading .map-loading-overlay {
+  background: transparent;
+}
+
 .map-pin-loader {
   position: relative;
   display: flex;
@@ -596,10 +721,18 @@
   100% { transform: translateX(-50%) scale(4.5); opacity: 0; }
 }
 
+@keyframes map-loading-shimmer {
+  0% { background-position: 120% 0; }
+  100% { background-position: -120% 0; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .map-pin-icon,
   .map-pin-shadow,
-  .map-pin-ring {
+  .map-pin-ring,
+  .map-loading-bar,
+  .map-loading-pill,
+  .map-loading-actions span {
     animation: none;
   }
 }
