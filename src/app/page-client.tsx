@@ -361,16 +361,16 @@ const TodayWave = ({ f, body }: { f: Facility; body: TodayResponse | null }) => 
   return (
     <>
       {hasToday ? (
-        // Crossfade: the pre-API wave stays mounted and fades out underneath
-        // while the refined wave (with the forecast) fades in — the two solid
-        // shapes are near-identical, so the swap reads as a soft morph.
+        // Sweep redraw, same move as the dashed forecast wipe: the refined
+        // wave reveals left-to-right while the seeded wave is erased behind
+        // the same front, so one continuous redraw crosses the whole graph.
         <Fragment key={f.id}>
           <WaveBackground
             f={f}
             height={110}
             intensity={0.85}
             actual={preActual}
-            className="wave-fade-out"
+            className="wave-wipe-out"
             gidSuffix="-pre"
           />
           <WaveBackground
@@ -379,7 +379,7 @@ const TodayWave = ({ f, body }: { f: Facility; body: TodayResponse | null }) => 
             intensity={0.85}
             actual={body.actual}
             projected={body.projected}
-            className="wave-fade-in"
+            className="wave-wipe-in"
           />
         </Fragment>
       ) : (

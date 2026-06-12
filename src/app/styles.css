@@ -930,31 +930,38 @@
   pointer-events: auto;
   cursor: help;
 }
-/* Crossfade when the refined /today wave replaces the seeded one: keyframes
-   omit the other end so each wave fades to/from its own inline opacity. */
-.er-now-root .wave-fade-in {
-  animation: wave-solid-in 400ms ease-out;
+/* Sweep redraw when the refined /today wave replaces the seeded one: the new
+   wave reveals left-to-right while the old is erased behind the same front —
+   identical timing/easing keeps the seam aligned, so regions never stack. */
+.er-now-root .wave-wipe-in {
+  animation: wave-wipe-in 600ms ease-out both;
 }
-.er-now-root .wave-fade-out {
-  animation: wave-solid-out 400ms ease-out forwards;
+.er-now-root .wave-wipe-out {
+  animation: wave-wipe-out 600ms ease-out both;
 }
-@keyframes wave-solid-in {
+@keyframes wave-wipe-in {
   from {
-    opacity: 0;
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
   }
 }
-@keyframes wave-solid-out {
+@keyframes wave-wipe-out {
+  from {
+    clip-path: inset(0 0 0 0);
+  }
   to {
-    opacity: 0;
+    clip-path: inset(0 0 0 100%);
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .er-now-root .wave-fade-in {
+  .er-now-root .wave-wipe-in {
     animation: none;
   }
-  .er-now-root .wave-fade-out {
-    /* Without the animation the inline opacity would keep it visible and
-       double-stack the gradients under the refined wave. */
+  .er-now-root .wave-wipe-out {
+    /* Without the animation it would stay fully visible and double-stack
+       the gradients under the refined wave. */
     display: none;
   }
 }
