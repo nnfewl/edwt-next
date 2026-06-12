@@ -173,50 +173,39 @@ async function queryAnalytics(): Promise<AnalyticsResult> {
   console.log("[analytics] query start");
 
   try {
-    const rawPollsExists = await sql<{ exists: boolean }[]>`
-      select to_regclass('public.raw_polls') is not null as exists
-    `;
-    console.log("[analytics] raw polls exists", Date.now() - startedAt);
-    const hasRawPolls = rawPollsExists[0]?.exists ?? false;
-    const tablesQuery = hasRawPolls
-      ? sql<TableCount[]>`
-        select 'locations' as table_name, count(*)::int as rows from locations
-        union all
-        select 'raw_polls' as table_name, count(*)::int as rows from raw_polls
-        union all
-        select 'wait_time_readings' as table_name, count(*)::int as rows from wait_time_readings
-        order by table_name
-      `
-      : sql<TableCount[]>`
-        select 'locations' as table_name, count(*)::int as rows from locations
-        union all
-        select 'raw_polls' as table_name, 0::int as rows
-        union all
-        select 'wait_time_readings' as table_name, count(*)::int as rows from wait_time_readings
-        order by table_name
-      `;
-    const pollCadenceQuery = hasRawPolls
-      ? sql<PollCadence[]>`
-        with intervals as (
-          select fetched_at, fetched_at - lag(fetched_at) over (order by fetched_at) as gap
-          from raw_polls
-        )
-        select
-          count(*)::int as polls,
-          min(fetched_at) as first_poll,
-          max(fetched_at) as last_poll,
-          round(avg(extract(epoch from gap))::numeric, 1)::float as avg_seconds_between_polls,
-          percentile_cont(0.5) within group (order by extract(epoch from gap))::float as median_seconds_between_polls,
-          max(extract(epoch from gap))::int as max_seconds_between_polls
-        from intervals
-        where gap is not null
-      `
-      : Promise.resolve([{ polls: 0, first_poll: null, last_poll: null, avg_seconds_between_polls: null, median_seconds_between_polls: null, max_seconds_between_polls: null }]);
+    // Drive raw_polls presence from env — avoids a 1.35s serial DB round-trip.
+    // Set HAS_RAW_POLLS=1 in .env.local when raw_polls exists locally.
+    const hasRawPolls = process.env.HAS_RAW_POLLS === "1";
 
-    // Batch 1: lightweight meta queries (5 queries, all fast)
-    console.log("[analytics] batch 1 start", Date.now() - startedAt);
-    const [tables, observedRange, quality, pollCadence, freshness] = await Promise.all([
-      tablesQuery,
+    // All queries run in one parallel batch — the old batches 1/2/3 had no
+    // data dependencies between them; splitting them only added sequential wait.
+    console.log("[analytics] queries start", Date.now() - startedAt);
+    const [
+      tables,
+      observedRange,
+      quality,
+      pollCadence,
+      freshness,
+      byType,
+      current,
+      highestAverage,
+      mostVolatile,
+      noReadings,
+      distribution,
+      heatmap,
+      facilityRisk,
+      typeTrend,
+      coverage,
+      alerts,
+    ] = await Promise.all([
+      // Approximate row counts via planner stats — instant, no seq scan.
+      sql<TableCount[]>`
+        select relname as table_name, greatest(reltuples::int, 0) as rows
+        from pg_class
+        where relname in ('locations', 'raw_polls', 'wait_time_readings')
+          and relnamespace = 'public'::regnamespace
+        order by relname
+      `,
       sql<ObservedRange[]>`
         select
           min(observed_at) as first_observed,
@@ -234,7 +223,23 @@ async function queryAnalytics(): Promise<AnalyticsResult> {
           count(distinct location_id)::int as locations_with_readings
         from wait_time_readings
       `,
-      pollCadenceQuery,
+      hasRawPolls
+        ? sql<PollCadence[]>`
+          with intervals as (
+            select fetched_at, fetched_at - lag(fetched_at) over (order by fetched_at) as gap
+            from raw_polls
+          )
+          select
+            count(*)::int as polls,
+            min(fetched_at) as first_poll,
+            max(fetched_at) as last_poll,
+            round(avg(extract(epoch from gap))::numeric, 1)::float as avg_seconds_between_polls,
+            percentile_cont(0.5) within group (order by extract(epoch from gap))::float as median_seconds_between_polls,
+            max(extract(epoch from gap))::int as max_seconds_between_polls
+          from intervals
+          where gap is not null
+        `
+        : Promise.resolve([{ polls: 0, first_poll: null, last_poll: null, avg_seconds_between_polls: null, median_seconds_between_polls: null, max_seconds_between_polls: null }]),
       sql<Freshness[]>`
         select
           count(*)::int as readings,
@@ -246,11 +251,6 @@ async function queryAnalytics(): Promise<AnalyticsResult> {
         where reading_created_at is not null
           and observed_at >= now() - interval '30 days'
       `,
-    ]);
-    console.log("[analytics] batch 1 done", Date.now() - startedAt);
-
-    // Batch 2: per-type + snapshot + facility aggregations (5 queries)
-    const [byType, current, highestAverage, mostVolatile, noReadings] = await Promise.all([
       sql<TypeSummary[]>`
         select
           l.type,
@@ -336,11 +336,6 @@ async function queryAnalytics(): Promise<AnalyticsResult> {
         where w.id is null
         order by l.type, l.name
       `,
-    ]);
-    console.log("[analytics] batch 2 done", Date.now() - startedAt);
-
-    // Batch 3: time-series, distribution, heatmap, risk, alerts (6 queries)
-    const [distribution, heatmap, facilityRisk, typeTrend, coverage, alerts] = await Promise.all([
       sql<DistributionRow[]>`
         select
           case
@@ -486,7 +481,7 @@ async function queryAnalytics(): Promise<AnalyticsResult> {
         limit 10
       `,
     ]);
-    console.log("[analytics] batch 3 done", Date.now() - startedAt);
+    console.log("[analytics] queries done", Date.now() - startedAt);
     return {
       data: {
         tables,
