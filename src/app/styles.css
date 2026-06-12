@@ -1007,8 +1007,11 @@
   transition: opacity 120ms ease;
 }
 .er-now-root .usual-slot:hover .usual-bar {
-  opacity: 0.75;
+  opacity: 1;
 }
+.er-now-root .usual-wrap[data-sev="short"] .usual-slot:hover .usual-bar { background: color-mix(in oklch, var(--green) 60%, white); }
+.er-now-root .usual-wrap[data-sev="medium"] .usual-slot:hover .usual-bar { background: color-mix(in oklch, var(--amber) 60%, white); }
+.er-now-root .usual-wrap[data-sev="long"] .usual-slot:hover .usual-bar { background: color-mix(in oklch, var(--red) 60%, white); }
 .er-now-root .usual-bar[data-state="past"] {
   opacity: 0.45;
 }
