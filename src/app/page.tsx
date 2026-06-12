@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { AutoRefresh } from "./auto-refresh";
 import { getPublicFacilities } from "./facilities-db";
+import { HomeSkeleton } from "./home-skeleton";
 import { getApproximateLocationOrigin } from "./location-origin";
 import { ERNowPageClient } from "./page-client";
 
@@ -49,7 +51,7 @@ const jsonLd = [
   },
 ];
 
-export default async function ERNowPage() {
+async function FacilitiesSection() {
   // Two reads, parallelized. Distance is computed on the client once the GPS
   // override (if any) settles, so the DB query no longer takes origin.
   const [initialOrigin, facilities] = await Promise.all([
@@ -57,6 +59,10 @@ export default async function ERNowPage() {
     getPublicFacilities(),
   ]);
 
+  return <ERNowPageClient facilities={facilities} initialOrigin={initialOrigin} />;
+}
+
+export default function ERNowPage() {
   return (
     <>
       <script
@@ -64,7 +70,11 @@ export default async function ERNowPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <AutoRefresh />
-      <ERNowPageClient facilities={facilities} initialOrigin={initialOrigin} />
+      {/* Suspense here (not a root loading.tsx) so the skeleton only ever
+          shows for this route, never while navigating to /map or /analytics. */}
+      <Suspense fallback={<HomeSkeleton />}>
+        <FacilitiesSection />
+      </Suspense>
     </>
   );
 }

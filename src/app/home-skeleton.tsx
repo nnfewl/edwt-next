@@ -39,7 +39,7 @@ function SkeletonFacilityCard() {
   );
 }
 
-export default function HomeLoading() {
+export function HomeSkeleton() {
   return (
     <div className="er-now-root">
       <main className="page">
