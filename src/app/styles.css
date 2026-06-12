@@ -930,6 +930,42 @@
   pointer-events: auto;
   cursor: help;
 }
+/* ── Home skeleton loading state ──────────────────────────────────────── */
+@keyframes home-shimmer {
+  0% { opacity: 0.4; }
+  50% { opacity: 1; }
+  100% { opacity: 0.4; }
+}
+@keyframes home-fade-in {
+  from { opacity: 0.5; }
+  to { opacity: 1; }
+}
+.er-now-root .home-skeleton-bar {
+  display: inline-block;
+  border-radius: 6px;
+  background: var(--bg-2, var(--line));
+  animation: home-shimmer 1.6s ease-in-out infinite;
+}
+.er-now-root .home-skeleton-fade {
+  animation: home-fade-in 0.3s ease-out;
+}
+.er-now-root .home-skeleton-filters {
+  display: flex;
+  gap: 10px;
+  margin: 18px 0 14px;
+}
+.er-now-root .home-skeleton-wait {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+@media (prefers-reduced-motion: reduce) {
+  .er-now-root .home-skeleton-bar,
+  .er-now-root .home-skeleton-fade {
+    animation: none;
+  }
+}
+
 /* ── Typical day bars (drawer, popular-times style) ───────────────────── */
 .er-now-root .usual-wrap {
   position: relative;
