@@ -14,17 +14,7 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-type MapPageProps = {
-  searchParams?: Promise<Record<string, string | string[] | undefined>>;
-};
-
-function firstParam(value: string | string[] | undefined): string | null {
-  if (Array.isArray(value)) return value[0] ?? null;
-  return value ?? null;
-}
-
-export default async function MapPage({ searchParams }: MapPageProps) {
-  const params = (await searchParams) ?? {};
+export default async function MapPage() {
   const [initialOrigin, facilities] = await Promise.all([
     getApproximateLocationOrigin(),
     getPublicFacilities(),
@@ -36,8 +26,6 @@ export default async function MapPage({ searchParams }: MapPageProps) {
       <MapClientLazy
         facilities={facilities}
         initialOrigin={initialOrigin}
-        initialFacilityId={firstParam(params.facility)}
-        routeRequested={firstParam(params.route) === "1"}
       />
     </>
   );
