@@ -482,6 +482,11 @@ const DetailsDrawer = ({
                   <span className="sev-dot" />
                   {facilityWaitStatusLabel(f)} · updated {f.lastUpdated}
                 </div>
+                {(f.history?.length ?? 0) >= 2 && (
+                  <div className="wave-caption" title="The background wave traces hourly wait times over the past 12 hours">
+                    12h trend
+                  </div>
+                )}
               </>
             ) : (
               <div className="no-data-state no-data-state-drawer">
