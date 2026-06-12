@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { AutoRefresh } from "../auto-refresh";
 import { getPublicFacilities } from "../facilities-db";
 import { FALLBACK_LOCATION_ORIGIN } from "../location-types";
 import { MapClientLazy } from "./map-client-lazy";
@@ -17,12 +16,9 @@ export default async function MapPage() {
   const facilities = await getPublicFacilities();
 
   return (
-    <>
-      <AutoRefresh />
-      <MapClientLazy
-        facilities={facilities}
-        initialOrigin={FALLBACK_LOCATION_ORIGIN}
-      />
-    </>
+    <MapClientLazy
+      facilities={facilities}
+      initialOrigin={FALLBACK_LOCATION_ORIGIN}
+    />
   );
 }

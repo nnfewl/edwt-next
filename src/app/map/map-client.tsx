@@ -25,6 +25,7 @@ const FACILITY_SELECTED_ICON_LAYER_ID = "facility-marker-selected-icon";
 const FACILITY_LABEL_LAYER_ID = "facility-marker-label";
 const MARKER_IMAGE_SIZE = 48;
 const MARKER_IMAGE_PIXEL_RATIO = 2;
+const FACILITIES_REFRESH_MS = 60_000;
 
 type RouteState = {
   distanceKm: number;
@@ -426,6 +427,38 @@ function isLocationOrigin(value: unknown): value is LocationOrigin {
   );
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function isFacility(value: unknown): value is Facility {
+  if (!isRecord(value)) return false;
+  const waitMin = value.waitMin;
+  return (
+    typeof value.id === "string" &&
+    typeof value.name === "string" &&
+    typeof value.subtitle === "string" &&
+    (value.type === "Emergency" || value.type === "UPCC") &&
+    typeof value.audience === "string" &&
+    (typeof waitMin === "number" || waitMin === null) &&
+    typeof value.waitText === "string" &&
+    typeof value.distanceKm === "number" &&
+    typeof value.address === "string" &&
+    typeof value.phone === "string" &&
+    typeof value.hours === "string" &&
+    typeof value.lastUpdated === "string" &&
+    typeof value.lat === "number" &&
+    typeof value.lng === "number" &&
+    typeof value.open === "boolean" &&
+    typeof value.physiciansOnDuty === "number" &&
+    typeof value.inWaitingRoom === "number"
+  );
+}
+
+function isFacilityList(value: unknown): value is Facility[] {
+  return Array.isArray(value) && value.every(isFacility);
+}
+
 function createFontAwesomeSvg(icon: typeof faLocationArrow) {
   const [width, height, , , pathData] = icon.icon;
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -461,10 +494,12 @@ export function MapClient({
   // without clobbering a user's precise-location choice.
   const [gpsOrigin, setGpsOrigin] = useSessionGpsOrigin();
   const [ipOrigin, setIpOrigin] = useState<LocationOrigin | null>(null);
+  const [liveFacilities, setLiveFacilities] = useState<Facility[] | null>(null);
   const origin: LocationOrigin = gpsOrigin ?? ipOrigin ?? initialOrigin;
+  const visibleFacilities = liveFacilities ?? facilities;
   const facilitiesWithDistance = useMemo(
-    () => withOriginDistances(facilities, origin),
-    [facilities, origin],
+    () => withOriginDistances(visibleFacilities, origin),
+    [visibleFacilities, origin],
   );
   const openFacilities = facilitiesWithDistance.filter((facility) => facility.open);
   const openWaitFacilities = openFacilities.filter((facility) => facility.waitMin != null);
@@ -500,10 +535,10 @@ export function MapClient({
   const [loaderPad, setLoaderPad] = useState(0);
   // Capture the initial facility list in a ref so the mount-only init effect
   // can read it for fitBounds without taking a dep that would tear the whole
-  // map down (and reset pan/zoom + any active route) every time router.refresh
-  // hands a new array reference down. `useRef(initial)` ignores subsequent
-  // renders, so this snapshot stays at the first-render value — exactly what
-  // fitBounds wants. The reconciliation effect below picks up later changes.
+  // map down (and reset pan/zoom + any active route) when client polling hands
+  // a new array reference down. `useRef(initial)` ignores subsequent renders,
+  // so this snapshot stays at the first-render value — exactly what fitBounds
+  // wants. The reconciliation effect below picks up later changes.
   const initialFacilitiesRef = useRef(facilities);
   const initialSelectedIdRef = useRef(selectedId);
 
@@ -529,6 +564,40 @@ export function MapClient({
       controller.abort();
     };
   }, [gpsOrigin]);
+
+  useEffect(() => {
+    let stopped = false;
+    let controller: AbortController | null = null;
+
+    const refreshFacilities = async () => {
+      if (document.visibilityState !== "visible") return;
+
+      controller?.abort();
+      controller = new AbortController();
+
+      try {
+        const response = await fetch("/api/facilities", {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        if (!response.ok) return;
+        const payload = await response.json() as unknown;
+        if (!stopped && isFacilityList(payload)) setLiveFacilities(payload);
+      } catch {
+        // Keep the current snapshot if the refresh is aborted or temporarily fails.
+      }
+    };
+
+    const timer = window.setInterval(() => {
+      void refreshFacilities();
+    }, FACILITIES_REFRESH_MS);
+
+    return () => {
+      stopped = true;
+      window.clearInterval(timer);
+      controller?.abort();
+    };
+  }, []);
 
   useEffect(() => {
     if (!mapNode.current || map.current) return;
