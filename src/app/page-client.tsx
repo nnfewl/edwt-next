@@ -657,9 +657,10 @@ const DetailsDrawer = ({
   const sev = severityFor(f.waitMin);
   const hasWaitData = f.waitMin != null;
   const stopBubble = (e: React.MouseEvent) => e.stopPropagation();
+  // No overflow:hidden — on mobile the block is shorter than the 110px wave,
+  // and clipping would slice the wave/forecast crest under the subtitle.
   const waitInline: CSSProperties = {
     position: "relative",
-    overflow: "hidden",
     alignItems: "flex-start",
     textAlign: "left",
     margin: "14px 0 22px",
