@@ -551,9 +551,20 @@ function rowCount(data: AnalyticsData, table: string) {
   return data.tables.find((item) => item.table_name === table)?.rows ?? 0;
 }
 
+const numberFormatters = new Map<number, Intl.NumberFormat>();
+
+function numberFormatter(maximumFractionDigits: number) {
+  const cached = numberFormatters.get(maximumFractionDigits);
+  if (cached) return cached;
+
+  const formatter = new Intl.NumberFormat("en-US", { maximumFractionDigits });
+  numberFormatters.set(maximumFractionDigits, formatter);
+  return formatter;
+}
+
 function fmtNumber(value: MaybeNumber | undefined, digits = 0) {
   if (value === null || value === undefined || Number.isNaN(value)) return "n/a";
-  return new Intl.NumberFormat("en-US", { maximumFractionDigits: digits }).format(value);
+  return numberFormatter(digits).format(value);
 }
 
 function fmtWait(value: MaybeNumber | undefined) {

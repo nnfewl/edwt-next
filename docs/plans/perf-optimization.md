@@ -79,7 +79,7 @@ It also **grows quadratically**: labels and rows both scale with the data window
 
 - [x] **P0** — Hoist `Intl.DateTimeFormat` in `shortTime` to module scope (`analytics-charts.tsx:98`) — commit `27b4c01`
 - [x] **P0** — Replace `labels × find` with a one-pass `Map` in `typeTrendSeries` — commit `27b4c01`
-- [ ] **P2** — Audit other per-call `Intl` constructions (`compactNumber`, `fmtNumber` in `page.tsx`) — low call counts today, same trap
+- [x] **P2** — Audit other per-call `Intl` constructions (`compactNumber`, `fmtNumber` in `page.tsx`) — hoisted/cached remaining number formatters in `analytics-charts.tsx` and `page.tsx`
 
 ---
 
@@ -121,7 +121,7 @@ Deleting these removes 3 queries. Only `trend` currently bloats the HTML/RSC pay
 
 ### TODO
 
-- [ ] **P1** — `/`: choose caching strategy first. It currently personalizes via IP-geo headers (`getApproximateLocationOrigin` reads `x-vercel-ip-*` through `headers()`), which opts the route into request-time rendering. Options: move origin resolution fully client-side (GPS/session logic already exists) and set `revalidate = 30`, or keep `/` dynamic because 2-3s is tolerable.
+- [x] **P1** — `/`: choose caching strategy first. It previously personalized via IP-geo headers (`getApproximateLocationOrigin` reads `x-vercel-ip-*` through `headers()`), which opted the route into request-time rendering. Chosen path: keep `/` shared with `revalidate = 30`, start from `FALLBACK_LOCATION_ORIGIN`, and restore approximate IP origin client-side through dynamic `/api/location-origin`; GPS/session origin still wins. — commit `3de9da9`
 - [x] **P1** — `/analytics`: before ISR, remove or relocate the `?shell=1` debug path that awaits `searchParams`; `searchParams` is also request-time data. Then drop `force-dynamic`/`revalidate = 0` and set `export const revalidate = 60`. — commit `37a83d8`
 - [ ] **P2** — Confirm `AutoRefresh` expectations after ISR. `router.refresh()` makes a new server request, but it does not invalidate the server-side cache; freshness comes from the `revalidate` interval or explicit invalidation.
 - [ ] **P3** — Consider `maxDuration` back down from 60 once the above lands (cost guard).
@@ -132,13 +132,13 @@ Deleting these removes 3 queries. Only `trend` currently bloats the HTML/RSC pay
 
 ### `/analytics` client bundle
 
-- `import Chart from "chart.js/auto"` pulls every controller/scale/plugin: the chunk is 209KB raw / 70KB gz. Registering only the used pieces (bar, line, scatter, bubble + scales/tooltip/legend) typically saves ~30-40%. **P2**
+- [x] `import Chart from "chart.js/auto"` pulled every controller/scale/plugin: replaced with selective Chart.js registration for bar, line, scatter, bubble, category/linear scales, tooltip, and legend. Current built Chart-bearing chunk scan: ~202KB raw / 68KB gzip. **P2**
 - Charts fully re-instantiate (`destroy()` + `new Chart`) on every AutoRefresh because configs get new identities. With ISR + 5-min refresh this is occasional; leave unless it shows up. **P3**
 
 ### `/` client bundle
 
 - Current build manifest shows `/` initial JS ≈ 189KB raw / 55KB gzip. MapLibre correctly stays off `/`; Sentry's big chunk is lazy-loaded. The earlier ~560KB raw estimate appears stale or included lazy chunks.
-- [ ] **P2** — After re-measuring `/`, lazy-load the facility detail drawer (only shown on tap) via `next/dynamic` if it still moves first-load bytes meaningfully.
+- [x] **P2** — After re-measuring `/`, lazy-load the facility detail drawer (only shown on tap) via `next/dynamic` if it still moves first-load bytes meaningfully. Drawer code now loads as an async chunk (~3.5KB gzip); first-load savings are modest because shared wave/icon code stays on `/`.
 - [ ] **P3** — Replace FontAwesome icons with inline SVGs only if bundle analysis still shows `@fortawesome/*` as a first-load problem.
 
 ### Corrections to the previous version of this doc

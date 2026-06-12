@@ -1,8 +1,38 @@
 "use client";
 
 import { useEffect, useMemo, useRef, type ReactNode } from "react";
-import Chart from "chart.js/auto";
-import type { ChartConfiguration, ChartType, Plugin } from "chart.js";
+import {
+  BarController,
+  BarElement,
+  BubbleController,
+  CategoryScale,
+  Chart as ChartJS,
+  Legend,
+  LinearScale,
+  LineController,
+  LineElement,
+  PointElement,
+  ScatterController,
+  Tooltip,
+  type Chart as ChartInstance,
+  type ChartConfiguration,
+  type ChartType,
+  type Plugin,
+} from "chart.js";
+
+ChartJS.register(
+  BarController,
+  BarElement,
+  BubbleController,
+  CategoryScale,
+  Legend,
+  LinearScale,
+  LineController,
+  LineElement,
+  PointElement,
+  ScatterController,
+  Tooltip,
+);
 
 type MaybeNumber = number | null;
 
@@ -120,8 +150,13 @@ function signedAxisMinutes(value: number | string) {
   return sign + axisMinutes(Math.abs(numeric));
 }
 
+const compactNumberFormatter = new Intl.NumberFormat("en-US", {
+  notation: "compact",
+  maximumFractionDigits: 1,
+});
+
 function compactNumber(value: number | string) {
-  return new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 }).format(Number(value));
+  return compactNumberFormatter.format(Number(value));
 }
 
 function pressureColor(wait: MaybeNumber | undefined) {
@@ -236,14 +271,14 @@ function ChartCanvas({
   frameClassName?: string;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const chartRef = useRef<Chart<ChartType> | null>(null);
+  const chartRef = useRef<ChartInstance<ChartType> | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return undefined;
 
     chartRef.current?.destroy();
-    chartRef.current = new Chart(canvas, config);
+    chartRef.current = new ChartJS(canvas, config);
 
     return () => {
       chartRef.current?.destroy();
