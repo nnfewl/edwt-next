@@ -142,11 +142,9 @@ const WaveBackground = ({
   const x = (t: number) => (t / span) * W;
   // Hybrid scale: normalize to this facility's own window so small waits still
   // show shape, but clamp so a 40-minute peak never towers like a 6-hour one.
-  const windowMax = Math.max(
-    1,
-    ...hist.map((p) => p.min),
-    ...(projected ?? []).map((p) => p.hi ?? p.min),
-  );
+  // Deliberately scaled to actuals only: including the projection would make
+  // the solid wave shrink a step when the forecast loads in.
+  const windowMax = Math.max(1, ...hist.map((p) => p.min));
   const scaleMax = Math.min(720, Math.max(120, windowMax * 1.2));
   const amp = (v: number) => {
     const shaped = Math.pow(Math.max(0, v) / scaleMax, 0.75);
@@ -250,7 +248,7 @@ const WaveBackground = ({
         strokeLinejoin="round"
       />
       {proj && (
-        <>
+        <g className="wave-proj" key={f.id}>
           <path d={proj.area} fill={`url(#${gid}-ghost)`} />
           <line
             x1={fmt(x(lastPt.t))}
@@ -272,7 +270,7 @@ const WaveBackground = ({
             strokeLinecap="round"
             strokeLinejoin="round"
           />
-        </>
+        </g>
       )}
     </svg>
   );
@@ -316,8 +314,42 @@ const useTodayData = (facilityId: string | null) => {
   return facilityId && loaded?.id === facilityId ? loaded.body : null;
 };
 
+// The card payload's 12h hourly history already covers today-so-far. Seed the
+// wave with it while /today loads, so the drawer opens straight onto the today
+// axis — the API response then only refines resolution and adds the projection
+// instead of swapping in a whole different chart.
+const VAN_CLOCK = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "America/Vancouver",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+});
+
+const vanDayAndMinute = (d: Date) => {
+  const parts = VAN_CLOCK.formatToParts(d);
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
+  return {
+    day: `${get("year")}-${get("month")}-${get("day")}`,
+    t: Number(get("hour")) * 60 + Number(get("minute")),
+  };
+};
+
+const todaySoFar = (hist: HistoryPoint[] | undefined): WavePoint[] => {
+  if (!hist || hist.length === 0) return [];
+  const today = vanDayAndMinute(new Date()).day;
+  return hist.flatMap((p) => {
+    const { day, t } = vanDayAndMinute(new Date(p.observedAt));
+    return day === today ? [{ t, min: p.min }] : [];
+  });
+};
+
 const TodayWave = ({ f, body }: { f: Facility; body: TodayResponse | null }) => {
   const hasToday = body != null && body.actual.length >= 2;
+  const provisional = hasToday ? [] : todaySoFar(f.history);
+  const showToday = hasToday || provisional.length >= 2;
 
   return (
     <>
@@ -325,19 +357,19 @@ const TodayWave = ({ f, body }: { f: Facility; body: TodayResponse | null }) => 
         f={f}
         height={110}
         intensity={0.85}
-        actual={hasToday ? body.actual : undefined}
+        actual={hasToday ? body.actual : provisional.length >= 2 ? provisional : undefined}
         projected={hasToday ? body.projected : undefined}
       />
-      {(hasToday || (f.history?.length ?? 0) >= 2) && (
+      {(showToday || (f.history?.length ?? 0) >= 2) && (
         <div
           className="wave-caption"
           title={
-            hasToday
+            showToday
               ? "The wave is today's waits so far · the dotted line and shaded band show the expected range for the rest of the day"
               : "The background wave traces hourly wait times over the past 12 hours"
           }
         >
-          {hasToday ? "Today" : "12h trend"}
+          {showToday ? "Today" : "12h trend"}
         </div>
       )}
     </>
