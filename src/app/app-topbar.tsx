@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useLayoutEffect, useRef, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faBars, faChartLine, faHospital, faList, faMapLocationDot } from "@fortawesome/free-solid-svg-icons";
+import { faBars, faChartLine, faGlobe, faHospital, faList, faMapLocationDot } from "@fortawesome/free-solid-svg-icons";
 import { useLocale, useTranslations } from "next-intl";
 
 type AppTopBarActive = "list" | "map" | "analytics";
@@ -28,16 +28,19 @@ function activeFromPathname(pathname: string): AppTopBarActive {
   return "list";
 }
 
-function LocaleToggle() {
+function useLocaleSwitcher() {
   const locale = useLocale();
   const router = useRouter();
   const nextLocale = locale === "en" ? "fr" : "en";
-
   const switchLocale = () => {
     document.cookie = `NEXT_LOCALE=${nextLocale};path=/;max-age=31536000;samesite=lax`;
     router.refresh();
   };
+  return { locale, nextLocale, switchLocale };
+}
 
+function LocaleToggle() {
+  const { nextLocale, switchLocale } = useLocaleSwitcher();
   return (
     <button
       className="app-locale-toggle"
@@ -46,6 +49,22 @@ function LocaleToggle() {
       aria-label={nextLocale === "fr" ? "Passer au français" : "Switch to English"}
     >
       {nextLocale.toUpperCase()}
+    </button>
+  );
+}
+
+function MobileLocaleToggle({ onSwitch }: { onSwitch: () => void }) {
+  const { nextLocale, switchLocale } = useLocaleSwitcher();
+  const label = nextLocale === "fr" ? "Français" : "English";
+  return (
+    <button
+      className="app-mobile-locale-toggle"
+      type="button"
+      onClick={() => { switchLocale(); onSwitch(); }}
+      aria-label={nextLocale === "fr" ? "Passer au français" : "Switch to English"}
+    >
+      <FontAwesomeIcon icon={faGlobe} aria-hidden="true" />
+      {label}
     </button>
   );
 }
@@ -147,6 +166,8 @@ export function AppTopBar() {
             <Link href="/analytics" className={active === "analytics" ? "active" : ""} onClick={closeMenu}>
               <FontAwesomeIcon icon={faChartLine} aria-hidden="true" /> {t("analytics")}
             </Link>
+            <div className="app-mobile-menu-divider" />
+            <MobileLocaleToggle onSwitch={closeMenu} />
           </div>
         </details>
 
