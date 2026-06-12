@@ -95,13 +95,15 @@ function hourLabel(hour: number) {
   return `${normalized}${suffix}`;
 }
 
+const shortTimeFormatter = new Intl.DateTimeFormat("en-US", {
+  timeZone: "America/Vancouver",
+  month: "short",
+  day: "numeric",
+  hour: "numeric",
+});
+
 function shortTime(value: string) {
-  return new Intl.DateTimeFormat("en-US", {
-    timeZone: "America/Vancouver",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-  }).format(new Date(value));
+  return shortTimeFormatter.format(new Date(value));
 }
 
 function minutes(value: MaybeNumber | undefined) {
@@ -363,6 +365,14 @@ export function AnalyticsCharts({ current, distribution, heatmap, facilityRisk, 
 
   const typeTrendLabels = useMemo(() => Array.from(new Set(typeTrend.map((point) => shortTime(point.bucket)))), [typeTrend]);
   const typeTrendTicks = useMemo(() => new Set(sparseTicks(typeTrendLabels, 5)), [typeTrendLabels]);
+  // One-pass lookup map: avoids O(labels × rows) find calls inside the series loop.
+  const typeTrendMap = useMemo(() => {
+    const map = new Map<string, TypeTrendPoint>();
+    for (const point of typeTrend) {
+      map.set(`${point.type}|${shortTime(point.bucket)}`, point);
+    }
+    return map;
+  }, [typeTrend]);
   const typeTrendSeries = useMemo(() => [
     { label: "ED median wait time", type: "ed", metric: "median", color: colors.coral },
     { label: "ED P90 wait time", type: "ed", metric: "p90", color: colors.red },
@@ -371,7 +381,7 @@ export function AnalyticsCharts({ current, distribution, heatmap, facilityRisk, 
   ].map((series) => ({
     label: series.label,
     data: typeTrendLabels.map((label) => {
-      const found = typeTrend.find((point) => point.type === series.type && shortTime(point.bucket) === label);
+      const found = typeTrendMap.get(`${series.type}|${label}`);
       return series.metric === "median" ? found?.medianWait ?? null : found?.p90Wait ?? null;
     }),
     borderColor: series.color,
@@ -381,7 +391,7 @@ export function AnalyticsCharts({ current, distribution, heatmap, facilityRisk, 
     pointHoverRadius: 4,
     tension: 0.36,
     spanGaps: true,
-  })), [typeTrend, typeTrendLabels]);
+  })), [typeTrendLabels, typeTrendMap]);
 
   const trendConfig = useMemo<ChartConfiguration>(() => ({
     type: "line",
