@@ -117,6 +117,7 @@ const WaveBackground = ({
   projected,
   className,
   gidSuffix = "",
+  pinnedWindowMax,
 }: {
   f: Facility;
   height?: number;
@@ -127,6 +128,8 @@ const WaveBackground = ({
   className?: string;
   /** Keeps gradient ids unique when two waves for one facility are stacked. */
   gidSuffix?: string;
+  /** Locks the amplitude scale so a stacked wipe pair shares one seam-aligned scale. */
+  pinnedWindowMax?: number;
 }) => {
   if (f.waitMin == null) return null;
   // Pin today's wave to the left edge: extend the first reading back to midnight.
@@ -150,7 +153,7 @@ const WaveBackground = ({
   // show shape, but clamp so a 40-minute peak never towers like a 6-hour one.
   // Deliberately scaled to actuals only: including the projection would make
   // the solid wave shrink a step when the forecast loads in.
-  const windowMax = Math.max(1, ...hist.map((p) => p.min));
+  const windowMax = pinnedWindowMax ?? Math.max(1, ...hist.map((p) => p.min));
   const scaleMax = Math.min(720, Math.max(120, windowMax * 1.2));
   const amp = (v: number) => {
     const shaped = Math.pow(Math.max(0, v) / scaleMax, 0.75);
@@ -357,6 +360,12 @@ const TodayWave = ({ f, body }: { f: Facility; body: TodayResponse | null }) => 
   const provisional = todaySoFar(f.history);
   const preActual = provisional.length >= 2 ? provisional : undefined;
   const showToday = hasToday || preActual != null;
+  // One scale for both halves of the wipe pair, or the seam jumps vertically
+  // as the front passes (hourly seed samples can miss the 15-min peak).
+  const pinnedMax =
+    hasToday && preActual
+      ? Math.max(1, ...body.actual.map((p) => p.min), ...preActual.map((p) => p.min))
+      : undefined;
 
   return (
     <>
@@ -372,6 +381,7 @@ const TodayWave = ({ f, body }: { f: Facility; body: TodayResponse | null }) => 
             actual={preActual}
             className="wave-wipe-out"
             gidSuffix="-pre"
+            pinnedWindowMax={pinnedMax}
           />
           <WaveBackground
             f={f}
@@ -380,6 +390,7 @@ const TodayWave = ({ f, body }: { f: Facility; body: TodayResponse | null }) => 
             actual={body.actual}
             projected={body.projected}
             className="wave-wipe-in"
+            pinnedWindowMax={pinnedMax}
           />
         </Fragment>
       ) : (
