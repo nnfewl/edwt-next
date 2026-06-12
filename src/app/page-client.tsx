@@ -38,6 +38,7 @@ import {
   severityFor,
 } from "./data";
 import { ClosedIllustration } from "./closed-illustration";
+import type { TodayResponse } from "./api/facilities/[id]/today/route";
 import { withOriginDistances } from "./geo-distance";
 import { HeroMapBackdrop } from "./hero-map-backdrop";
 import { preciseGpsOrigin, preciseGpsOriginWithLocationText, useSessionGpsOrigin, writeSessionGpsOrigin } from "./location-session";
@@ -105,40 +106,65 @@ const Icon = ({
 
 /* ───────── ambient wave (pressure curve as card background) ──────────────── */
 
+type WavePoint = { t: number; min: number; lo?: number; hi?: number };
+
 const WaveBackground = ({
   f,
   height = 110,
   intensity = 0.48,
+  actual,
+  projected,
 }: {
   f: Facility;
   height?: number;
   intensity?: number;
+  /** When set, the wave plots today's readings on a midnight-to-midnight axis. */
+  actual?: WavePoint[];
+  projected?: WavePoint[];
 }) => {
   if (f.waitMin == null) return null;
-  const hist = f.history ?? [];
+  // Pin today's wave to the left edge: extend the first reading back to midnight.
+  const todayPts =
+    actual && actual.length > 0 && actual[0].t > 0
+      ? [{ t: 0, min: actual[0].min }, ...actual]
+      : actual;
+  const hist: WavePoint[] =
+    todayPts ?? (f.history ?? []).map((p: HistoryPoint, i: number) => ({ t: i, min: p.min }));
   if (hist.length < 2) return null;
 
   const W = 1000;
   const H = height;
+  const span = actual ? 1440 : hist.length - 1;
   const maxWaitForFullWave = 720;
   const pressure = (v: number) =>
     Math.min(1, Math.max(0, v) / maxWaitForFullWave);
 
-  const x = (i: number) => (i / (hist.length - 1)) * W;
+  const x = (t: number) => (t / span) * W;
+  // Hybrid scale: normalize to this facility's own window so small waits still
+  // show shape, but clamp so a 40-minute peak never towers like a 6-hour one.
+  const windowMax = Math.max(
+    1,
+    ...hist.map((p) => p.min),
+    ...(projected ?? []).map((p) => p.hi ?? p.min),
+  );
+  const scaleMax = Math.min(720, Math.max(120, windowMax * 1.2));
   const amp = (v: number) => {
-    const shaped = Math.pow(pressure(v), 0.75);
+    const shaped = Math.pow(Math.max(0, v) / scaleMax, 0.75);
     return H * (0.08 + shaped * 0.8);
   };
   const baseline = H * 0.94;
   const y = (v: number) => Math.max(H * 0.08, baseline - amp(v));
 
   // Catmull-Rom smoothing so the curve reads as breath, not jitter.
-  const buildPath = (offsetY: number, scale: number) => {
-    const pts: [number, number][] = hist.map((p: HistoryPoint, i: number) => [
-      x(i),
+  // Coordinates are rounded so server and client render identical path strings
+  // (raw Math.pow output can differ by 1 ulp between Node and the browser).
+  const fmt = (n: number) => n.toFixed(2);
+  const buildPath = (points: WavePoint[], offsetY: number, scale: number) => {
+    const pts: [number, number][] = points.map((p) => [
+      x(p.t),
       y(p.min) + offsetY - (1 - scale) * 14,
     ]);
-    let d = `M ${pts[0][0]} ${pts[0][1]}`;
+    let d = `M ${fmt(pts[0][0])} ${fmt(pts[0][1])}`;
     for (let i = 0; i < pts.length - 1; i++) {
       const p0 = pts[i - 1] || pts[i];
       const p1 = pts[i];
@@ -148,13 +174,27 @@ const WaveBackground = ({
       const c1y = p1[1] + (p2[1] - p0[1]) / 6;
       const c2x = p2[0] - (p3[0] - p1[0]) / 6;
       const c2y = p2[1] - (p3[1] - p1[1]) / 6;
-      d += ` C ${c1x} ${c1y}, ${c2x} ${c2y}, ${p2[0]} ${p2[1]}`;
+      d += ` C ${fmt(c1x)} ${fmt(c1y)}, ${fmt(c2x)} ${fmt(c2y)}, ${fmt(p2[0])} ${fmt(p2[1])}`;
     }
-    return { line: d, area: `${d} L ${W} ${H} L 0 ${H} Z` };
+    const first = fmt(pts[0][0]);
+    const last = fmt(pts[pts.length - 1][0]);
+    return { line: d, area: `${d} L ${last} ${H} L ${first} ${H} Z` };
   };
 
-  const back = buildPath(8, 0.85);
-  const front = buildPath(0, 1);
+  const back = buildPath(hist, 8, 0.85);
+  const front = buildPath(hist, 0, 1);
+
+  const lastPt = hist[hist.length - 1];
+  // Pin the projection to the right edge: extend the last point to midnight.
+  const projPts =
+    projected && projected.length > 0 && projected[projected.length - 1].t < 1440
+      ? [...projected, { ...projected[projected.length - 1], t: 1440 }]
+      : projected;
+  const proj =
+    actual && projPts && projPts.length > 0
+      ? buildPath([lastPt, ...projPts], 0, 1)
+      : null;
+
 
   const sev = severityFor(f.waitMin);
   const currentPressure = pressure(f.waitMin);
@@ -193,6 +233,10 @@ const WaveBackground = ({
           <stop offset="0%" stopColor={palette.c} stopOpacity={palette.op * 2} />
           <stop offset="100%" stopColor={palette.c} stopOpacity={0.02} />
         </linearGradient>
+        <linearGradient id={`${gid}-ghost`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={palette.c} stopOpacity={palette.op * 0.9} />
+          <stop offset="100%" stopColor={palette.c} stopOpacity={0.01} />
+        </linearGradient>
       </defs>
       <path d={back.area} fill={`url(#${gid})`} />
       <path d={front.area} fill={`url(#${gid}-front)`} />
@@ -205,11 +249,166 @@ const WaveBackground = ({
         strokeLinecap="round"
         strokeLinejoin="round"
       />
+      {proj && (
+        <>
+          <path d={proj.area} fill={`url(#${gid}-ghost)`} />
+          <line
+            x1={fmt(x(lastPt.t))}
+            x2={fmt(x(lastPt.t))}
+            y1={H * 0.06}
+            y2={H * 0.94}
+            stroke="var(--muted)"
+            strokeWidth={1}
+            strokeOpacity={0.3}
+            strokeDasharray="3 5"
+          />
+          <path
+            d={proj.line}
+            fill="none"
+            stroke={palette.c}
+            strokeWidth={1.4 + currentPressure * 0.8}
+            strokeOpacity={0.45}
+            strokeDasharray="2 8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </>
+      )}
     </svg>
   );
 };
 
 
+
+/* ───────── today wave (drawer: actual so far + projected fan) ────────────── */
+
+const fmtDur = (min: number) => {
+  if (min < 60) return `${min}m`;
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return m > 0 ? `${h}h ${m}m` : `${h}h`;
+};
+
+const fmtHour = (h: number) => {
+  const hr = ((h + 11) % 12) + 1;
+  return `${hr} ${h < 12 ? "am" : "pm"}`;
+};
+
+const useTodayData = (facilityId: string | null) => {
+  const [loaded, setLoaded] = useState<{ id: string; body: TodayResponse | null } | null>(null);
+
+  useEffect(() => {
+    if (!facilityId) return;
+    let cancelled = false;
+    fetch(`/api/facilities/${facilityId}/today`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((body: TodayResponse | null) => {
+        if (!cancelled) setLoaded({ id: facilityId, body });
+      })
+      .catch(() => {
+        if (!cancelled) setLoaded({ id: facilityId, body: null });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [facilityId]);
+
+  return facilityId && loaded?.id === facilityId ? loaded.body : null;
+};
+
+const TodayWave = ({ f, body }: { f: Facility; body: TodayResponse | null }) => {
+  const hasToday = body != null && body.actual.length >= 2;
+
+  return (
+    <>
+      <WaveBackground
+        f={f}
+        height={110}
+        intensity={0.85}
+        actual={hasToday ? body.actual : undefined}
+        projected={hasToday ? body.projected : undefined}
+      />
+      {(hasToday || (f.history?.length ?? 0) >= 2) && (
+        <div
+          className="wave-caption"
+          title={
+            hasToday
+              ? "The wave is today's waits so far · the dotted line and shaded band show the expected range for the rest of the day"
+              : "The background wave traces hourly wait times over the past 12 hours"
+          }
+        >
+          {hasToday ? "Today" : "12h trend"}
+        </div>
+      )}
+    </>
+  );
+};
+
+/* ───────── typical day bars (drawer: popular-times style) ────────────────── */
+
+const TypicalDayBars = ({
+  usual,
+  nowHour,
+  sev,
+}: {
+  usual: { hour: number; min: number }[];
+  nowHour: number;
+  sev: ReturnType<typeof severityFor>;
+}) => {
+  const [hovered, setHovered] = useState<number | null>(null);
+  const byHour = new Map(usual.map((u) => [u.hour, u.min]));
+  const max = Math.max(1, ...usual.map((u) => u.min));
+  const busiest = usual.reduce((a, b) => (b.min > a.min ? b : a));
+
+  const hoveredMin = hovered != null ? byHour.get(hovered) : undefined;
+
+  return (
+    <div className="usual-wrap" data-sev={sev}>
+      {hovered != null && (
+        <div
+          className="usual-tip"
+          style={{ left: `clamp(56px, ${((hovered + 0.5) / 24) * 100}%, calc(100% - 56px))` }}
+        >
+          {fmtHour(hovered)} · {hoveredMin != null ? `usually ~${fmtDur(hoveredMin)}` : "no data"}
+        </div>
+      )}
+      <div
+        className="usual-row"
+        role="img"
+        aria-label="Typical wait by hour of day"
+        onMouseLeave={() => setHovered(null)}
+      >
+        {Array.from({ length: 24 }, (_, h) => {
+          const v = byHour.get(h);
+          const state = h === nowHour ? "now" : h < nowHour ? "past" : "future";
+          return (
+            <div
+              key={h}
+              className="usual-slot"
+              data-hovered={hovered === h || undefined}
+              onMouseEnter={() => setHovered(h)}
+              aria-label={v != null ? `${fmtHour(h)} — usually ~${fmtDur(v)}` : `${fmtHour(h)} — no data`}
+            >
+              <div
+                className="usual-bar"
+                data-state={state}
+                style={{ height: v != null ? `${Math.max(8, (v / max) * 100)}%` : "2px" }}
+              />
+            </div>
+          );
+        })}
+      </div>
+      <div className="usual-labels" aria-hidden="true">
+        <span style={{ left: `${((6 + 0.5) / 24) * 100}%` }}>6 am</span>
+        <span style={{ left: `${((12 + 0.5) / 24) * 100}%` }}>noon</span>
+        <span style={{ left: `${((18 + 0.5) / 24) * 100}%` }}>6 pm</span>
+      </div>
+      <div className="usual-note">
+        Usually busiest around {fmtHour(busiest.hour)} (~{fmtDur(busiest.min)})
+      </div>
+    </div>
+  );
+};
 
 /* ───────── facility card ─────────────────────────────────────────────────── */
 
@@ -361,6 +560,7 @@ const DetailsDrawer = ({
 }) => {
   const panelRef = useRef<HTMLElement>(null);
   const dragState = useRef<{ startY: number; currentY: number; dragging: boolean }>({ startY: 0, currentY: 0, dragging: false });
+  const today = useTodayData(f ? f.id : null);
 
   useEffect(() => {
     if (!f) return;
@@ -474,7 +674,7 @@ const DetailsDrawer = ({
           {f.open ? (
             hasWaitData ? (
               <>
-                <WaveBackground f={f} height={110} intensity={0.38} />
+                <TodayWave f={f} body={today} />
                 <div className="wait-num" style={{ fontSize: 80 }}>
                   {f.waitText}
                 </div>
@@ -482,11 +682,6 @@ const DetailsDrawer = ({
                   <span className="sev-dot" />
                   {facilityWaitStatusLabel(f)} · updated {f.lastUpdated}
                 </div>
-                {(f.history?.length ?? 0) >= 2 && (
-                  <div className="wave-caption" title="The background wave traces hourly wait times over the past 12 hours">
-                    12h trend
-                  </div>
-                )}
               </>
             ) : (
               <div className="no-data-state no-data-state-drawer">
@@ -501,6 +696,17 @@ const DetailsDrawer = ({
             </div>
           )}
         </div>
+
+        {f.open && hasWaitData && today != null && today.usual.length >= 6 && (
+          <>
+            <h4 className="drawer-section-label usual-label">Typical day</h4>
+            <TypicalDayBars
+              usual={today.usual}
+              nowHour={Math.floor(today.nowMin / 60)}
+              sev={sev}
+            />
+          </>
+        )}
 
         <h4 className="drawer-section-label">What to expect</h4>
         <p className="drawer-text">
