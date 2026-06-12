@@ -6,13 +6,6 @@ import type { ChartConfiguration, ChartType, Plugin } from "chart.js";
 
 type MaybeNumber = number | null;
 
-type TrendPoint = {
-  bucket: string;
-  avgWait: MaybeNumber;
-  medianWait: MaybeNumber;
-  p90Wait: MaybeNumber;
-};
-
 type CurrentPoint = {
   name: string;
   type: string;
@@ -58,7 +51,6 @@ type CoveragePoint = {
 };
 
 type Props = {
-  trend: TrendPoint[];
   current: CurrentPoint[];
   distribution: DistributionPoint[];
   heatmap: HeatmapPoint[];

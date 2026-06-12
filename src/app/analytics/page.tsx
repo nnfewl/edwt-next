@@ -66,20 +66,6 @@ type SnapshotRow = {
   elos_minutes: MaybeNumber;
   status: string | null;
 };
-type HourlyRow = {
-  vancouver_hour: number;
-  readings: number;
-  avg_wait: MaybeNumber;
-  median_wait: MaybeNumber;
-  p90_wait: MaybeNumber;
-};
-type TrendRow = {
-  bucket: Date;
-  readings: number;
-  avg_wait: MaybeNumber;
-  median_wait: MaybeNumber;
-  p90_wait: MaybeNumber;
-};
 type DistributionRow = {
   bucket: string;
   bucket_order: number;
@@ -101,12 +87,6 @@ type FacilityRiskRow = {
   median_wait: MaybeNumber;
   p90_wait: MaybeNumber;
   stddev_wait: MaybeNumber;
-};
-type RankFlowRow = {
-  bucket: Date;
-  name: string;
-  rank: number;
-  avg_wait: MaybeNumber;
 };
 type TypeTrendRow = {
   bucket: Date;
@@ -164,12 +144,9 @@ type AnalyticsData = {
   current: SnapshotRow[];
   highestAverage: FacilitySummary[];
   mostVolatile: FacilitySummary[];
-  hourly: HourlyRow[];
-  trend: TrendRow[];
   distribution: DistributionRow[];
   heatmap: HeatmapRow[];
   facilityRisk: FacilityRiskRow[];
-  rankFlow: RankFlowRow[];
   typeTrend: TypeTrendRow[];
   coverage: CoverageRow[];
   alerts: AlertRow[];
@@ -362,34 +339,8 @@ async function queryAnalytics(): Promise<AnalyticsResult> {
     ]);
     console.log("[analytics] batch 2 done", Date.now() - startedAt);
 
-    // Batch 3: time-series, distribution, heatmap, risk, alerts (9 queries)
-    const [hourly, trend, distribution, heatmap, facilityRisk, rankFlow, typeTrend, coverage, alerts] = await Promise.all([
-      sql<HourlyRow[]>`
-        select
-          extract(hour from observed_at at time zone 'America/Vancouver')::int as vancouver_hour,
-          count(*)::int as readings,
-          round(avg(wait_time_minutes)::numeric, 1)::float as avg_wait,
-          percentile_cont(0.5) within group (order by wait_time_minutes)::float as median_wait,
-          percentile_cont(0.9) within group (order by wait_time_minutes)::float as p90_wait
-        from wait_time_readings
-        where wait_time_minutes is not null
-          and observed_at >= now() - interval '30 days'
-        group by 1
-        order by 1
-      `,
-      sql<TrendRow[]>`
-        select
-          date_bin('30 minutes', observed_at, timestamp with time zone '2000-01-01') as bucket,
-          count(*)::int as readings,
-          round(avg(wait_time_minutes)::numeric, 1)::float as avg_wait,
-          percentile_cont(0.5) within group (order by wait_time_minutes)::float as median_wait,
-          percentile_cont(0.9) within group (order by wait_time_minutes)::float as p90_wait
-        from wait_time_readings
-        where wait_time_minutes is not null
-          and observed_at >= now() - interval '30 days'
-        group by 1
-        order by 1
-      `,
+    // Batch 3: time-series, distribution, heatmap, risk, alerts (6 queries)
+    const [distribution, heatmap, facilityRisk, typeTrend, coverage, alerts] = await Promise.all([
       sql<DistributionRow[]>`
         select
           case
@@ -469,36 +420,6 @@ async function queryAnalytics(): Promise<AnalyticsResult> {
         having count(w.id) >= 10
         order by avg(w.wait_time_minutes) desc
       `,
-      sql<RankFlowRow[]>`
-        with bucketed as (
-          select
-            date_bin('2 hours', observed_at, timestamp with time zone '2000-01-01') as bucket,
-            location_id,
-            avg(wait_time_minutes)::float as avg_wait,
-            count(*)::int as readings
-          from wait_time_readings
-          where wait_time_minutes is not null
-            and observed_at >= now() - interval '30 days'
-          group by 1, 2
-          having count(*) >= 2
-        ), ranked as (
-          select
-            bucket,
-            location_id,
-            avg_wait,
-            row_number() over (partition by bucket order by avg_wait desc nulls last) as rank
-          from bucketed
-        )
-        select
-          ranked.bucket,
-          l.name,
-          ranked.rank::int as rank,
-          round(ranked.avg_wait::numeric, 1)::float as avg_wait
-        from ranked
-        join locations l on l.id = ranked.location_id
-        where ranked.rank <= 8
-        order by ranked.bucket, ranked.rank
-      `,
       sql<TypeTrendRow[]>`
         select
           date_bin('2 hours', w.observed_at, timestamp with time zone '2000-01-01') as bucket,
@@ -577,12 +498,9 @@ async function queryAnalytics(): Promise<AnalyticsResult> {
         current,
         highestAverage,
         mostVolatile,
-        hourly,
-        trend,
         distribution,
         heatmap,
         facilityRisk,
-        rankFlow,
         typeTrend,
         coverage,
         alerts,
@@ -909,12 +827,6 @@ export default async function AnalyticsPage({
         </section>
 
         <AnalyticsCharts
-          trend={data.trend.map((row) => ({
-            bucket: new Date(row.bucket).toISOString(),
-            avgWait: row.avg_wait,
-            medianWait: row.median_wait,
-            p90Wait: row.p90_wait,
-          }))}
           current={data.current.map((row) => ({
             name: row.name,
             type: row.type,
