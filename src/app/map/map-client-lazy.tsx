@@ -18,9 +18,9 @@ function MapLoadingShell() {
       <section className="map-shell map-shell-loading" aria-busy="true" aria-label="Loading facility map">
         <aside className="map-sidebar">
           <div className="map-copy">
-            <p className="eyebrow">Loading map</p>
-            <h1>Nearby facilities</h1>
-            <p>Preparing live wait-time markers, facility details, and local map controls.</p>
+            <p className="eyebrow"><span className="map-loading-bar" style={{ width: "90px", height: "12px" }} /></p>
+            <h1><span className="map-loading-bar" style={{ width: "82%", height: "47px", borderRadius: "10px" }} /></h1>
+            <p><span className="map-loading-bar" style={{ width: "95%", height: "14px" }} /><br /><span className="map-loading-bar" style={{ width: "72%", height: "14px", marginTop: "6px" }} /></p>
           </div>
 
           <div className="map-stats map-loading-stats">
@@ -70,6 +70,20 @@ function MapLoadingShell() {
 
         <div className="map-canvas-wrap">
           <div className="map-canvas map-loading-canvas" />
+          <div className="map-loading-overlay" aria-hidden="true">
+            <div className="map-pin-loader">
+              <div className="map-pin-icon">
+                <svg viewBox="0 0 24 34" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 0C5.373 0 0 5.373 0 12c0 7.2 12 22 12 22s12-14.8 12-22C24 5.373 18.627 0 12 0z" fill="currentColor" />
+                  <circle cx="12" cy="12" r="4.5" fill="white" />
+                </svg>
+              </div>
+              <div className="map-pin-shadow" />
+              <div className="map-pin-ring" />
+              <div className="map-pin-ring" />
+              <div className="map-pin-ring" />
+            </div>
+          </div>
         </div>
       </section>
     </main>
