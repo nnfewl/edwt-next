@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCrosshairs, faLocationArrow, faPhone } from "@fortawesome/free-solid-svg-icons";
 import maplibregl, { type GeoJSONSource, type LngLatLike, type Map as MapLibreMap } from "maplibre-gl";
@@ -743,6 +743,11 @@ export function MapClient({
     return Math.max(0, Math.min(mapRect.bottom, overlayBottom) - mapRect.top);
   }, []);
 
+  useLayoutEffect(() => {
+    if (mapReady) return;
+    setLoaderPad(mobileOverlayHeight());
+  }, [mapReady, mobileOverlayHeight]);
+
   useEffect(() => {
     if (mapReady) return;
     let raf = 0;
@@ -750,7 +755,6 @@ export function MapClient({
       cancelAnimationFrame(raf);
       raf = requestAnimationFrame(() => setLoaderPad(mobileOverlayHeight()));
     };
-    measure();
     window.addEventListener("resize", measure);
     return () => {
       cancelAnimationFrame(raf);

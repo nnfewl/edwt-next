@@ -726,13 +726,27 @@
   100% { background-position: -120% 0; }
 }
 
+@keyframes map-fade-in {
+  from { opacity: 0; }
+}
+
+.map-shell:not(.map-shell-loading) .map-pin-loader {
+  animation: map-fade-in 0.2s ease;
+}
+
+.map-shell:not(.map-shell-loading) > .map-sidebar > * {
+  animation: map-fade-in 0.22s ease;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .map-pin-icon,
   .map-pin-shadow,
   .map-pin-ring,
   .map-loading-bar,
   .map-loading-pill,
-  .map-loading-actions span {
+  .map-loading-actions span,
+  .map-shell:not(.map-shell-loading) .map-pin-loader,
+  .map-shell:not(.map-shell-loading) > .map-sidebar > * {
     animation: none;
   }
 }
