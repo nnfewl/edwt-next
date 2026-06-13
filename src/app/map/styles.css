@@ -438,6 +438,7 @@
   /* The shell now caps height; let this fill the right grid cell instead of
      setting its own min-height which would override the cap. */
   height: 100%;
+  background: var(--bg);
 }
 
 .map-canvas {
@@ -679,6 +680,7 @@
   flex-direction: column;
   align-items: center;
   gap: 8px;
+  animation: map-fade-in 0.4s ease;
 }
 
 .map-pin-icon {
@@ -748,6 +750,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .map-pin-loader,
   .map-pin-icon,
   .map-pin-shadow,
   .map-pin-ring,

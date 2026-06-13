@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCrosshairs, faLocationArrow, faPhone } from "@fortawesome/free-solid-svg-icons";
+import { faCrosshairs, faLocationArrow, faLocationDot, faPhone } from "@fortawesome/free-solid-svg-icons";
 import { useSearchParams } from "next/navigation";
 import maplibregl, { type GeoJSONSource, type LngLatLike, type Map as MapLibreMap } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -1074,7 +1074,17 @@ export function MapClient({
             <div
               className={"map-loading-overlay" + (mapReady ? " is-ready" : "")}
               aria-hidden="true"
-            />
+            >
+              <div className="map-pin-loader">
+                <span className="map-pin-icon">
+                  <FontAwesomeIcon icon={faLocationDot} />
+                </span>
+                <span className="map-pin-shadow" />
+                <span className="map-pin-ring" />
+                <span className="map-pin-ring" />
+                <span className="map-pin-ring" />
+              </div>
+            </div>
           )}
           {mapUnavailable && (
             <div className="map-fallback" role="status">
