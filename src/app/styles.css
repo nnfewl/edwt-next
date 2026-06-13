@@ -1014,6 +1014,14 @@
   flex-direction: column;
   align-items: flex-end;
 }
+@media (max-width: 760px) {
+  .er-now-root .home-skeleton-wait > .home-skeleton-bar {
+    height: 40px !important;
+  }
+  .er-now-root .facility .badges .home-skeleton-bar {
+    height: 25px !important;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .er-now-root .home-skeleton-bar,
   .er-now-root .home-skeleton-fade {
