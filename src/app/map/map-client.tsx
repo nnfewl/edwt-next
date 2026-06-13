@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCrosshairs, faLocationArrow, faPhone } from "@fortawesome/free-solid-svg-icons";
+import { useSearchParams } from "next/navigation";
 import maplibregl, { type GeoJSONSource, type LngLatLike, type Map as MapLibreMap } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { type Facility, facilityWaitStatusLabel, severityFor } from "../data";
@@ -481,17 +482,14 @@ function createFontAwesomeSvg(icon: typeof faLocationArrow) {
 export function MapClient({
   facilities,
   initialOrigin,
-  initialFacilityId,
-  routeRequested,
 }: {
   facilities: Facility[];
   initialOrigin: LocationOrigin;
-  initialFacilityId: string | null;
-  routeRequested: boolean;
 }) {
-  // GPS override pattern: store only the user-granted location locally so the
-  // server's IP-geolocated `initialOrigin` can update through router.refresh()
-  // without clobbering a user's precise-location choice.
+  const searchParams = useSearchParams();
+  const initialFacilityId = searchParams.get("facility");
+  const routeRequested = searchParams.get("route") === "1";
+
   const [gpsOrigin, setGpsOrigin] = useSessionGpsOrigin();
   const [ipOrigin, setIpOrigin] = useState<LocationOrigin | null>(null);
   const [liveFacilities, setLiveFacilities] = useState<Facility[] | null>(null);
@@ -532,7 +530,6 @@ export function MapClient({
   const [routeError, setRouteError] = useState<string | null>(null);
   // Mobile: the card/rail overlay covers the top of the canvas, so the loading
   // pin must center in the visible region below it — same idea as mobileMapOffset.
-  const [loaderPad, setLoaderPad] = useState(0);
   // Capture the initial facility list in a ref so the mount-only init effect
   // can read it for fitBounds without taking a dep that would tear the whole
   // map down (and reset pan/zoom + any active route) when client polling hands
@@ -742,25 +739,6 @@ export function MapClient({
     const overlayBottom = Math.max(cardBottom, railBottom);
     return Math.max(0, Math.min(mapRect.bottom, overlayBottom) - mapRect.top);
   }, []);
-
-  useLayoutEffect(() => {
-    if (mapReady) return;
-    setLoaderPad(mobileOverlayHeight());
-  }, [mapReady, mobileOverlayHeight]);
-
-  useEffect(() => {
-    if (mapReady) return;
-    let raf = 0;
-    const measure = () => {
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => setLoaderPad(mobileOverlayHeight()));
-    };
-    window.addEventListener("resize", measure);
-    return () => {
-      cancelAnimationFrame(raf);
-      window.removeEventListener("resize", measure);
-    };
-  }, [mapReady, mobileOverlayHeight]);
 
   const mobileMapOffset = useCallback((): [number, number] => {
     if (!mapNode.current) return [0, 0];
@@ -1095,22 +1073,8 @@ export function MapClient({
           {!mapUnavailable && (
             <div
               className={"map-loading-overlay" + (mapReady ? " is-ready" : "")}
-              style={loaderPad > 0 ? { paddingTop: loaderPad } : undefined}
               aria-hidden="true"
-            >
-              <div className="map-pin-loader">
-                <div className="map-pin-icon">
-                  <svg viewBox="0 0 24 34" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 0C5.373 0 0 5.373 0 12c0 7.2 12 22 12 22s12-14.8 12-22C24 5.373 18.627 0 12 0z" fill="currentColor"/>
-                    <circle cx="12" cy="12" r="4.5" fill="white"/>
-                  </svg>
-                </div>
-                <div className="map-pin-shadow" />
-                <div className="map-pin-ring" />
-                <div className="map-pin-ring" />
-                <div className="map-pin-ring" />
-              </div>
-            </div>
+            />
           )}
           {mapUnavailable && (
             <div className="map-fallback" role="status">

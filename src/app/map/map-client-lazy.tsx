@@ -1,8 +1,6 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useSearchParams } from "next/navigation";
-import { Suspense } from "react";
 
 const MapClientDynamic = dynamic(
   () => import("./map-client").then((m) => m.MapClient),
@@ -12,22 +10,7 @@ const MapClientDynamic = dynamic(
   },
 );
 
-type MapClientLazyProps = Omit<
-  React.ComponentProps<typeof MapClientDynamic>,
-  "initialFacilityId" | "routeRequested"
->;
-
-function MapClientWithSearchParams(props: MapClientLazyProps) {
-  const searchParams = useSearchParams();
-
-  return (
-    <MapClientDynamic
-      {...props}
-      initialFacilityId={searchParams.get("facility")}
-      routeRequested={searchParams.get("route") === "1"}
-    />
-  );
-}
+type MapClientLazyProps = React.ComponentProps<typeof MapClientDynamic>;
 
 function MapLoadingShell() {
   return (
@@ -108,9 +91,5 @@ function MapLoadingShell() {
 }
 
 export function MapClientLazy(props: MapClientLazyProps) {
-  return (
-    <Suspense fallback={<MapLoadingShell />}>
-      <MapClientWithSearchParams {...props} />
-    </Suspense>
-  );
+  return <MapClientDynamic {...props} />;
 }
