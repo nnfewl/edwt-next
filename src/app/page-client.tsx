@@ -1081,7 +1081,6 @@ export function ERNowPageClient({
                   className={`sort-option ${sort === s.id ? "active" : ""}`}
                   type="button"
                   aria-pressed={sort === s.id}
-                  aria-label={s.label}
                   title={s.label}
                   onClick={() => setSort(s.id)}
                   ref={(node) => {

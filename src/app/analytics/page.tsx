@@ -652,10 +652,10 @@ function TypeComparison({ rows }: { rows: TypeSummary[] }) {
               <TypePill type={row.type} />
               <span>Median wait time {fmtWait(row.median_wait)} / P90 wait time {fmtWait(row.p90_wait)}</span>
             </div>
-            <div className="analytics-bar-track" aria-label={`${typeLabel(row.type)} median wait time ${fmtWait(row.median_wait)}`}>
+            <div className="analytics-bar-track" role="meter" aria-label={`${typeLabel(row.type)} median wait time`} aria-valuemin={0} aria-valuemax={max} aria-valuenow={row.median_wait ?? 0} aria-valuetext={fmtWait(row.median_wait)}>
               <span className="analytics-bar-fill analytics-bar-median" style={{ width: `${Math.max(((row.median_wait ?? 0) / max) * 100, 2)}%` }} />
             </div>
-            <div className="analytics-bar-track" aria-label={`${typeLabel(row.type)} P90 wait time ${fmtWait(row.p90_wait)}`}>
+            <div className="analytics-bar-track" role="meter" aria-label={`${typeLabel(row.type)} P90 wait time`} aria-valuemin={0} aria-valuemax={max} aria-valuenow={row.p90_wait ?? 0} aria-valuetext={fmtWait(row.p90_wait)}>
               <span className="analytics-bar-fill analytics-bar-p90" style={{ width: `${Math.max(((row.p90_wait ?? 0) / max) * 100, 2)}%` }} />
             </div>
           </div>

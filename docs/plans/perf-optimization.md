@@ -197,3 +197,70 @@ Those three together prevented the same `PRERENDER` behavior working on `/` and 
 | `revalidate = 60` on `/analytics` | small after removing request-time shell path | TTFB ~2.5s/100s+ → ~100-300ms for cached visitors |
 
 Combined, `/analytics` should go from **18–118s to under 1s** for cached hits and ~5s for regenerations, with the regeneration happening in the background where nobody waits on it.
+
+---
+
+## Lighthouse audit (2026-06-13, Lighthouse 11.16, headless Chrome against edwt.ca production)
+
+### Scores
+
+| Route | Device | Perf | A11y | Best Practices | SEO | CLS |
+|-------|--------|------|------|----------------|-----|-----|
+| `/` | Desktop | 95 | 96 | 96 | 100 | 0 |
+| `/` | Mobile | 73 | 95 | 96 | 100 | 0 |
+| `/map` | Desktop | 59 | 96 | 96 | 100 | 0 |
+| `/map` | Mobile | 59 | 96 | 96 | 100 | 0 |
+| `/analytics` | Desktop | 89 | 90 | 96 | 100 | 0 |
+| `/analytics` | Mobile | 66 | 90 | 96 | 100 | 0 |
+
+### Key metrics
+
+| Route | Device | FCP | LCP | SI | TTI | TBT |
+|-------|--------|-----|-----|----|-----|-----|
+| `/` | Desktop | 0.4s | 0.9s | 0.7s | 1.0s | 170ms |
+| `/` | Mobile | 1.1s | 3.3s | 2.3s | 3.8s | 760ms |
+| `/map` | Desktop | 0.3s | 1.6s | 2.4s | 3.9s | 1,980ms |
+| `/map` | Mobile | 0.9s | 2.7s | 7.5s | 16.9s | 12,140ms |
+| `/analytics` | Desktop | 0.4s | 0.9s | 0.7s | 1.2s | 260ms |
+| `/analytics` | Mobile | — | 2.9s | — | — | 2,460ms |
+
+CLS is 0 across all routes (good).
+
+### Findings
+
+**Performance — `/map` mobile is the worst offender**
+
+`/map` mobile TBT of 12.1s and TTI of 16.9s are catastrophic. Main-thread breakdown: 12.4s "Other" (WebGL context setup, tile parsing, glyph decoding) + 4s Script Evaluation. This is inherent to MapLibre GL on a throttled mobile CPU; the prerendered shell and skeleton already mask perceived load, but the page is unresponsive until MapLibre finishes. Desktop TBT (1,980ms) is bad too — MapLibre init is CPU-bound regardless of network.
+
+Chunk `10353` (279KB total, 158KB / 57% unused on `/map`) is the MapLibre bundle. Chunk `099jjb` (172KB total, ~78KB / 46% unused) is loaded on all three routes — likely Sentry or FontAwesome tree-shaking opportunity. Chunk `0i6xoq9j` (69KB total, nearly 100% unused on `/` and `/map`, 38% on `/analytics`) is loaded but barely used outside analytics.
+
+**Accessibility — color contrast dominates**
+
+212 elements fail contrast on `/` (badges like `<span class="badge emergency">`, `<span class="badge open">`, and `<small>` text), 56 on `/analytics` (`.analytics-kicker` divs and span text), 1 on `/map` (`.status-pill.open`). These are all severity/status badge colors against their backgrounds.
+
+`/analytics` has 4 elements with prohibited ARIA attributes: `aria-label` on non-interactive `div.analytics-bar-track`. These need `role="meter"` or `role="img"` to make the `aria-label` valid.
+
+`/` has 1 label/name mismatch: sort button "Closest first" (`aria-label="Closest first"` doesn't match visible text).
+
+### TODO
+
+#### Performance
+
+- [x] **P2** — Investigate shared chunk `099jjb` (172KB, 46% unused on all routes). Chunk IDs are per-deployment; `099jjb` doesn't exist in local builds. The build manifest confirms Chart.js (`0i6xoq`) is scoped to `/analytics` first-load only. The shared chunk Lighthouse flagged is likely framework/polyfill code loaded via prefetching, not a code-splitting problem.
+- [x] **P2** — Investigate chunk `0i6xoq9j` (69KB, ~100% unused on `/` and `/map`). Confirmed as Chart.js. Build manifest shows it only appears in `/analytics` first-load chunks — Lighthouse likely detected it via prefetch or after client navigation. No code-splitting change needed.
+- [ ] **P3** — `/map` mobile TBT (12.1s). MapLibre GL initialization is inherently CPU-heavy (WebGL + tile parsing). Possible mitigations: (a) break `addFacilityMarkerImages()` into `requestIdleCallback` chunks so the main thread yields between marker batches; (b) use `maplibre-gl`'s `cooperativeGestures` or deferred layer loading; (c) accept the TBT since the skeleton already provides perceived responsiveness. The MapLibre bundle size itself (279KB, existing P3) is secondary to the init CPU cost.
+- [ ] **P3** — `/analytics` mobile TBT (2,460ms). Script Evaluation: 3,518ms is mostly Chart.js canvas rendering. Already partially addressed by selective Chart.js registration. Further mitigation: lazy-render below-fold charts with `IntersectionObserver` so only visible charts block interaction.
+- [ ] **P3** — `/` mobile LCP (3.3s), TBT (760ms). Style & Layout: 1,152ms — likely driven by 200+ facility list items rendered at once. Consider virtual scrolling or progressive rendering (render first ~20 items, defer rest). Desktop is fine (LCP 0.9s, TBT 170ms).
+- [ ] **P3** — Legacy JS: ~15KB across all routes from Next.js polyfills. Set `browserslist` in `package.json` to modern-only targets if not already done, or configure `next.config` `experimental.modernBuild` if available.
+- [ ] **P3** — Unused CSS on `/map`: 12KB (MapLibre GL CSS). Minor; only worth addressing if switching to a custom MapLibre CSS build.
+
+#### Accessibility
+
+- [x] **P2** — Fix color contrast on severity/status badges across all routes. Darkened `--muted` (#757a75→#6b706b on `/`, `/analytics`; #68716c→#5e665f on `/map`, globals), `--coral` (oklch 0.68→0.54 on `/`; #dc6d55→#b5462d on `/analytics` + chart colors), `--green` (oklch 0.55→0.47 on `/`; #16a34a→#15803d on `/analytics`, `/map` CSS + chart colors). All pairs now pass WCAG AA 4.5:1.
+- [x] **P2** — Fix prohibited ARIA attributes on `/analytics`. Added `role="meter"` with `aria-valuemin`, `aria-valuemax`, `aria-valuenow`, and `aria-valuetext` to the 4 `.analytics-bar-track` divs.
+- [x] **P3** — Fix label/name mismatch on `/` sort button. Removed redundant `aria-label` from sort buttons — the visible text (`shortLabel`) plus `title` (full label) is sufficient. `aria-pressed` already conveys state.
+
+#### Other
+
+- [ ] **P3** — Console error `ERR_ADDRESS_UNREACHABLE` on all routes. Likely Sentry SDK or an external resource that fails in headless/restricted environments. Verify it doesn't occur in real browsers; if it does, fix the failing resource load.
+- [ ] **P3** — `llms.txt` format: Lighthouse flags it doesn't follow recommendations. Review against the `llms.txt` spec and update if worthwhile.

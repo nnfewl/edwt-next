@@ -8,7 +8,7 @@
   --surface: #ffffff;
   --ink: #1a1d1b;
   --ink-2: #3b403d;
-  --muted: #757a75;
+  --muted: #6b706b;
   --line: #e2e8f0;
   --line-2: #cbd5e1;
 
@@ -16,10 +16,10 @@
   --teal-soft: oklch(0.93 0.025 180);
   --teal-ink: oklch(0.28 0.05 180);
 
-  --coral: oklch(0.68 0.16 30);
+  --coral: oklch(0.54 0.14 30);
   --coral-soft: oklch(0.94 0.04 30);
 
-  --green: oklch(0.55 0.13 150);
+  --green: oklch(0.47 0.12 150);
   --green-soft: oklch(0.94 0.05 150);
 
   --amber: oklch(0.72 0.14 70);

@@ -85,7 +85,7 @@ body {
 .app-wordmark small {
   display: block;
   margin-top: 2px;
-  color: #68716c;
+  color: #5e665f;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0;
@@ -315,7 +315,7 @@ body {
   .app-mobile-menu-panel a svg {
     width: 18px;
     height: 18px;
-    color: var(--muted, #68716c);
+    color: var(--muted, #5e665f);
     flex: 0 0 auto;
   }
 
