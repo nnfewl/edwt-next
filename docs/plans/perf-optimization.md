@@ -1,4 +1,4 @@
-# Performance Audit: `/` and `/analytics`
+# Performance Audit: `/`, `/map`, and `/analytics`
 
 Audit date: 2026-06-12 (measured, not estimated — production curl timings, production DB query timings, local prod-build server logs, and a micro-benchmark)
 
@@ -46,7 +46,11 @@ The normal work order is **`/` first, `/analytics` second**. The one exception i
    - If `/` stays dynamic, keep the optimization focused: inspect `getPublicFacilities()`, payload size, and only then tackle client bundle work.
    - Treat the drawer/icon split as secondary unless fresh bundle analysis shows it matters on first load.
 
-3. **Second workstream: `/analytics` endpoint**
+3. **Follow-up workstream: `/map` endpoint — completed**
+   - Shared-shell caching is in place: request-time origin and URL-param handling moved out of the server page, and `/map` is prerenderable with 30s revalidation.
+   - MapLibre stays lazy-loaded, with a real loading shell before the 1MB map chunk boots and client polling for facility updates.
+
+4. **Second workstream: `/analytics` endpoint**
    - Delete unused queries/props, remove the serial `raw_polls` existence query, merge query batches, and replace exact table counts.
    - Only after that, revisit `/analytics` ISR. The current `searchParams` shell path is a request-time API, so simply adding `revalidate = 60` is not enough unless the shell debug mode moves elsewhere or the page stops awaiting `searchParams`.
 
@@ -123,8 +127,39 @@ Deleting these removes 3 queries. Only `trend` currently bloats the HTML/RSC pay
 
 - [x] **P1** — `/`: choose caching strategy first. It previously personalized via IP-geo headers (`getApproximateLocationOrigin` reads `x-vercel-ip-*` through `headers()`), which opted the route into request-time rendering. Chosen path: keep `/` shared with `revalidate = 30`, start from `FALLBACK_LOCATION_ORIGIN`, and restore approximate IP origin client-side through dynamic `/api/location-origin`; GPS/session origin still wins. — commit `3de9da9`
 - [x] **P1** — `/analytics`: before ISR, remove or relocate the `?shell=1` debug path that awaits `searchParams`; `searchParams` is also request-time data. Then drop `force-dynamic`/`revalidate = 0` and set `export const revalidate = 60`. — commit `37a83d8`
-- [ ] **P2** — Confirm `AutoRefresh` expectations after ISR. `router.refresh()` makes a new server request, but it does not invalidate the server-side cache; freshness comes from the `revalidate` interval or explicit invalidation.
+- [x] **P2** — Confirm `AutoRefresh` expectations after ISR. `router.refresh()` makes a new server request, but it does not invalidate the server-side cache; freshness comes from the `revalidate` interval or explicit invalidation. Confirmed correct: `/` (revalidate=30, refresh every 2min) and `/analytics` (revalidate=60, refresh every 5min) both get fast cached responses within the revalidation window and trigger background regeneration when stale. The 30s in-process DB cache in `facilities-db.ts` further collapses redundant queries.
 - [ ] **P3** — Consider `maxDuration` back down from 60 once the above lands (cost guard).
+
+---
+
+## `/map` endpoint work — shell now prerendered; remaining work is map boot polish
+
+Pre-fix live spot check after the `/` and `/analytics` fixes:
+
+| Request | TTFB | Total | Notes |
+|---------|------|-------|-------|
+| `/map` cold-ish | 8.06s | 8.08s | `x-vercel-cache: MISS`, `private, no-store`, dynamic server render |
+| `/map` warm ×2 | 0.34–1.23s | 0.38–1.31s | dynamic before the fixes; warm lambda/cache helped but each visitor could miss |
+
+Before the fixes, local prod build confirmed `/map` was still `ƒ` dynamic, while `/` and `/analytics` were prerendered. After commits `dff1627` and `04eba63`, local prod build confirms `/map` is prerendered as `○ /map` with 30s revalidation. Initial route JS is small-ish because `MapClientLazy` uses `next/dynamic(..., { ssr: false })`: ~160KB raw / 47KB gzip for the route shell. The real map payload is the lazy MapLibre/client chunk: ~1.05MB raw / 280KB gzip, plus map CSS (~86KB raw / 13KB gzip). That is acceptable for a map route, but it makes the loading state important.
+
+### What made `/map` dynamic
+
+- [x] `src/app/map/page.tsx` exported `dynamic = "force-dynamic"` and `revalidate = 0` — fixed in commit `04eba63`.
+- [x] The page awaited `searchParams` to read `facility` and `route` — moved client-side in commit `dff1627`.
+- [x] The page called `getApproximateLocationOrigin()`, which reads request headers through `headers()` — replaced with `FALLBACK_LOCATION_ORIGIN` plus client-side `/api/location-origin` in commit `04eba63`.
+
+Those three together prevented the same `PRERENDER` behavior working on `/` and `/analytics`. `/map` now uses a shared server shell and lets the client resolve per-visitor state.
+
+### TODO
+
+- [x] **P1** — Make `/map` prerenderable. Remove `force-dynamic`/`revalidate = 0`, set `revalidate = 30`, pass `FALLBACK_LOCATION_ORIGIN` from the server, and mirror `/` by fetching `/api/location-origin` client-side after hydration when no GPS/session origin exists — commit `04eba63`.
+- [x] **P1** — Move `facility` and `route` query-param handling into a tiny client wrapper around `MapClientLazy` using `useSearchParams()`. The server page should not await `searchParams`; `/map?facility=...&route=1` can remain a client-side concern because routing/geolocation already happen in the browser — commit `dff1627`.
+- [x] **P2** — Replace `<AutoRefresh />` on `/map` with client polling of `/api/facilities` plus `source.setData(...)`. The map is already client-owned; polling the cached JSON API avoids RSC refreshes and keeps MapLibre state completely isolated from server refreshes — commit `4cd88fe`.
+- [x] **P2** — Replace the blank `MapClientLazy` loading fallback with a real map shell: sidebar/list skeleton plus a stable canvas loader. This avoids a plain block while the ~280KB gzip MapLibre chunk downloads and initializes — commit `afd01ff`.
+- [x] **P2** — Add `preconnect`/`dns-prefetch` for `https://basemaps.cartocdn.com` on `/map`. Preconnect was already in root `layout.tsx` for both `basemaps.cartocdn.com` and `tiles.basemaps.cartocdn.com`; added `dns-prefetch` fallback hints alongside them.
+- [ ] **P3** — Cache marker favicon loads in `map-client.tsx` or prebuild marker sprites. `addFacilityMarkerImages()` creates 20 canvas images (5 authorities × 4 severities) and currently calls `loadMarkerIcon()` per marker variant; browser cache helps, but a module-level image promise cache or static marker assets would reduce duplicate decode/canvas work.
+- [ ] **P3** — Leave MapLibre bundle size alone unless UX metrics still suffer after the shell/cache work. The big lazy chunk is expected for an interactive vector map; bigger gains come from prerendering the route and improving perceived boot.
 
 ---
 
@@ -154,6 +189,8 @@ Deleting these removes 3 queries. Only `trend` currently bloats the HTML/RSC pay
 | Fix | Effort | Effect (measured basis) |
 |-----|--------|------------------------|
 | `/` caching strategy | small/medium | If origin can move client-side, cached `/` hits should avoid per-visitor lambda work |
+| `/map` caching strategy | done | Completed in `dff1627`/`04eba63`; removes cold dynamic map-shell TTFB by prerendering the shared shell |
+| `/map` loading shell + client polling | done | Completed in `afd01ff`/`4cd88fe`; improves perceived map boot and avoids RSC refreshes for facility updates |
 | Intl hot-loop fix | ~10 lines | −5s server render **and** −5s client hydration; removes the growth-over-time degradation |
 | Delete 3 dead queries | deletion | less query/server work; removing `trend` also shrinks payload |
 | Env-var `raw_polls` + single `Promise.all` | small | query phase 8.9s → ~3-4s |

@@ -70,7 +70,9 @@ export default function RootLayout({
     >
       <head>
         <link rel="preconnect" href="https://basemaps.cartocdn.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://basemaps.cartocdn.com" />
         <link rel="preconnect" href="https://tiles.basemaps.cartocdn.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://tiles.basemaps.cartocdn.com" />
         <link
           rel="alternate"
           type="text/markdown"
