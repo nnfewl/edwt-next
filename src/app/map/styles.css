@@ -1061,6 +1061,9 @@
     min-height: 0;
     border: 0;
   }
+  .map-loading-overlay {
+    padding-top: 46dvh;
+  }
   .map-canvas .maplibregl-ctrl-top-right {
     top: 10px;
   }
