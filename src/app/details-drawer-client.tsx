@@ -119,7 +119,7 @@ const useWaveWipe = (hasToday: boolean) => {
     const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (prefersReduced) {
       outRef.current.style.display = "none";
-      inRef.current.style.maskImage = "none";
+      inRef.current.style.clipPath = "none";
       return;
     }
 
@@ -128,7 +128,6 @@ const useWaveWipe = (hasToday: boolean) => {
     import("gsap").then(({ gsap }) => {
       if (cancelled) return;
       const progress = { v: 0 };
-      const edge = 10;
       tween = gsap.to(progress, {
         v: 1,
         duration: 2,
@@ -136,16 +135,12 @@ const useWaveWipe = (hasToday: boolean) => {
         onUpdate() {
           if (!outRef.current || !inRef.current) return;
           const p = progress.v * 100;
-          const inEnd = Math.min(100, p + edge);
-          const outStart = Math.max(0, p - edge);
-          inRef.current.style.maskImage =
-            `linear-gradient(to right, black ${p}%, transparent ${inEnd}%)`;
-          outRef.current.style.maskImage =
-            `linear-gradient(to right, transparent ${outStart}%, black ${p}%)`;
+          inRef.current.style.clipPath = `inset(-200px ${100 - p}% -200px 0)`;
+          outRef.current.style.clipPath = `inset(-200px 0 -200px ${p}%)`;
         },
         onComplete() {
           if (!outRef.current || !inRef.current) return;
-          inRef.current.style.maskImage = "none";
+          inRef.current.style.clipPath = "none";
           outRef.current.style.display = "none";
         },
       });
