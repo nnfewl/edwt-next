@@ -128,6 +128,7 @@ const useWaveWipe = (hasToday: boolean) => {
     import("gsap").then(({ gsap }) => {
       if (cancelled) return;
       const progress = { v: 0 };
+      const edge = 10;
       tween = gsap.to(progress, {
         v: 1,
         duration: 1.8,
@@ -135,12 +136,16 @@ const useWaveWipe = (hasToday: boolean) => {
         onUpdate() {
           if (!outRef.current || !inRef.current) return;
           const p = progress.v * 100;
-          inRef.current.style.clipPath = `inset(-200px ${100 - p}% -200px 0)`;
-          outRef.current.style.clipPath = `inset(-200px 0 -200px ${p}%)`;
+          const inEnd = Math.min(100, p + edge);
+          const outStart = Math.max(0, p - edge);
+          inRef.current.style.maskImage =
+            `linear-gradient(to right, black ${p}%, transparent ${inEnd}%)`;
+          outRef.current.style.maskImage =
+            `linear-gradient(to right, transparent ${outStart}%, black ${p}%)`;
         },
         onComplete() {
           if (!outRef.current || !inRef.current) return;
-          inRef.current.style.clipPath = "none";
+          inRef.current.style.maskImage = "none";
           outRef.current.style.display = "none";
         },
       });

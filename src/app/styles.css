@@ -930,17 +930,14 @@
   pointer-events: auto;
   cursor: help;
 }
-/* Wave wipe pair: GSAP drives clip-path on these; CSS just hides the
-   incoming wave until the timeline starts. */
+/* Wave wipe pair: GSAP drives mask-image on these; CSS just hides the
+   incoming wave until the animation starts. */
 .er-now-root .wave-wipe-in {
-  clip-path: inset(-200px 100% -200px 0);
-}
-.er-now-root .wave-wipe-out {
-  clip-path: inset(-200px 0 -200px 0);
+  mask-image: linear-gradient(to right, black 0%, transparent 10%);
 }
 @media (prefers-reduced-motion: reduce) {
   .er-now-root .wave-wipe-in {
-    clip-path: none;
+    mask-image: none;
   }
   .er-now-root .wave-wipe-out {
     display: none;
