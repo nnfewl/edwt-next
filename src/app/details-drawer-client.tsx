@@ -131,7 +131,7 @@ const useWaveWipe = (hasToday: boolean) => {
       const edge = 10;
       tween = gsap.to(progress, {
         v: 1,
-        duration: 1.8,
+        duration: 2,
         ease: "sine.inOut",
         onUpdate() {
           if (!outRef.current || !inRef.current) return;
@@ -175,7 +175,7 @@ const TodayWave = ({
     <>
       {hasToday ? (
         <Fragment key={f.id}>
-          <div ref={outRef as React.RefObject<HTMLDivElement>} className="wave-wipe-out" style={{ position: "absolute", inset: 0 }}>
+          <div ref={outRef as React.RefObject<HTMLDivElement>} className="wave-wipe-out" style={{ position: "absolute", left: 0, right: 0, bottom: 0, pointerEvents: "none" }}>
             <WaveBackgroundComponent
               f={f}
               height={110}
@@ -184,7 +184,7 @@ const TodayWave = ({
               gidSuffix="-pre"
             />
           </div>
-          <div ref={inRef as React.RefObject<HTMLDivElement>} className="wave-wipe-in" style={{ position: "absolute", inset: 0 }}>
+          <div ref={inRef as React.RefObject<HTMLDivElement>} className="wave-wipe-in" style={{ position: "absolute", left: 0, right: 0, bottom: 0, pointerEvents: "none" }}>
             <WaveBackgroundComponent
               f={f}
               height={110}
