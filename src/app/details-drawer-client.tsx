@@ -110,6 +110,42 @@ const todaySoFar = (hist: HistoryPoint[] | undefined): WavePoint[] => {
   });
 };
 
+const useWaveWipe = (hasToday: boolean) => {
+  const outRef = useRef<HTMLElement>(null);
+  const inRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (!hasToday || !outRef.current || !inRef.current) return;
+    const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (prefersReduced) {
+      outRef.current.style.display = "none";
+      inRef.current.style.clipPath = "none";
+      return;
+    }
+
+    let tween: { kill(): void } | null = null;
+    let cancelled = false;
+    import("gsap").then(({ gsap }) => {
+      if (cancelled) return;
+      const progress = { v: 0 };
+      tween = gsap.to(progress, {
+        v: 1,
+        duration: 1.2,
+        ease: "power2.inOut",
+        onUpdate() {
+          if (!outRef.current || !inRef.current) return;
+          const p = progress.v * 100;
+          inRef.current.style.clipPath = `inset(0 ${100 - p}% 0 0)`;
+          outRef.current.style.clipPath = `inset(0 0 0 ${p}%)`;
+        },
+      });
+    });
+    return () => { cancelled = true; tween?.kill(); };
+  }, [hasToday]);
+
+  return { outRef, inRef };
+};
+
 const TodayWave = ({
   f,
   body,
@@ -123,38 +159,37 @@ const TodayWave = ({
   const provisional = todaySoFar(f.history);
   const preActual = provisional.length >= 2 ? provisional : undefined;
   const showToday = hasToday || preActual != null;
-  // One scale for both halves of the wipe pair, or the seam jumps vertically
-  // as the front passes (hourly seed samples can miss the 15-min peak).
   const pinnedMax =
     hasToday && preActual
       ? Math.max(1, ...body.actual.map((p) => p.min), ...preActual.map((p) => p.min))
       : undefined;
 
+  const { outRef, inRef } = useWaveWipe(hasToday);
+
   return (
     <>
       {hasToday ? (
-        // Sweep redraw, same move as the dashed forecast wipe: the refined
-        // wave reveals left-to-right while the seeded wave is erased behind
-        // the same front, so one continuous redraw crosses the whole graph.
         <Fragment key={f.id}>
-          <WaveBackgroundComponent
-            f={f}
-            height={110}
-            intensity={0.85}
-            actual={preActual}
-            className="wave-wipe-out"
-            gidSuffix="-pre"
-            pinnedWindowMax={pinnedMax}
-          />
-          <WaveBackgroundComponent
-            f={f}
-            height={110}
-            intensity={0.85}
-            actual={body.actual}
-            projected={body.projected}
-            className="wave-wipe-in"
-            pinnedWindowMax={pinnedMax}
-          />
+          <div ref={outRef as React.RefObject<HTMLDivElement>} className="wave-wipe-out" style={{ position: "absolute", inset: 0 }}>
+            <WaveBackgroundComponent
+              f={f}
+              height={110}
+              intensity={0.85}
+              actual={preActual}
+              gidSuffix="-pre"
+              pinnedWindowMax={pinnedMax}
+            />
+          </div>
+          <div ref={inRef as React.RefObject<HTMLDivElement>} className="wave-wipe-in" style={{ position: "absolute", inset: 0 }}>
+            <WaveBackgroundComponent
+              f={f}
+              height={110}
+              intensity={0.85}
+              actual={body.actual}
+              projected={body.projected}
+              pinnedWindowMax={pinnedMax}
+            />
+          </div>
         </Fragment>
       ) : (
         <WaveBackgroundComponent f={f} height={110} intensity={0.85} actual={preActual} />

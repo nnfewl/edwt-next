@@ -1,9 +1,3 @@
-@property --wipe {
-  syntax: "<percentage>";
-  initial-value: 0%;
-  inherits: false;
-}
-
 /* ER Now — public facilities list. Ported from the Claude Design prototype.
    Scoped to the /now route via Next.js per-segment CSS loading; the
    .er-now-root wrapper carries the page-level resets so nothing leaks. */
@@ -936,37 +930,17 @@
   pointer-events: auto;
   cursor: help;
 }
-/* Sweep redraw: the refined /today wave replaces the seeded one with a soft
-   gradient wipe. @property --wipe lets the browser interpolate the gradient
-   stops so the feathered edge sweeps smoothly left-to-right. */
+/* Wave wipe pair: GSAP drives clip-path on these; CSS just hides the
+   incoming wave until the timeline starts. */
 .er-now-root .wave-wipe-in {
-  mask-image: linear-gradient(
-    to right,
-    black 0%, black calc(var(--wipe) - 6%),
-    transparent calc(var(--wipe) + 6%)
-  );
-  animation: wave-wipe-in 1200ms ease-in-out both;
+  clip-path: inset(0 100% 0 0);
 }
 .er-now-root .wave-wipe-out {
-  mask-image: linear-gradient(
-    to right,
-    transparent 0%, transparent calc(var(--wipe) - 6%),
-    black calc(var(--wipe) + 6%), black 100%
-  );
-  animation: wave-wipe-out 1200ms ease-in-out both;
-}
-@keyframes wave-wipe-in {
-  from { --wipe: 0%; }
-  to   { --wipe: 100%; }
-}
-@keyframes wave-wipe-out {
-  from { --wipe: 0%; }
-  to   { --wipe: 100%; }
+  clip-path: inset(0 0 0 0);
 }
 @media (prefers-reduced-motion: reduce) {
   .er-now-root .wave-wipe-in {
-    animation: none;
-    mask-image: none;
+    clip-path: none;
   }
   .er-now-root .wave-wipe-out {
     display: none;
