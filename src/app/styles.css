@@ -933,7 +933,7 @@
 /* Wave wipe pair: GSAP drives mask-image on these; CSS just hides the
    incoming wave until the animation starts. */
 .er-now-root .wave-wipe-in {
-  mask-image: linear-gradient(to right, black 0%, transparent 10%);
+  mask-image: linear-gradient(to right, transparent 0%, transparent 0%);
 }
 @media (prefers-reduced-motion: reduce) {
   .er-now-root .wave-wipe-in {

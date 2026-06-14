@@ -119,7 +119,7 @@ const useWaveWipe = (hasToday: boolean) => {
     const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (prefersReduced) {
       outRef.current.style.display = "none";
-      inRef.current.style.clipPath = "none";
+      inRef.current.style.maskImage = "none";
       return;
     }
 
