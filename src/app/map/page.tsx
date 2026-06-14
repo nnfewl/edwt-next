@@ -16,9 +16,15 @@ export default async function MapPage() {
   const facilities = await getPublicFacilities();
 
   return (
-    <MapClientLazy
-      facilities={facilities}
-      initialOrigin={FALLBACK_LOCATION_ORIGIN}
-    />
+    <>
+      <link rel="preconnect" href="https://basemaps.cartocdn.com" crossOrigin="anonymous" />
+      <link rel="dns-prefetch" href="https://basemaps.cartocdn.com" />
+      <link rel="preconnect" href="https://tiles.basemaps.cartocdn.com" crossOrigin="anonymous" />
+      <link rel="dns-prefetch" href="https://tiles.basemaps.cartocdn.com" />
+      <MapClientLazy
+        facilities={facilities}
+        initialOrigin={FALLBACK_LOCATION_ORIGIN}
+      />
+    </>
   );
 }
