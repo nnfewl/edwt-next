@@ -933,10 +933,10 @@
 /* Wave wipe pair: GSAP drives clip-path on these; CSS just hides the
    incoming wave until the timeline starts. */
 .er-now-root .wave-wipe-in {
-  clip-path: inset(0 100% 0 0);
+  clip-path: inset(-200px 100% -200px 0);
 }
 .er-now-root .wave-wipe-out {
-  clip-path: inset(0 0 0 0);
+  clip-path: inset(-200px 0 -200px 0);
 }
 @media (prefers-reduced-motion: reduce) {
   .er-now-root .wave-wipe-in {

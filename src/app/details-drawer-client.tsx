@@ -130,13 +130,13 @@ const useWaveWipe = (hasToday: boolean) => {
       const progress = { v: 0 };
       tween = gsap.to(progress, {
         v: 1,
-        duration: 1.2,
-        ease: "power2.inOut",
+        duration: 2,
+        ease: "sine.inOut",
         onUpdate() {
           if (!outRef.current || !inRef.current) return;
           const p = progress.v * 100;
-          inRef.current.style.clipPath = `inset(0 ${100 - p}% 0 0)`;
-          outRef.current.style.clipPath = `inset(0 0 0 ${p}%)`;
+          inRef.current.style.clipPath = `inset(-200px ${100 - p}% -200px 0)`;
+          outRef.current.style.clipPath = `inset(-200px 0 -200px ${p}%)`;
         },
       });
     });
