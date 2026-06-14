@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import {
   Fragment,
+  startTransition,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -463,6 +464,8 @@ const FacilityCard = ({
 
 /* ───────── page ──────────────────────────────────────────────────────────── */
 
+const INITIAL_VISIBLE = 10;
+
 const FILTERS = [
   { id: "all", label: "All facilities" },
   { id: "emergency", label: "Emergency" },
@@ -795,6 +798,16 @@ export function ERNowPageClient({
     const matched = facilitiesWithDistance.filter((f) => filterMatch(f, filter));
     return sortFacilities(matched, sort);
   }, [facilitiesWithDistance, filter, sort]);
+
+  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE);
+  useEffect(() => {
+    if (visibleCount < filtered.length) {
+      startTransition(() => setVisibleCount(filtered.length));
+    }
+  }, [filtered, visibleCount]);
+  useEffect(() => {
+    setVisibleCount(INITIAL_VISIBLE);
+  }, [filter, sort]);
 
   const counts = useMemo(() => {
     const c: Record<FilterId, number> = {
@@ -1155,7 +1168,7 @@ export function ERNowPageClient({
 
         {/* List */}
         <div className="facility-list">
-          {filtered.map((f) => (
+          {filtered.slice(0, visibleCount).map((f) => (
             <FacilityCard key={f.id} f={f} onSelect={setSelected} />
           ))}
           {filtered.length === 0 && (
