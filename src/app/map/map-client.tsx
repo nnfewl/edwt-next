@@ -128,14 +128,21 @@ function initialsFor(name: string) {
     .join("");
 }
 
+const faviconCache = new Map<string, Promise<HTMLImageElement | null>>();
+
 function loadMarkerIcon(src: string): Promise<HTMLImageElement | null> {
-  return new Promise((resolve) => {
-    const image = new Image();
-    image.decoding = "async";
-    image.onload = () => resolve(image);
-    image.onerror = () => resolve(null);
-    image.src = src;
-  });
+  let cached = faviconCache.get(src);
+  if (!cached) {
+    cached = new Promise((resolve) => {
+      const image = new Image();
+      image.decoding = "async";
+      image.onload = () => resolve(image);
+      image.onerror = () => resolve(null);
+      image.src = src;
+    });
+    faviconCache.set(src, cached);
+  }
+  return cached;
 }
 
 async function createMarkerImage(authorityInfo: HealthAuthority, severity: Severity) {
@@ -184,18 +191,33 @@ async function createMarkerImage(authorityInfo: HealthAuthority, severity: Sever
   return ctx.getImageData(0, 0, pixelSize, pixelSize);
 }
 
+const markerImageCache = new Map<string, Promise<ImageData>>();
+
+function ensureMarkerImagesCached() {
+  for (const key of Object.keys(HEALTH_AUTHORITIES) as HealthAuthorityKey[]) {
+    for (const severity of SEVERITIES) {
+      const id = markerImageId(key, severity);
+      if (!markerImageCache.has(id)) {
+        markerImageCache.set(id, createMarkerImage(authority(key), severity));
+      }
+    }
+  }
+}
+
+// Start creating all 20 marker images immediately at module load so the
+// canvas/favicon work overlaps with MapLibre's WebGL init + tile fetching.
+ensureMarkerImagesCached();
+
 async function addFacilityMarkerImages(m: MapLibreMap) {
+  ensureMarkerImagesCached();
   await Promise.all(
-    (Object.keys(HEALTH_AUTHORITIES) as HealthAuthorityKey[]).flatMap((key) =>
-      SEVERITIES.map(async (severity) => {
-        const id = markerImageId(key, severity);
-        if (m.hasImage(id)) return;
-        const image = await createMarkerImage(authority(key), severity);
-        if (!m.hasImage(id)) {
-          m.addImage(id, image, { pixelRatio: MARKER_IMAGE_PIXEL_RATIO });
-        }
-      }),
-    ),
+    Array.from(markerImageCache.entries()).map(async ([id, promise]) => {
+      if (m.hasImage(id)) return;
+      const image = await promise;
+      if (!m.hasImage(id)) {
+        m.addImage(id, image, { pixelRatio: MARKER_IMAGE_PIXEL_RATIO });
+      }
+    }),
   );
 }
 
