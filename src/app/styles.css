@@ -930,38 +930,36 @@
   pointer-events: auto;
   cursor: help;
 }
-/* Sweep redraw when the refined /today wave replaces the seeded one: the new
-   wave reveals left-to-right while the old is erased behind the same front —
-   identical timing/easing keeps the seam aligned, so regions never stack. */
+/* Sweep redraw when the refined /today wave replaces the seeded one: a soft
+   gradient mask sweeps left-to-right so the old wave dissolves into the new
+   one instead of a hard vertical cut. Both masks are 115% wide with a 15%
+   feathered edge that creates the soft wipe front. */
 .er-now-root .wave-wipe-in {
+  mask-image: linear-gradient(to right, black 85%, transparent 100%);
+  mask-size: 115% 100%;
+  mask-repeat: no-repeat;
   animation: wave-wipe-in 1200ms ease-in-out both;
 }
 .er-now-root .wave-wipe-out {
+  mask-image: linear-gradient(to left, black 85%, transparent 100%);
+  mask-size: 115% 100%;
+  mask-repeat: no-repeat;
   animation: wave-wipe-out 1200ms ease-in-out both;
 }
 @keyframes wave-wipe-in {
-  from {
-    clip-path: inset(0 100% 0 0);
-  }
-  to {
-    clip-path: inset(0 0 0 0);
-  }
+  from { mask-position: -115% 0; }
+  to   { mask-position: 0 0; }
 }
 @keyframes wave-wipe-out {
-  from {
-    clip-path: inset(0 0 0 0);
-  }
-  to {
-    clip-path: inset(0 0 0 100%);
-  }
+  from { mask-position: 115% 0; }
+  to   { mask-position: 0 0; }
 }
 @media (prefers-reduced-motion: reduce) {
   .er-now-root .wave-wipe-in {
     animation: none;
+    mask-image: none;
   }
   .er-now-root .wave-wipe-out {
-    /* Without the animation it would stay fully visible and double-stack
-       the gradients under the refined wave. */
     display: none;
   }
 }
