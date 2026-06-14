@@ -175,7 +175,7 @@ const TodayWave = ({
     <>
       {hasToday ? (
         <Fragment key={f.id}>
-          <div ref={outRef as React.RefObject<HTMLDivElement>} className="wave-wipe-out" style={{ position: "absolute", left: 0, right: 0, bottom: 0, pointerEvents: "none" }}>
+          <div ref={outRef as React.RefObject<HTMLDivElement>} className="wave-wipe-out" style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 110, pointerEvents: "none" }}>
             <WaveBackgroundComponent
               f={f}
               height={110}
@@ -184,7 +184,7 @@ const TodayWave = ({
               gidSuffix="-pre"
             />
           </div>
-          <div ref={inRef as React.RefObject<HTMLDivElement>} className="wave-wipe-in" style={{ position: "absolute", left: 0, right: 0, bottom: 0, pointerEvents: "none" }}>
+          <div ref={inRef as React.RefObject<HTMLDivElement>} className="wave-wipe-in" style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 110, pointerEvents: "none" }}>
             <WaveBackgroundComponent
               f={f}
               height={110}
