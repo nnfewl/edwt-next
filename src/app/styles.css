@@ -1,3 +1,9 @@
+@property --wipe {
+  syntax: "<percentage>";
+  initial-value: 0%;
+  inherits: false;
+}
+
 /* ER Now — public facilities list. Ported from the Claude Design prototype.
    Scoped to the /now route via Next.js per-segment CSS loading; the
    .er-now-root wrapper carries the page-level resets so nothing leaks. */
@@ -930,29 +936,32 @@
   pointer-events: auto;
   cursor: help;
 }
-/* Sweep redraw when the refined /today wave replaces the seeded one: a soft
-   gradient mask sweeps left-to-right so the old wave dissolves into the new
-   one instead of a hard vertical cut. Both masks are 115% wide with a 15%
-   feathered edge that creates the soft wipe front. */
+/* Sweep redraw: the refined /today wave replaces the seeded one with a soft
+   gradient wipe. @property --wipe lets the browser interpolate the gradient
+   stops so the feathered edge sweeps smoothly left-to-right. */
 .er-now-root .wave-wipe-in {
-  mask-image: linear-gradient(to right, black 85%, transparent 100%);
-  mask-size: 115% 100%;
-  mask-repeat: no-repeat;
+  mask-image: linear-gradient(
+    to right,
+    black 0%, black var(--wipe),
+    transparent calc(var(--wipe) + 12%)
+  );
   animation: wave-wipe-in 1200ms ease-in-out both;
 }
 .er-now-root .wave-wipe-out {
-  mask-image: linear-gradient(to left, black 85%, transparent 100%);
-  mask-size: 115% 100%;
-  mask-repeat: no-repeat;
+  mask-image: linear-gradient(
+    to right,
+    transparent 0%, transparent calc(var(--wipe) - 12%),
+    black var(--wipe), black 100%
+  );
   animation: wave-wipe-out 1200ms ease-in-out both;
 }
 @keyframes wave-wipe-in {
-  from { mask-position: -115% 0; }
-  to   { mask-position: 0 0; }
+  from { --wipe: 0%; }
+  to   { --wipe: 100%; }
 }
 @keyframes wave-wipe-out {
-  from { mask-position: 115% 0; }
-  to   { mask-position: 0 0; }
+  from { --wipe: 0%; }
+  to   { --wipe: 100%; }
 }
 @media (prefers-reduced-motion: reduce) {
   .er-now-root .wave-wipe-in {
