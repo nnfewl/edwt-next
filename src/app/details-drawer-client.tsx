@@ -159,11 +159,6 @@ const TodayWave = ({
   const provisional = todaySoFar(f.history);
   const preActual = provisional.length >= 2 ? provisional : undefined;
   const showToday = hasToday || preActual != null;
-  const pinnedMax =
-    hasToday && preActual
-      ? Math.max(1, ...body.actual.map((p) => p.min), ...preActual.map((p) => p.min))
-      : undefined;
-
   const { outRef, inRef } = useWaveWipe(hasToday);
 
   return (
@@ -177,7 +172,6 @@ const TodayWave = ({
               intensity={0.85}
               actual={preActual}
               gidSuffix="-pre"
-              pinnedWindowMax={pinnedMax}
             />
           </div>
           <div ref={inRef as React.RefObject<HTMLDivElement>} className="wave-wipe-in" style={{ position: "absolute", inset: 0 }}>
@@ -187,7 +181,6 @@ const TodayWave = ({
               intensity={0.85}
               actual={body.actual}
               projected={body.projected}
-              pinnedWindowMax={pinnedMax}
             />
           </div>
         </Fragment>
