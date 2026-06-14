@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   BarController,
   BarElement,
@@ -270,10 +270,29 @@ function ChartCanvas({
   config: ChartConfiguration;
   frameClassName?: string;
 }) {
+  const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const chartRef = useRef<ChartInstance<ChartType> | null>(null);
+  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return undefined;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "200px" },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!visible) return undefined;
     const canvas = canvasRef.current;
     if (!canvas) return undefined;
 
@@ -284,10 +303,10 @@ function ChartCanvas({
       chartRef.current?.destroy();
       chartRef.current = null;
     };
-  }, [config]);
+  }, [config, visible]);
 
   return (
-    <div className="analytics-chart-scroll">
+    <div className="analytics-chart-scroll" ref={containerRef}>
       <div className={frameClassName}>
         <canvas ref={canvasRef} />
       </div>
