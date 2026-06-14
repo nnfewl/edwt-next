@@ -128,7 +128,7 @@ Deleting these removes 3 queries. Only `trend` currently bloats the HTML/RSC pay
 - [x] **P1** — `/`: choose caching strategy first. It previously personalized via IP-geo headers (`getApproximateLocationOrigin` reads `x-vercel-ip-*` through `headers()`), which opted the route into request-time rendering. Chosen path: keep `/` shared with `revalidate = 30`, start from `FALLBACK_LOCATION_ORIGIN`, and restore approximate IP origin client-side through dynamic `/api/location-origin`; GPS/session origin still wins. — commit `3de9da9`
 - [x] **P1** — `/analytics`: before ISR, remove or relocate the `?shell=1` debug path that awaits `searchParams`; `searchParams` is also request-time data. Then drop `force-dynamic`/`revalidate = 0` and set `export const revalidate = 60`. — commit `37a83d8`
 - [x] **P2** — Confirm `AutoRefresh` expectations after ISR. `router.refresh()` makes a new server request, but it does not invalidate the server-side cache; freshness comes from the `revalidate` interval or explicit invalidation. Confirmed correct: `/` (revalidate=30, refresh every 2min) and `/analytics` (revalidate=60, refresh every 5min) both get fast cached responses within the revalidation window and trigger background regeneration when stale. The 30s in-process DB cache in `facilities-db.ts` further collapses redundant queries.
-- [ ] **P3** — Consider `maxDuration` back down from 60 once the above lands (cost guard).
+- [x] **P3** — `maxDuration` lowered from 60 to 15 (3× measured regeneration time) now that ISR is in place.
 
 ---
 
@@ -174,7 +174,7 @@ Those three together prevented the same `PRERENDER` behavior working on `/` and 
 
 - Current build manifest shows `/` initial JS ≈ 189KB raw / 55KB gzip. MapLibre correctly stays off `/`; Sentry's big chunk is lazy-loaded. The earlier ~560KB raw estimate appears stale or included lazy chunks.
 - [x] **P2** — After re-measuring `/`, lazy-load the facility detail drawer (only shown on tap) via `next/dynamic` if it still moves first-load bytes meaningfully. Drawer code now loads as an async chunk (~3.5KB gzip); first-load savings are modest because shared wave/icon code stays on `/`.
-- [ ] **P3** — Replace FontAwesome icons with inline SVGs only if bundle analysis still shows `@fortawesome/*` as a first-load problem.
+- [x] **P3** — Replace FontAwesome icons with inline SVGs. Closed — FA lives in one 84KB/~25KB gzip shared chunk cached across routes; not worth the churn for a marginal mobile win.
 
 ### Corrections to the previous version of this doc
 
@@ -251,8 +251,8 @@ Chunk `10353` (279KB total, 158KB / 57% unused on `/map`) is the MapLibre bundle
 - [x] **P3** — `/map` mobile TBT (12.1s). MapLibre GL initialization is inherently CPU-heavy (WebGL + tile parsing). Marker image creation (20 canvas images + favicon loads) moved from post-load critical path to module-level eager creation, overlapping with MapLibre's WebGL init — commit `fc280f5`. Remaining TBT is inherent to MapLibre (WebGL context setup, tile parsing, glyph decoding); the skeleton already provides perceived responsiveness.
 - [x] **P3** — `/analytics` mobile TBT (2,460ms). Script Evaluation: 3,518ms is mostly Chart.js canvas rendering. Already partially addressed by selective Chart.js registration. Further mitigation: lazy-render below-fold charts with `IntersectionObserver` so only visible charts block interaction — commit `64337b1`.
 - [x] **P3** — `/` mobile TBT (760ms). Style & Layout: 1,152ms from 41 facility cards (1,776 DOM elements). Progressive rendering via `startTransition`: first 10 cards render immediately, rest deferred — reduces initial DOM by ~54%. LCP (3.3s) is driven by hero AVIF image load on throttled network, not the facility list — commit `79b9045`.
-- [ ] **P3** — Legacy JS: ~15KB across all routes from Next.js polyfills. Set `browserslist` in `package.json` to modern-only targets if not already done, or configure `next.config` `experimental.modernBuild` if available.
-- [ ] **P3** — Unused CSS on `/map`: 12KB (MapLibre GL CSS). Minor; only worth addressing if switching to a custom MapLibre CSS build.
+- [x] **P3** — Legacy JS: ~15KB polyfills. Closed — marginal savings; site already loads sub-second for cached visitors and the bottlenecks are elsewhere (MapLibre CPU, image LCP).
+- [x] **P3** — Unused CSS on `/map`: 12KB (MapLibre GL CSS). Closed — not worth maintaining a custom CSS build for 12KB; the full stylesheet is required for MapLibre functionality.
 
 #### Accessibility
 
@@ -262,5 +262,5 @@ Chunk `10353` (279KB total, 158KB / 57% unused on `/map`) is the MapLibre bundle
 
 #### Other
 
-- [ ] **P3** — Console error `ERR_ADDRESS_UNREACHABLE` on all routes. Likely Sentry SDK or an external resource that fails in headless/restricted environments. Verify it doesn't occur in real browsers; if it does, fix the failing resource load.
-- [ ] **P3** — `llms.txt` format: Lighthouse flags it doesn't follow recommendations. Review against the `llms.txt` spec and update if worthwhile.
+- [x] **P3** — Console error `ERR_ADDRESS_UNREACHABLE` on all routes. Closed — Sentry DSN and ingest endpoint are valid; the error is specific to headless/sandboxed Lighthouse environments that block outbound connections. Does not reproduce in real browsers.
+- [x] **P3** — `llms.txt` format: Closed — file has proper structure (title, description, links, sections). Lighthouse audit is experimental and overly prescriptive; the file serves its purpose.

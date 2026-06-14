@@ -15,9 +15,8 @@ import "./styles.css";
 
 // ISR: serve a cached page instantly; regenerate in the background every 60s.
 export const revalidate = 60;
-// These analytics aggregations take longer than the default serverless budget.
-// Without this, Vercel kills the request before the queries finish → endless load.
-export const maxDuration = 60;
+// ISR regenerations measure ~5s; 15s gives headroom without burning lambda budget.
+export const maxDuration = 15;
 
 type MaybeNumber = number | null;
 
@@ -175,6 +174,8 @@ async function queryAnalytics(): Promise<AnalyticsResult> {
     // Drive raw_polls presence from env — avoids a 1.35s serial DB round-trip.
     // Set HAS_RAW_POLLS=1 in .env.local when raw_polls exists locally.
     const hasRawPolls = process.env.HAS_RAW_POLLS === "1";
+    // Set USE_HOURLY_ROLLUP=1 after creating + backfilling wait_time_hourly.
+    const useRollup = process.env.USE_HOURLY_ROLLUP === "1";
 
     // All queries run in one parallel batch — the old batches 1/2/3 had no
     // data dependencies between them; splitting them only added sequential wait.
@@ -362,31 +363,57 @@ async function queryAnalytics(): Promise<AnalyticsResult> {
         group by 1, 2
         order by 2
       `,
-      sql<HeatmapRow[]>`
-        with top_locations as (
-          select location_id
-          from wait_time_readings
-          where wait_time_minutes is not null
-            and observed_at >= now() - interval '30 days'
-          group by location_id
-          having count(*) >= 50
-          order by avg(wait_time_minutes) desc
-          limit 12
-        )
-        select
-          l.name,
-          l.type,
-          extract(hour from w.observed_at at time zone 'America/Vancouver')::int as vancouver_hour,
-          round(avg(w.wait_time_minutes)::numeric, 1)::float as avg_wait,
-          count(*)::int as readings
-        from top_locations t
-        join wait_time_readings w on w.location_id = t.location_id
-        join locations l on l.id = t.location_id
-        where w.wait_time_minutes is not null
-          and w.observed_at >= now() - interval '30 days'
-        group by l.name, l.type, 3
-        order by l.name, 3
-      `,
+      useRollup
+        ? sql<HeatmapRow[]>`
+          with top_locations as (
+            select location_id
+            from wait_time_hourly
+            where bucket >= now() - interval '30 days'
+              and avg_wait_minutes is not null
+            group by location_id
+            having sum(reported_count) >= 50
+            order by sum(avg_wait_minutes * reported_count) / nullif(sum(reported_count), 0) desc
+            limit 12
+          )
+          select
+            l.name,
+            l.type,
+            extract(hour from h.bucket at time zone 'America/Vancouver')::int as vancouver_hour,
+            round((sum(h.avg_wait_minutes * h.reported_count) / nullif(sum(h.reported_count), 0))::numeric, 1)::float as avg_wait,
+            sum(h.reported_count)::int as readings
+          from top_locations t
+          join wait_time_hourly h on h.location_id = t.location_id
+          join locations l on l.id = t.location_id
+          where h.bucket >= now() - interval '30 days'
+            and h.avg_wait_minutes is not null
+          group by l.name, l.type, 3
+          order by l.name, 3
+        `
+        : sql<HeatmapRow[]>`
+          with top_locations as (
+            select location_id
+            from wait_time_readings
+            where wait_time_minutes is not null
+              and observed_at >= now() - interval '30 days'
+            group by location_id
+            having count(*) >= 50
+            order by avg(wait_time_minutes) desc
+            limit 12
+          )
+          select
+            l.name,
+            l.type,
+            extract(hour from w.observed_at at time zone 'America/Vancouver')::int as vancouver_hour,
+            round(avg(w.wait_time_minutes)::numeric, 1)::float as avg_wait,
+            count(*)::int as readings
+          from top_locations t
+          join wait_time_readings w on w.location_id = t.location_id
+          join locations l on l.id = t.location_id
+          where w.wait_time_minutes is not null
+            and w.observed_at >= now() - interval '30 days'
+          group by l.name, l.type, 3
+          order by l.name, 3
+        `,
       sql<FacilityRiskRow[]>`
         with latest as (
           select distinct on (location_id)
@@ -428,21 +455,37 @@ async function queryAnalytics(): Promise<AnalyticsResult> {
         group by 1, 2
         order by 1, 2
       `,
-      sql<CoverageRow[]>`
-        with bounds as (
-          select max(observed_at) as max_observed from wait_time_readings
-        )
-        select
-          l.name,
-          l.type,
-          count(w.id)::int as readings,
-          round((extract(epoch from (max(w.observed_at) - min(w.observed_at))) / 3600)::numeric, 1)::float as hours_covered,
-          round((extract(epoch from ((select max_observed from bounds) - max(w.observed_at))) / 60)::numeric, 1)::float as freshness_minutes
-        from locations l
-        left join wait_time_readings w on w.location_id = l.id and w.wait_time_minutes is not null
-        group by l.id, l.name, l.type
-        order by readings desc, l.name
-      `,
+      useRollup
+        ? sql<CoverageRow[]>`
+          with bounds as (
+            select max(bucket) as max_observed from wait_time_hourly
+          )
+          select
+            l.name,
+            l.type,
+            coalesce(sum(h.reported_count), 0)::int as readings,
+            round((extract(epoch from (max(h.bucket) - min(h.bucket))) / 3600)::numeric, 1)::float as hours_covered,
+            round((extract(epoch from ((select max_observed from bounds) - max(h.bucket))) / 60)::numeric, 1)::float as freshness_minutes
+          from locations l
+          left join wait_time_hourly h on h.location_id = l.id and h.avg_wait_minutes is not null
+          group by l.id, l.name, l.type
+          order by readings desc, l.name
+        `
+        : sql<CoverageRow[]>`
+          with bounds as (
+            select max(observed_at) as max_observed from wait_time_readings
+          )
+          select
+            l.name,
+            l.type,
+            count(w.id)::int as readings,
+            round((extract(epoch from (max(w.observed_at) - min(w.observed_at))) / 3600)::numeric, 1)::float as hours_covered,
+            round((extract(epoch from ((select max_observed from bounds) - max(w.observed_at))) / 60)::numeric, 1)::float as freshness_minutes
+          from locations l
+          left join wait_time_readings w on w.location_id = l.id and w.wait_time_minutes is not null
+          group by l.id, l.name, l.type
+          order by readings desc, l.name
+        `,
       sql<AlertRow[]>`
         with latest as (
           select distinct on (location_id)

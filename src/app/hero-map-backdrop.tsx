@@ -76,7 +76,7 @@ export function HeroMapBackdrop({
           height={1536}
           alt=""
           decoding="async"
-          fetchPriority="low"
+          fetchPriority="high"
           draggable={false}
         />
       </picture>
