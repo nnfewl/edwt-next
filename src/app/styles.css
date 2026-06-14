@@ -1074,6 +1074,10 @@
   font-size: 12px;
   color: var(--muted);
 }
+.er-now-root .skeleton-bar {
+  background: var(--line);
+  animation: home-shimmer 1.6s ease-in-out infinite;
+}
 @media (max-width: 760px) {
   .er-now-root .usual-wrap,
   .er-now-root .usual-label {

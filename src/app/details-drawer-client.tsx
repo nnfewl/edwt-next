@@ -416,15 +416,39 @@ export function DetailsDrawer({
           )}
         </div>
 
-        {f.open && hasWaitData && today != null && today.usual.length >= 6 && (
-          <>
-            <h4 className="drawer-section-label usual-label">Typical day</h4>
-            <TypicalDayBars
-              usual={today.usual}
-              nowHour={Math.floor(today.nowMin / 60)}
-              sev={sev}
-            />
-          </>
+        {f.open && hasWaitData && (
+          today != null && today.usual.length >= 6 ? (
+            <>
+              <h4 className="drawer-section-label usual-label">Typical day</h4>
+              <TypicalDayBars
+                usual={today.usual}
+                nowHour={Math.floor(today.nowMin / 60)}
+                sev={sev}
+              />
+            </>
+          ) : today == null ? (
+            <>
+              <h4 className="drawer-section-label usual-label">Typical day</h4>
+              <div className="usual-wrap">
+                <div className="usual-row">
+                  {Array.from({ length: 24 }, (_, h) => (
+                    <div key={h} className="usual-slot">
+                      <div
+                        className="usual-bar skeleton-bar"
+                        style={{ height: `${20 + Math.sin(h * 0.7) * 15 + Math.sin(h * 1.3) * 10}%` }}
+                      />
+                    </div>
+                  ))}
+                </div>
+                <div className="usual-labels" aria-hidden="true">
+                  <span style={{ left: `${((6 + 0.5) / 24) * 100}%` }}>6 am</span>
+                  <span style={{ left: `${((12 + 0.5) / 24) * 100}%` }}>noon</span>
+                  <span style={{ left: `${((18 + 0.5) / 24) * 100}%` }}>6 pm</span>
+                </div>
+                <div className="usual-note" style={{ visibility: "hidden" }}>&nbsp;</div>
+              </div>
+            </>
+          ) : null
         )}
 
         <h4 className="drawer-section-label">What to expect</h4>
