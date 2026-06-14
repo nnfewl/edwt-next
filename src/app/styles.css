@@ -942,16 +942,16 @@
 .er-now-root .wave-wipe-in {
   mask-image: linear-gradient(
     to right,
-    black 0%, black var(--wipe),
-    transparent calc(var(--wipe) + 12%)
+    black 0%, black calc(var(--wipe) - 6%),
+    transparent calc(var(--wipe) + 6%)
   );
   animation: wave-wipe-in 1200ms ease-in-out both;
 }
 .er-now-root .wave-wipe-out {
   mask-image: linear-gradient(
     to right,
-    transparent 0%, transparent calc(var(--wipe) - 12%),
-    black var(--wipe), black 100%
+    transparent 0%, transparent calc(var(--wipe) - 6%),
+    black calc(var(--wipe) + 6%), black 100%
   );
   animation: wave-wipe-out 1200ms ease-in-out both;
 }
