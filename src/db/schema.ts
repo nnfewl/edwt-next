@@ -1,5 +1,6 @@
 import {
   pgTable,
+  primaryKey,
   text,
   doublePrecision,
   boolean,
@@ -72,6 +73,34 @@ export const waitTimeReadings = pgTable(
     index("idx_readings_location_observed").on(t.locationId, t.observedAt),
     index("idx_readings_observed").on(t.observedAt),
     uniqueIndex("uq_readings_location_report").on(t.locationId, t.reportId),
+  ],
+);
+
+/**
+ * Hourly rollup of wait-time readings. Populated by a pg_cron job that
+ * aggregates the last 3 hours of raw readings every hour at :05. Kept
+ * indefinitely for long-term trend queries; raw readings are pruned to
+ * 30 days once this table is backfilled.
+ */
+export const waitTimeHourly = pgTable(
+  "wait_time_hourly",
+  {
+    locationId: text("location_id")
+      .notNull()
+      .references(() => locations.id),
+    bucket: timestamp("bucket", { withTimezone: true }).notNull(),
+    sampleCount: integer("sample_count").notNull(),
+    reportedCount: integer("reported_count").notNull(),
+    avgWaitMinutes: doublePrecision("avg_wait_minutes"),
+    minWaitMinutes: integer("min_wait_minutes"),
+    maxWaitMinutes: integer("max_wait_minutes"),
+    avgElosMinutes: doublePrecision("avg_elos_minutes"),
+    minElosMinutes: integer("min_elos_minutes"),
+    maxElosMinutes: integer("max_elos_minutes"),
+  },
+  (t) => [
+    primaryKey({ columns: [t.locationId, t.bucket] }),
+    index("idx_hourly_bucket").on(t.bucket),
   ],
 );
 
