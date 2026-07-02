@@ -8,7 +8,7 @@ const CLOSE_10PM = "Fri, 02 Jan 1970 06:00:00 GMT"; // 22:00 PST
 const CLOSE_2AM = "Thu, 01 Jan 1970 10:00:00 GMT"; // 02:00 PST
 
 /** operating_hours payload with the same open/close for all 7 days. */
-function weeklyHours(open: string, close: string) {
+function weeklyHours(open: string, close: string): { days: { open: string | null; close: string | null }[] } {
   return { days: Array.from({ length: 7 }, () => ({ open, close })) };
 }
 
