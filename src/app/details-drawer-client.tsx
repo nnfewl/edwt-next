@@ -457,9 +457,6 @@ export function DetailsDrawer({
             hasWaitData ? (
               <>
                 The reported wait is the latest published wait-time reading for this facility. Sicker patients are seen first, so the live wait can change quickly.
-                {f.inWaitingRoom > 0 && (
-                  <> Right now there are <b>{f.inWaitingRoom} people</b> in the waiting room.</>
-                )}
               </>
             ) : (
               <>This facility is open, but no wait time is currently posted.</>

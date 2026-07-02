@@ -52,7 +52,7 @@ All modes poll `edwaittimes.ca/api/wait-times` and upsert into the same Postgres
 
 - `/` — facilities list with severity colors, distance sort, type filters, detail drawer. Client component: `page-client.tsx`.
 - `/map` — MapLibre GL map with wait markers and bottom-sheet. Client component: `map-client.tsx`.
-- `/admin` — analytics dashboard with chart.js charts. Client component: `analytics-charts.tsx`.
+- `/analytics` — public analytics dashboard with chart.js charts. Client component: `analytics-charts.tsx`.
 
 **Data flow**: `src/app/facilities-db.ts` runs a raw SQL query joining `locations` + `wait_time_readings` (+ 12h hourly history), projects into the `Facility` type from `src/app/data.ts`, and caches for 30s in-process. Pages are `force-dynamic` with auto-refresh on the client (`auto-refresh.tsx`).
 

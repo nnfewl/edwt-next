@@ -1,5 +1,8 @@
 import { client as sharedClient } from "../db/client";
-import { type Facility, type HistoryPoint } from "./data";
+import { parseAddress } from "@/lib/address";
+import { hoursInfo } from "@/lib/hours";
+import { parseWaitHistory } from "@/lib/wait-history";
+import { type Facility } from "./data";
 
 type DbFacilityRow = {
   id: string;
@@ -21,51 +24,6 @@ type DbFacilityRow = {
   elos_minutes: number | null;
   wait_history: unknown;
 };
-
-type HoursDay = {
-  open?: string | null;
-  close?: string | null;
-};
-
-type OperatingHours = {
-  days?: HoursDay[];
-};
-
-function isOperatingHours(value: unknown): value is OperatingHours {
-  return typeof value === "object" && value !== null && Array.isArray((value as OperatingHours).days);
-}
-
-function parseJson(value: string): unknown {
-  try {
-    return JSON.parse(value);
-  } catch {
-    return null;
-  }
-}
-
-function parseWaitHistory(value: unknown): HistoryPoint[] {
-  const raw = typeof value === "string" ? parseJson(value) : value;
-  if (!Array.isArray(raw)) return [];
-
-  const points: HistoryPoint[] = [];
-  for (const item of raw) {
-    if (typeof item !== "object" || item === null) continue;
-    const record = item as Record<string, unknown>;
-    const minutes = Number(record.wait_time_minutes);
-    const observedRaw = record.observed_at;
-    const observedAt =
-      observedRaw instanceof Date
-        ? observedRaw
-        : typeof observedRaw === "string"
-          ? new Date(observedRaw)
-          : null;
-
-    if (!Number.isFinite(minutes) || !observedAt || Number.isNaN(observedAt.getTime())) continue;
-    points.push({ observedAt: observedAt.toISOString(), min: Math.max(0, Math.round(minutes)) });
-  }
-
-  return points.slice(-12);
-}
 
 function audienceLabel(value: string | null): string {
   if (value === "sixteenAndUnder") return "16 and under";
@@ -98,123 +56,6 @@ function formatAge(value: Date | null): string {
   return Math.round(hours / 24) + "d ago";
 }
 
-const VANCOUVER_TZ = "America/Vancouver";
-
-// Get hour/minute in a given timezone without locale-dependent string parsing.
-function localHourMinute(date: Date, timeZone: string): { hour: number; minute: number } {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone,
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).formatToParts(date);
-  const get = (type: string) => parts.find((part) => part.type === type)?.value ?? "0";
-  return { hour: Number(get("hour")) % 24, minute: Number(get("minute")) };
-}
-
-// Day-of-week (Sun=0..Sat=6) in a given timezone — built from year/month/day so
-// it doesn't depend on which ICU short-weekday string the runtime emits.
-function localDayIndex(date: Date, timeZone: string): number {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(date);
-  const get = (type: string) => Number(parts.find((part) => part.type === type)?.value ?? "0");
-  const y = get("year");
-  const m = get("month") - 1;
-  const d = get("day");
-  if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) return -1;
-  return new Date(Date.UTC(y, m, d)).getUTCDay();
-}
-
-// The source encodes each day's open/close as an RFC 2822 string anchored to
-// 1970-01-01 GMT, where 16:00 GMT means "8 a.m. PST." Converting via the
-// Vancouver timezone recovers the intended wall-clock minutes-of-day.
-function operatingMinutes(value: string | null | undefined): number | null {
-  if (!value) return null;
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return null;
-  const { hour, minute } = localHourMinute(date, VANCOUVER_TZ);
-  if (!Number.isFinite(hour) || !Number.isFinite(minute)) return null;
-  return hour * 60 + minute;
-}
-
-function hoursInfo(row: DbFacilityRow): { label: string; open: boolean } {
-  if (row.open247) return { label: "Open 24 / 7", open: true };
-  if (!isOperatingHours(row.operating_hours)) return { label: "Hours vary", open: row.wait_time_minutes !== null };
-
-  const now = new Date();
-  const index = localDayIndex(now, VANCOUVER_TZ);
-  const today = index >= 0 ? row.operating_hours.days?.[index] : undefined;
-  const openMin = operatingMinutes(today?.open);
-  const closeMinRaw = operatingMinutes(today?.close);
-
-  if (openMin == null || closeMinRaw == null) return { label: "Hours vary", open: false };
-
-  const closeMin = closeMinRaw <= openMin ? closeMinRaw + 24 * 60 : closeMinRaw;
-  const { hour, minute } = localHourMinute(now, VANCOUVER_TZ);
-  const nowMinRaw = hour * 60 + minute;
-  const nowMin = nowMinRaw < openMin && closeMin > 24 * 60 ? nowMinRaw + 24 * 60 : nowMinRaw;
-  const open = nowMin >= openMin && nowMin < closeMin;
-  const label = formatMinutes(openMin) + " - " + formatMinutes(closeMinRaw);
-  return { label, open };
-}
-
-function formatMinutes(value: number): string {
-  const hour24 = Math.floor(value / 60) % 24;
-  const minute = value % 60;
-  const suffix = hour24 >= 12 ? "p.m." : "a.m.";
-  const hour12 = hour24 % 12 || 12;
-  return hour12 + ":" + String(minute).padStart(2, "0") + " " + suffix;
-}
-
-// Split a raw upstream address into display parts.
-// address      → raw as-is (desktop single line)
-// addressStreet → "920 West 10th Ave"      (mobile line 1)
-// addressCity   → "Vancouver, BC V5Z 1M9" (mobile line 2)
-function parseAddress(raw: string | null): {
-  address: string;
-  addressStreet: string;
-  addressCity: string;
-} {
-  const fallback = { address: "Address not available", addressStreet: "Address not available", addressCity: "" };
-  if (!raw) return fallback;
-
-  const address = raw.trim();
-
-  const bcIdx = raw.search(/\bBC\b/i);
-  if (bcIdx === -1) {
-    return { address, addressStreet: address, addressCity: "" };
-  }
-
-  // Normalize "BC, V1V 1V1" or "BC  V1V 1V1" → "BC V1V 1V1"
-  const bcPart = raw.slice(bcIdx).replace(/^(BC)[,\s]+/i, "$1 ").trim();
-  // Everything before BC, trailing separators stripped
-  const beforeBC = raw.slice(0, bcIdx).replace(/[, ]+$/, "");
-
-  const lastComma = beforeBC.lastIndexOf(",");
-  let addressStreet: string;
-  let cityName: string;
-
-  if (lastComma === -1) {
-    const lastSpace = beforeBC.lastIndexOf(" ");
-    if (lastSpace === -1) return { address, addressStreet: address, addressCity: bcPart };
-    addressStreet = beforeBC.slice(0, lastSpace).trim();
-    cityName = beforeBC.slice(lastSpace + 1).trim();
-  } else {
-    addressStreet = beforeBC.slice(0, lastComma).trim();
-    cityName = beforeBC.slice(lastComma + 1).trim();
-  }
-
-  return {
-    address,
-    addressStreet,
-    addressCity: `${cityName}, ${bcPart}`,
-  };
-}
-
 function toFacility(row: DbFacilityRow): Facility | null {
   if (row.latitude == null || row.longitude == null) return null;
   const hours = hoursInfo(row);
@@ -242,8 +83,6 @@ function toFacility(row: DbFacilityRow): Facility | null {
     lat: row.latitude,
     lng: row.longitude,
     open: hours.open,
-    physiciansOnDuty: 0,
-    inWaitingRoom: 0,
     history,
   };
 }

@@ -472,9 +472,7 @@ function isFacility(value: unknown): value is Facility {
     typeof value.lastUpdated === "string" &&
     typeof value.lat === "number" &&
     typeof value.lng === "number" &&
-    typeof value.open === "boolean" &&
-    typeof value.physiciansOnDuty === "number" &&
-    typeof value.inWaitingRoom === "number"
+    typeof value.open === "boolean"
   );
 }
 
@@ -1038,8 +1036,6 @@ export function MapClient({
               </div>
               <dl>
                 <div><dt>Distance</dt><dd>{selected.distanceKm} km</dd></div>
-                {selected.inWaitingRoom > 0 && <div><dt>Waiting</dt><dd>{selected.inWaitingRoom}</dd></div>}
-                {selected.physiciansOnDuty > 0 && <div><dt>On duty</dt><dd>{selected.physiciansOnDuty}</dd></div>}
               </dl>
               {selectedInTopPressure && (
                 <div className="pressure-note">This site is currently in the top pressure group.</div>
