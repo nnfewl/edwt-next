@@ -1,7 +1,42 @@
 # Retention + hourly rollup (Supabase)
 
-**Status:** drafted, not yet applied. Apply when the DB approaches the storage cap
-(currently ~22 MB; free-tier 500 MB cap is ~2 months out at ~7.2 MB/day).
+**Status:** reviewed & ready to apply — see runbook below. As of 2026-07-02 prod is at
+**295 MB / 500 MB** (618k readings spanning 37 days, growing ~7.2 MB/day → cap hit in
+~4 weeks). Code side is done and committed (`773f934`): `waitTimeHourly` schema,
+migration `drizzle/0001_stormy_shaman.sql`, and `USE_HOURLY_ROLLUP=1`-gated heatmap +
+coverage queries in `src/app/analytics/page.tsx`.
+
+## Apply runbook (verified against prod 2026-07-02)
+
+Pre-verified facts: Drizzle journal exists on prod with `0000` recorded (so `db:migrate`
+applies only `0001`); `idx_readings_observed` exists (prune uses an index scan); only
+cron job is `ingest-every-minute` (no name collisions); every analytics query that
+aggregates history already uses a ≤30-day window, so the prune breaks nothing.
+
+**Decision: no p50 columns.** Each hourly bucket holds only ~12 readings, so avg ≈ median
+within an hour, and percentiles don't compose across buckets anyway. Queries needing
+true percentiles run on the 30-day raw window, which survives the prune.
+
+1. **Migrate** (creates `wait_time_hourly`, additive only):
+   ```bash
+   node scripts/with-env.cjs .env.prod pnpm db:migrate
+   ```
+2. **Backfill** — run the section-2 UPSERT *without* the `where observed_at >= ...`
+   line (Supabase SQL editor or psql against `.env.prod`). Expect ~37k rollup rows.
+3. **Schedule `rollup-hourly`** (section 4, first statement). While in there, also
+   re-schedule `ingest-every-minute` with its existing command plus
+   `timeout_milliseconds := 10000` in the `net.http_post` call (copy the current
+   command from `cron.job`; the 5000 ms default trips when the Edge Function runs long).
+4. **Verify** at the next `:05` that `wait_time_hourly` row count grows (section
+   "Verify" queries).
+5. **Schedule `prune-readings-daily`** (section 4, second statement). First run deletes
+   ~7 days ≈ 130k rows — fine in one statement at this size.
+6. **Flip the read path:** set `USE_HOURLY_ROLLUP=1` in Vercel env + redeploy.
+
+**Known cosmetic effects after the first prune** (informational tiles only, nothing
+breaks): `observedRange`'s "data since" becomes a rolling 30-day date; `quality`'s
+total-readings counts become 30-day counts; a facility silent >30 days shows up under
+`noReadings` as if it never reported.
 
 ## Why
 
