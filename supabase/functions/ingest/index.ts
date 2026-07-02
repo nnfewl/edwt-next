@@ -148,7 +148,9 @@ Deno.serve(async () => {
           ? it.waitTime!.elosMinutes
           : null,
         status: it.waitTime!.status ?? null,
-        has_wait_time: true,
+        // "Has a wait time" means a number was published, not merely that a
+        // report exists — ~35% of reports carry no number.
+        has_wait_time: typeof it.waitTime!.waitTimeMinutes === "number",
       }));
 
     let newReadings = 0;

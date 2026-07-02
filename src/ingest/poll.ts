@@ -99,7 +99,9 @@ export async function runPoll(): Promise<PollOutcome> {
             elosMinutes:
               typeof wt.elosMinutes === "number" ? wt.elosMinutes : null,
             status: wt.status ?? null,
-            hasWaitTime: true,
+            // "Has a wait time" means a number was published, not merely that
+            // a report exists — ~35% of reports carry no number.
+            hasWaitTime: typeof wt.waitTimeMinutes === "number",
           })
           .onConflictDoNothing({
             target: [waitTimeReadings.locationId, waitTimeReadings.reportId],
