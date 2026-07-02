@@ -11,6 +11,7 @@ import { withOriginDistances } from "../geo-distance";
 import { preciseGpsOriginWithLocationText, readSessionGpsOrigin, useSessionGpsOrigin, writeSessionGpsOrigin } from "../location-session";
 import { FALLBACK_LOCATION_ORIGIN, type LocationOrigin } from "../location-types";
 import "./styles.css";
+import { HEALTH_AUTHORITIES, authority, healthAuthorityFor, type HealthAuthority, type HealthAuthorityKey } from "@/lib/health-authorities";
 
 const DEFAULT_CENTER: LngLatLike = [FALLBACK_LOCATION_ORIGIN.lng, FALLBACK_LOCATION_ORIGIN.lat];
 // Keep the camera over southwestern BC (where every facility sits) so users
@@ -59,17 +60,7 @@ function pressureRank(facilities: Facility[], selectedId: string | null) {
     .some((facility) => facility.id === selectedId);
 }
 
-const HEALTH_AUTHORITIES = {
-  bcchildrens: { name: "BC Children's Hospital", faviconPath: "/health-authorities/bcchildrens.png", badgeBackground: "#ffffff" },
-  bcwomens: { name: "BC Women's Hospital", faviconPath: "/health-authorities/bcwomens.ico", badgeBackground: "#ffffff" },
-  fraserhealth: { name: "Fraser Health", faviconPath: "/health-authorities/fraserhealth.ico", badgeBackground: "#ffffff" },
-  providencehealthcare: { name: "Providence Health Care", faviconPath: "/health-authorities/providencehealthcare.ico", badgeBackground: "#ffffff" },
-  vch: { name: "Vancouver Coastal Health", faviconPath: "/health-authorities/vch.png", badgeBackground: "#0078AE" },
-} as const;
-
-type HealthAuthorityKey = keyof typeof HEALTH_AUTHORITIES;
 type Severity = ReturnType<typeof severityFor>;
-type HealthAuthority = { key: HealthAuthorityKey; name: string; faviconPath: string; badgeBackground: string };
 
 const SEVERITIES: Severity[] = ["short", "medium", "long", "closed"];
 const SEVERITY_COLORS: Record<Severity, string> = {
@@ -85,33 +76,8 @@ const SEVERITY_PLACEMENT_RANK: Record<Severity, number> = {
   closed: 3000,
 };
 
-const VCH_PLACES = ["vancouver", "north vancouver", "west vancouver", "richmond", "sechelt", "gibsons", "squamish", "whistler", "pemberton", "powell river"];
-
-function authority(key: HealthAuthorityKey): HealthAuthority {
-  return { key, ...HEALTH_AUTHORITIES[key] };
-}
-
 function markerImageId(key: HealthAuthorityKey, severity: Severity) {
   return "facility-marker-" + key + "-" + severity;
-}
-
-// BC ER/UPCC facilities operate under a regional health authority rather than
-// their own site, so the marker badge shows the operating authority's favicon.
-// Classify by name override first (Children's / Providence sites), then by the
-// city found in the address; Fraser Health is the largest-by-count fallback.
-function healthAuthorityFor(facility: Facility): HealthAuthority {
-  const name = facility.name.toLowerCase();
-  if (name.includes("children")) return authority("bcchildrens");
-  if (name.includes("women")) return authority("bcwomens");
-  if (name.includes("st. paul") || name.includes("st paul") || name.includes("saint paul") ||
-    name.includes("mount saint joseph") || name.includes("mount st. joseph") || name.includes("mount st joseph")) {
-    return authority("providencehealthcare");
-  }
-  const haystack = (facility.address + " " + facility.name).toLowerCase();
-  if (VCH_PLACES.some((place) => haystack.includes(place))) {
-    return authority("vch");
-  }
-  return authority("fraserhealth");
 }
 
 function placementRankFor(facility: Facility, severity: Severity) {
