@@ -1,0 +1,67 @@
+name: web
+
+on:
+  push:
+    branches: [master]
+    paths-ignore:
+      - "service/**"
+      - "docs/**"
+      - "**.md"
+  pull_request:
+    paths-ignore:
+      - "service/**"
+      - "docs/**"
+      - "**.md"
+
+jobs:
+  check:
+    name: lint + test + build
+    runs-on: ubuntu-latest
+
+    # The /analytics prerender queries the database at build time, so the
+    # build needs a real (empty, migrated) Postgres to run against.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: edwt
+          POSTGRES_PASSWORD: edwt
+          POSTGRES_DB: edwt
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U edwt"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgres://edwt:edwt@localhost:5433/edwt
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+
+      - name: install
+        run: pnpm install --frozen-lockfile
+
+      - name: lint
+        run: pnpm lint
+
+      - name: test
+        run: pnpm test
+
+      - name: typecheck
+        run: npx tsc --noEmit
+
+      - name: migrate
+        run: pnpm db:migrate
+
+      - name: build
+        run: pnpm build
