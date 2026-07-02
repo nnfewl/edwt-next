@@ -376,22 +376,6 @@ const FacilityCard = ({
               )}
             </span>
           </span>
-          {f.open && (
-            <>
-              {f.inWaitingRoom > 0 && (
-                <span className="m">
-                  <Icon name="users" size={14} />
-                  {f.inWaitingRoom} waiting
-                </span>
-              )}
-              {f.physiciansOnDuty > 0 && (
-                <span className="m">
-                  <Icon name="stethoscope" size={14} />
-                  {f.physiciansOnDuty} on duty
-                </span>
-              )}
-            </>
-          )}
         </div>
 
         <div className="actions">
@@ -800,14 +784,18 @@ export function ERNowPageClient({
   }, [facilitiesWithDistance, filter, sort]);
 
   const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE);
+  // Reset progressive rendering when the visible set changes. Adjusting state
+  // during render (not in an effect) avoids painting a stale list first.
+  const [prevFilterSort, setPrevFilterSort] = useState<[FilterId, SortId]>([filter, sort]);
+  if (prevFilterSort[0] !== filter || prevFilterSort[1] !== sort) {
+    setPrevFilterSort([filter, sort]);
+    setVisibleCount(INITIAL_VISIBLE);
+  }
   useEffect(() => {
     if (visibleCount < filtered.length) {
       startTransition(() => setVisibleCount(filtered.length));
     }
   }, [filtered, visibleCount]);
-  useEffect(() => {
-    setVisibleCount(INITIAL_VISIBLE);
-  }, [filter, sort]);
 
   const counts = useMemo(() => {
     const c: Record<FilterId, number> = {
@@ -986,11 +974,8 @@ export function ERNowPageClient({
                 </h2>
                 <p className="pick-reason">
                   Shortest reported wait among open facilities — about a{" "}
-                  {fmtMins(shortest.waitMin ?? 0)} expected wait
-                  {shortest.inWaitingRoom > 0 && (
-                    <> with <b>{shortest.inWaitingRoom} people</b> in the waiting room</>
-                  )}
-                  . ~{shortest.distanceKm} km from your location.
+                  {fmtMins(shortest.waitMin ?? 0)} expected wait.
+                  ~{shortest.distanceKm} km from your location.
                 </p>
                 <div className="pick-meta">
                   <span>
@@ -999,12 +984,6 @@ export function ERNowPageClient({
                   <span>
                     <Icon name="users" size={13} /> {shortest.audience}
                   </span>
-                  {shortest.physiciansOnDuty > 0 && (
-                    <span>
-                      <Icon name="stethoscope" size={13} /> {shortest.physiciansOnDuty}{" "}
-                      clinicians on duty
-                    </span>
-                  )}
                 </div>
                 <div className="actions" style={{ marginTop: 20 }}>
                   <a
