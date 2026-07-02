@@ -66,7 +66,7 @@ const readingInsertSQL = `
 insert into wait_time_readings (
   location_id, report_id, reading_id, reading_created_at,
   wait_time_minutes, elos_minutes, status, has_wait_time
-) values ($1,$2,$3,$4,$5,$6,$7,$5 is not null)
+) values ($1,$2,$3,$4,$5,$6,$7,$5::int is not null)
 on conflict (location_id, report_id) do nothing
 returning id`
 
