@@ -2,11 +2,14 @@
   "name": "edwt-next",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@11.3.0",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "db:up": "docker compose up -d db",
     "db:down": "docker compose down",
     "db:generate": "drizzle-kit generate",
@@ -45,6 +48,7 @@
     "eslint-config-next": "16.2.6",
     "tailwindcss": "^4",
     "tsx": "^4.22.3",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.9"
   }
 }
