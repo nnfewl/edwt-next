@@ -82,6 +82,22 @@ function WeekDetail({ sel, typical, today, todayDow }: { sel: number; typical: B
         {p50.length > 0 && <path d={smoothPath(p50)} fill="none" stroke={SAGE.primary} strokeWidth={isToday ? 2 : 3} strokeDasharray={isToday ? "1 7" : "none"} strokeLinecap="round" opacity={0.95} />}
         {actual.length > 0 && <path d={smoothPath(actual)} fill="none" stroke={SAGE.hot} strokeWidth={3.5} strokeLinecap="round" strokeLinejoin="round" />}
         {proj.length > 0 && <path d={smoothPath(proj)} fill="none" stroke={SAGE.hot} strokeWidth={2.5} strokeDasharray="4 6" strokeLinecap="round" opacity={0.75} />}
+        {/* Hover layer: invisible hour columns feeding the shared HoverTip. */}
+        {Array.from({ length: 24 }, (_, h) => {
+          const c = curve.find((b) => b.hour === h);
+          const t = isToday ? today.find((p) => p.hour === h) : undefined;
+          if (!c && !t) return null;
+          const lines = [hourLabel(h)];
+          if (t) lines.push(`actual ${fmtMin(t.min)}`);
+          if (c) lines.push(`usual ${fmtMin(c.p25)}–${fmtMin(c.p75)} · median ${fmtMin(c.p50)}`);
+          const step = (W - padL - padR) / 23;
+          return (
+            <g key={h} className="hovercol">
+              <line className="tipguide" x1={x(h)} y1={padT} x2={x(h)} y2={H - padB} />
+              <rect className="tipcol" x={x(h) - step / 2} y={padT} width={step} height={H - padT - padB} data-tip={lines.join("\n")} />
+            </g>
+          );
+        })}
       </svg>
     </>
   );

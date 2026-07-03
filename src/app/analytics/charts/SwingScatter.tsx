@@ -57,15 +57,17 @@ export function SwingScatter({ points }: { points: Pt[] }) {
         {hourTicks.map((m) => <text key={m} x={x(m)} y={H - padB + 15} fontSize={10.5} fill={SAGE.tick} textAnchor="middle" fontWeight={700}>{m / 60}h</text>)}
         <text x={(padL + W - padR) / 2} y={H - 7} fontSize={11} fill={SAGE.muted} textAnchor="middle" fontWeight={750}>median wait →</text>
         <text x={13} y={midCy} fontSize={11} fill={SAGE.muted} textAnchor="middle" fontWeight={750} transform={`rotate(-90 13 ${midCy})`}>typical swing →</text>
-        {dots.map((p) => (
-          <g key={p.name}>
-            <circle cx={p.cx} cy={p.cy} r={p.r} fill={severityColor(p.median)} opacity={0.82} stroke={SAGE.surface} strokeWidth={1.5}>
-              {/* Single string child: multiple text nodes inside an SVG <title> break hydration. */}
-              <title>{`${p.name} — median ${fmtMin(p.median)}, swings ±${fmtMin(p.stddev)}`}</title>
-            </circle>
-            <text x={p.cx} y={labelYByName.get(p.name)} fontSize={9.5} fontWeight={700} fill={SAGE.ink2} textAnchor="middle">{p.name}</text>
-          </g>
-        ))}
+        {dots.map((p) => {
+          const tip = `${p.name}\nmedian ${fmtMin(p.median)} · swings ±${fmtMin(p.stddev)}`;
+          return (
+            <g key={p.name}>
+              <circle cx={p.cx} cy={p.cy} r={p.r} fill={severityColor(p.median)} opacity={0.82} stroke={SAGE.surface} strokeWidth={1.5} />
+              {/* Oversized transparent hit target so small dots are easy to hover. */}
+              <circle cx={p.cx} cy={p.cy} r={Math.max(10, p.r + 4)} fill="transparent" data-tip={tip} />
+              <text x={p.cx} y={labelYByName.get(p.name)} fontSize={9.5} fontWeight={700} fill={SAGE.ink2} textAnchor="middle" data-tip={tip}>{p.name}</text>
+            </g>
+          );
+        })}
       </svg>
     </div>
   );

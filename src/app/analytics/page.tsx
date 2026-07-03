@@ -16,6 +16,7 @@ import { MonthCalendar } from "./charts/MonthCalendar";
 import { LeagueTable } from "./charts/LeagueTable";
 import { BumpChart } from "./charts/BumpChart";
 import { RecordsBoard } from "./charts/RecordsBoard";
+import { HoverTip } from "./charts/HoverTip";
 import "./styles.css";
 
 export const metadata: Metadata = {
@@ -96,6 +97,7 @@ export default async function AnalyticsPage() {
 
         {/* Redesigned charts (Sage), scoped to .analytics-redesign. */}
         <div className="analytics-redesign">
+          <HoverTip />
           <PressureHero status={v.status} ratio={v.ratio} context={v.heroContext} drivers={v.heroDrivers} today={v.heroToday} typical={v.heroTypical} />
           <StatStrip shortest={v.shortest} longest={v.longest} reporting={v.reporting} quietWindow={v.quietWindow} />
 

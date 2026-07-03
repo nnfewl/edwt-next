@@ -34,6 +34,20 @@ export function GapTrend({ gap }: { gap: GapPoint[] }) {
             <text x={x(li) - 6} y={(ed[li][1] + upcc[li][1]) / 2 + 4} fontSize={12.5} fontWeight={800} fill={SAGE.hot} textAnchor="end">gap: {fmtMin(gapNow)}</text>
           </>
         )}
+        {/* Hover layer: invisible day columns feeding the shared HoverTip. */}
+        {gap.map((g, i) => {
+          const lines = [tick(i)];
+          if (g.ed != null) lines.push(`ER ${fmtMin(g.ed)}`);
+          if (g.upcc != null) lines.push(`urgent care ${fmtMin(g.upcc)}`);
+          if (g.ed != null && g.upcc != null) lines.push(`gap ${fmtMin(Math.abs(g.ed - g.upcc))}`);
+          const step = (W - padL - padR) / Math.max(1, days - 1);
+          return (
+            <g key={g.day} className="hovercol">
+              <line className="tipguide" x1={x(i)} y1={padT} x2={x(i)} y2={H - padB} />
+              <rect className="tipcol" x={x(i) - step / 2} y={padT} width={step} height={H - padT - padB} data-tip={lines.join("\n")} />
+            </g>
+          );
+        })}
       </svg>
       <div className="legend">
         <span><i style={{ background: SAGE.hot }} />Emergency departments</span>

@@ -23,7 +23,7 @@ function Group({ title, rows, max }: { title: string; rows: Row[]; max: number }
         return (
           <div className="rank-row" key={r.name}>
             <div className="rank-name"><HABadge name={r.name} address={r.address} /><span className="nm">{r.name}</span></div>
-            <div className="rank-track"><div className="rank-fill" style={{ width: `${Math.min(100, (v / max) * 100)}%`, background: severityColor(v) }} /></div>
+            <div className="rank-track" data-tip={`${r.name}\n${fmtMin(v)} now${r.baseline != null ? ` · usually ~${fmtMin(r.baseline)} at this hour` : ""}`}><div className="rank-fill" style={{ width: `${Math.min(100, (v / max) * 100)}%`, background: severityColor(v) }} /></div>
             <div className="rank-end"><span className="rank-val">{fmtMin(v)}</span><span className={`delta ${cls}`}>{dTxt}</span></div>
           </div>
         );

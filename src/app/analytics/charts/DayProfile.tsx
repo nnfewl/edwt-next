@@ -1,4 +1,4 @@
-import { SAGE, severityColor, fmtMin } from "./chart-theme";
+import { SAGE, severityColor, fmtMin, hourLabel } from "./chart-theme";
 
 type Pt = { hour: number; min: number };
 
@@ -10,7 +10,7 @@ export function DayProfile({ profile, bestWindow, bestHours }: { profile: Pt[]; 
       <div className="profile-bars">
         {profile.map((p) => {
           const isBest = p.hour >= bestHours[0] && p.hour <= bestHours[1];
-          return <div key={p.hour} className="pbar" style={{ height: `${(p.min / max) * 100}%`, background: isBest ? SAGE.primary : severityColor(p.min), opacity: isBest ? 1 : 0.85 }} title={`${p.hour}:00 — median ${fmtMin(p.min)}`} />;
+          return <div key={p.hour} className="pbar" style={{ height: `${(p.min / max) * 100}%`, background: isBest ? SAGE.primary : severityColor(p.min), opacity: isBest ? 1 : 0.85 }} data-tip={`${hourLabel(p.hour)}\nmedian ${fmtMin(p.min)}${isBest ? " · quietest window" : ""}`} />;
         })}
       </div>
       <div className="profile-axis"><span>12am</span><span>6am</span><span>noon</span><span>6pm</span><span>11pm</span></div>

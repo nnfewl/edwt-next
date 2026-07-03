@@ -7,13 +7,13 @@ import { Pager } from "./Pager";
 
 type Row = { name: string; type: string; median: number | null; eveningPeak: number | null; spark: number[]; trend7d: number | null };
 
-function Spark({ values, up }: { values: number[]; up: boolean }) {
+function Spark({ name, values, up }: { name: string; values: number[]; up: boolean }) {
   const W = 110, H = 26;
   if (values.length < 2) return <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} />;
   const max = Math.max(...values), min = Math.min(...values), span = Math.max(1, max - min);
   const pts = values.map((v, i) => [(i / (values.length - 1)) * W, H - ((v - min) / span) * (H - 4) - 2] as [number, number]);
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H}>
+    <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} data-tip={`${name} · last 30 days\ndaily medians ${fmtMin(min)}–${fmtMin(max)}`}>
       <path d={smoothPath(pts)} fill="none" stroke={up ? SAGE.hot : SAGE.primary} strokeWidth={1.8} strokeLinejoin="round" strokeLinecap="round" opacity={0.85} />
     </svg>
   );
@@ -39,7 +39,7 @@ export function LeagueTable({ rows }: { rows: Row[] }) {
                 <td><span className={`pill ${r.type === "ed" ? "pill-ed" : "pill-upcc"}`}>{r.type === "ed" ? "ED" : "UPCC"}</span></td>
                 <td className="num">{fmtMin(r.median ?? 0)}</td>
                 <td>{r.eveningPeak != null ? fmtMin(r.eveningPeak) : "—"}</td>
-                <td><Spark values={r.spark} up={(r.trend7d ?? 0) > 0} /></td>
+                <td><Spark name={r.name} values={r.spark} up={(r.trend7d ?? 0) > 0} /></td>
                 <td>{r.trend7d == null ? "—" : <>{arrow(r.trend7d)} {Math.abs(r.trend7d) >= 5 ? `${r.trend7d > 0 ? "+" : "−"}${fmtMin(Math.abs(r.trend7d))}` : `±${fmtMin(Math.abs(r.trend7d))}`}</>}</td>
               </tr>
             ))}

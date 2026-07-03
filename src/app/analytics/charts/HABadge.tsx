@@ -8,7 +8,7 @@ export function HABadge({ name, address = null, size = 22 }: { name: string; add
     <span
       className="ha"
       style={{ width: size, height: size, background: a.badgeBackground }}
-      title={a.name}
+      data-tip={a.name}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={a.faviconPath} alt={a.name} width={logo} height={logo} />

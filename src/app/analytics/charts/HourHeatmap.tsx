@@ -1,4 +1,4 @@
-import { heatColor, HEAT, fmtMin } from "./chart-theme";
+import { heatColor, HEAT, fmtMin, hourLabel } from "./chart-theme";
 import { HABadge } from "./HABadge";
 
 type Cell = { name: string; type: string; hour: number; avgWait: number | null };
@@ -31,7 +31,7 @@ function FacilityRow({ name, byKey }: { name: string; byKey: Map<string, number 
       <div className="heat-name"><HABadge name={name} size={18} />{name}</div>
       {Array.from({ length: 24 }, (_, h) => {
         const v = byKey.get(`${name}|${h}`);
-        return <div key={h} className="heat-cell" style={{ background: v != null ? heatColor(v) : "var(--track)" }} title={v != null ? `${name} · ${h}:00 — avg ${fmtMin(v)}` : `${name} · ${h}:00 — no data`} />;
+        return <div key={h} className="heat-cell" style={{ background: v != null ? heatColor(v) : "var(--track)" }} data-tip={`${name} · ${hourLabel(h)}\n${v != null ? `avg ${fmtMin(v)}` : "no data"}`} />;
       })}
     </>
   );

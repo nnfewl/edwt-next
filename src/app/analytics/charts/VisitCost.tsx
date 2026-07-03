@@ -22,8 +22,8 @@ function Group({ title, rows, max }: { title: string; rows: Row[]; max: number }
           <div className="visit-row" key={r.name}>
             <div className="visit-name"><HABadge name={r.name} address={r.address} /><span className="nm">{r.name}</span></div>
             <div className="visit-track">
-              <div className="visit-wait" style={{ width: `${(w / max) * 100}%`, background: severityColor(w) }} title={`waiting: ${fmtMin(w)}`} />
-              <div className="visit-elos" style={{ width: `${(e / max) * 100}%`, background: severityColor(w) }} title={`treatment (est.): ${fmtMin(e)}`} />
+              <div className="visit-wait" style={{ width: `${(w / max) * 100}%`, background: severityColor(w) }} data-tip={`${r.name}\nwaiting ${fmtMin(w)}`} />
+              <div className="visit-elos" style={{ width: `${(e / max) * 100}%`, background: severityColor(w) }} data-tip={`${r.name}\ntreatment (est.) ${fmtMin(e)}`} />
             </div>
             <div className="visit-total">{fmtMin(w + e)}<small>{fmtMin(w)} wait · {e ? fmtMin(e) : "—"} care</small></div>
           </div>

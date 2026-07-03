@@ -1041,6 +1041,18 @@
 .analytics-redesign .ha-legend .ha { width: 18px; height: 18px; margin-right: 6px; vertical-align: -4px; display: inline-flex; }
 .analytics-redesign .ha-legend .ha img { width: 12px; height: 12px; }
 
+/* Shared chart tooltip (HoverTip) — positioned imperatively, fixed to viewport. */
+.chart-tip {
+  position: fixed; z-index: 60; pointer-events: none; opacity: 0; transition: opacity 0.12s;
+  background: #171a18; color: #fff; font-size: 12px; font-weight: 650; line-height: 1.5;
+  padding: 7px 11px; border-radius: 9px; box-shadow: 0 6px 20px rgba(23, 26, 24, 0.28);
+  max-width: 280px; font-variant-numeric: tabular-nums; white-space: pre-line;
+}
+/* Invisible per-hour/day hit columns on line charts + their hover guide line. */
+.analytics-redesign .tipcol { fill: transparent; }
+.analytics-redesign .tipguide { stroke: var(--faint); stroke-dasharray: 2 4; opacity: 0; transition: opacity 0.1s; pointer-events: none; }
+.analytics-redesign g.hovercol:hover .tipguide { opacity: 0.9; }
+
 @keyframes analytics-rise { from { opacity: 0; transform: translateY(16px); } }
 .analytics-redesign .hero, .analytics-redesign .stat, .analytics-redesign .card { animation: analytics-rise 0.55s cubic-bezier(0.2, 0.7, 0.3, 1) both; }
 .analytics-redesign .stat:nth-child(1) { animation-delay: 0.05s; } .analytics-redesign .stat:nth-child(2) { animation-delay: 0.1s; }

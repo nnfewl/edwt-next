@@ -33,7 +33,13 @@ export function BumpChart({ rows, climber, slider }: { rows: Row[]; climber: str
           return (
             <g key={r.name}>
               <polyline points={pts} fill="none" stroke={color} strokeWidth={highlight ? 3.5 : 2} strokeLinejoin="round" opacity={highlight ? 1 : 0.55} />
-              {r.ranks.map((rank, w) => <circle key={w} cx={x(w)} cy={y(rank)} r={highlight ? 5 : 3.5} fill={color} stroke={SAGE.surface} strokeWidth={1.5} />)}
+              {r.ranks.map((rank, w) => (
+                <g key={w}>
+                  <circle cx={x(w)} cy={y(rank)} r={highlight ? 5 : 3.5} fill={color} stroke={SAGE.surface} strokeWidth={1.5} />
+                  {/* Oversized transparent hit target for the shared HoverTip. */}
+                  <circle cx={x(w)} cy={y(rank)} r={10} fill="transparent" data-tip={`${r.name}\n${labels[w]}: #${rank} of ${maxRank} (longest = #1)`} />
+                </g>
+              ))}
               <text x={padL - 12} y={y(r.ranks[0]) + 4} fontSize={11.5} fontWeight={highlight ? 800 : 700} fill={highlight ? SAGE.ink : SAGE.muted} textAnchor="end">{r.name}</text>
               <text x={W - padR + 12} y={y(r.ranks[r.ranks.length - 1]) + 4} fontSize={11.5} fontWeight={highlight ? 800 : 700} fill={highlight ? SAGE.ink : SAGE.muted}>{endLabel}{badge}</text>
             </g>

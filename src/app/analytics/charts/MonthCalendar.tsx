@@ -17,7 +17,7 @@ export function MonthCalendar({ days }: { days: Day[] }) {
           return (
             <div key={d.date} className={`cal-day${d.date === todayIso ? " is-today" : ""}`}
               style={{ background: d.median != null ? HEAT[heatBucket(d.median, cuts)] : "var(--track)" }}
-              title={`${label} — median ${d.median != null ? fmtMin(d.median) : "no data"}`}>{dayNum}</div>
+              data-tip={`${label}\nregional median ${d.median != null ? fmtMin(d.median) : "no data"}`}>{dayNum}</div>
           );
         })}
       </div>

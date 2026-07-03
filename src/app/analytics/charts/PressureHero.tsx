@@ -81,6 +81,22 @@ export function PressureHero({
               <text x={last[0] - 10} y={last[1] - 13} fontSize={12.5} fontWeight={800} fill={SAGE.hot} textAnchor="end">{`${markerLabel} · ${fmtMin(today[today.length - 1].min)}`}</text>
             </>
           )}
+          {/* Hover layer: invisible hour columns feeding the shared HoverTip, drawn last so they sit on top. */}
+          {Array.from({ length: 24 }, (_, h) => {
+            const t = today.find((p) => p.hour === h);
+            const b = typical.find((c) => c.hour === h);
+            if (!t && !b) return null;
+            const lines = [hourLabel(h)];
+            if (t) lines.push(`today ${fmtMin(t.min)}`);
+            if (b) lines.push(`typical ${fmtMin(b.p50)} · usual ${fmtMin(b.p25)}–${fmtMin(b.p75)}`);
+            const step = (W - padL - padR) / 23;
+            return (
+              <g key={h} className="hovercol">
+                <line className="tipguide" x1={x(h)} y1={padT} x2={x(h)} y2={H - padB} />
+                <rect className="tipcol" x={x(h) - step / 2} y={padT} width={step} height={H - padT - padB} data-tip={lines.join("\n")} />
+              </g>
+            );
+          })}
         </svg>
       </div>
     </section>
