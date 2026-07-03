@@ -110,14 +110,25 @@ async function runQueries() {
       group by 1 order by 1
     `,
     // [2] Regional typical curve p25/p50/p75 by hour (30d, ED only). Feeds hero band + 02 profile.
+    // Two-level: collapse each day×hour to its regional median first, then take the
+    // percentiles ACROSS DAYS. Pooling raw readings measures cross-facility spread
+    // (which hospital you're at, ~1h-4h wide) and the band swallows the chart; the
+    // band should show the day-to-day range of the regional median itself.
     sql<{ hour: number; p25: number; p50: number; p75: number }[]>`
-      select extract(hour from observed_at at time zone ${TZ})::int as hour,
-             percentile_cont(0.25) within group (order by wait_time_minutes)::float as p25,
-             percentile_cont(0.5)  within group (order by wait_time_minutes)::float as p50,
-             percentile_cont(0.75) within group (order by wait_time_minutes)::float as p75
-      from wait_time_readings w join locations l on l.id = w.location_id
-      where l.type = 'ed' and l.id in ${sql(lmIds)} and w.has_wait_time = true and w.wait_time_minutes is not null
-        and observed_at >= now() - interval '30 days'
+      with day_hour as (
+        select to_char(observed_at at time zone ${TZ}, 'YYYY-MM-DD') as day,
+               extract(hour from observed_at at time zone ${TZ})::int as hour,
+               percentile_cont(0.5) within group (order by wait_time_minutes) as med
+        from wait_time_readings w join locations l on l.id = w.location_id
+        where l.type = 'ed' and l.id in ${sql(lmIds)} and w.has_wait_time = true and w.wait_time_minutes is not null
+          and observed_at >= now() - interval '30 days'
+        group by 1, 2
+      )
+      select hour,
+             percentile_cont(0.25) within group (order by med)::float as p25,
+             percentile_cont(0.5)  within group (order by med)::float as p50,
+             percentile_cont(0.75) within group (order by med)::float as p75
+      from day_hour
       group by 1 order by 1
     `,
     // [3] Facility × hour averages, top-8 busiest EDs, 30d. Feeds 02 heatmap.
@@ -227,15 +238,24 @@ async function runQueries() {
       order by w.wait_time_minutes desc, w.observed_at desc limit 1
     `,
     // [11] Per-dow × hour typical p25/p50/p75 (28d, ED). Feeds 03 week detail.
+    // Same two-level shape as [2]: day×hour regional medians first, then percentiles
+    // across the ~4 same-weekday samples — not the cross-facility reading pool.
     sql<{ dow: number; hour: number; p25: number; p50: number; p75: number }[]>`
-      select extract(dow from observed_at at time zone ${TZ})::int as dow,
-             extract(hour from observed_at at time zone ${TZ})::int as hour,
-             percentile_cont(0.25) within group (order by wait_time_minutes)::float as p25,
-             percentile_cont(0.5)  within group (order by wait_time_minutes)::float as p50,
-             percentile_cont(0.75) within group (order by wait_time_minutes)::float as p75
-      from wait_time_readings w join locations l on l.id = w.location_id
-      where l.type = 'ed' and l.id in ${sql(lmIds)} and w.has_wait_time = true and w.wait_time_minutes is not null
-        and observed_at >= now() - interval '28 days'
+      with day_hour as (
+        select to_char(observed_at at time zone ${TZ}, 'YYYY-MM-DD') as day,
+               extract(dow from observed_at at time zone ${TZ})::int as dow,
+               extract(hour from observed_at at time zone ${TZ})::int as hour,
+               percentile_cont(0.5) within group (order by wait_time_minutes) as med
+        from wait_time_readings w join locations l on l.id = w.location_id
+        where l.type = 'ed' and l.id in ${sql(lmIds)} and w.has_wait_time = true and w.wait_time_minutes is not null
+          and observed_at >= now() - interval '28 days'
+        group by 1, 2, 3
+      )
+      select dow, hour,
+             percentile_cont(0.25) within group (order by med)::float as p25,
+             percentile_cont(0.5)  within group (order by med)::float as p50,
+             percentile_cont(0.75) within group (order by med)::float as p75
+      from day_hour
       group by 1, 2 order by 1, 2
     `,
     // [12] Observed range (all facilities) — feeds the kept header's data-window aside.
