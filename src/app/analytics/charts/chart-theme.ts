@@ -1,5 +1,5 @@
 import { scaleLinear } from "d3-scale";
-import { line as d3line, curveCatmullRom } from "d3-shape";
+import { line as d3line, area as d3area, curveCatmullRom } from "d3-shape";
 
 export { fmtMin } from "@/lib/analytics/format";
 
@@ -36,6 +36,22 @@ export function linear(domain: [number, number], range: [number, number]) {
 /** Smooth Catmull-Rom path through [x,y] points. */
 export function smoothPath(points: [number, number][]): string {
   return d3line().curve(curveCatmullRom.alpha(0.5))(points) ?? "";
+}
+
+/** Smooth closed band between two edges. Uses d3's area generator so both edges
+    get the same curve treatment — hand-joining two smoothPath halves leaves seam
+    corners and asymmetric wiggles. */
+export function smoothBand(points: { x: number; y0: number; y1: number }[]): string {
+  return d3area<{ x: number; y0: number; y1: number }>()
+    .x((d) => d.x).y0((d) => d.y0).y1((d) => d.y1)
+    .curve(curveCatmullRom.alpha(0.5))(points) ?? "";
+}
+
+/** Whole-hour gridline positions (minutes) that fit under maxY with breathing room. */
+export function hourTicks(maxY: number): number[] {
+  const ticks: number[] = [];
+  for (let m = 60; m <= maxY - 20; m += 60) ticks.push(m);
+  return ticks;
 }
 
 /** Straight polyline path through [x,y] points. */

@@ -1,4 +1,4 @@
-import { SAGE, smoothPath, linear, hourLabel, fmtMin } from "./chart-theme";
+import { SAGE, smoothPath, smoothBand, hourTicks, linear, hourLabel, fmtMin } from "./chart-theme";
 import { PRESSURE_STATUSES, pressureIndex } from "@/lib/analytics/pressure-index";
 
 type Pt = { hour: number; min: number };
@@ -15,17 +15,18 @@ function Emph({ text }: { text: string }) {
 export function PressureHero({
   status, ratio, context, drivers, today, typical,
 }: { status: string; ratio: number; context: string; drivers: string; today: Pt[]; typical: Band[] }) {
-  const W = 660, H = 235, padL = 40, padR = 16, padT = 16, padB = 26, maxY = 300;
+  const W = 660, H = 235, padL = 40, padR = 16, padT = 16, padB = 26;
+  // Data-driven ceiling (integer, so SSR and hydration agree byte-for-byte) — a
+  // fixed cap clamps the band flat against the top of the plot when p75 exceeds it.
+  const maxY = Math.ceil((Math.max(240, ...typical.map((t) => t.p75), ...today.map((p) => p.min)) * 1.06) / 30) * 30;
   const x = linear([0, 23], [padL, W - padR]);
   const y = linear([0, maxY], [H - padB, padT]);
   const active = pressureIndex(ratio);
   const frac = Math.min(1, Math.max(0, (ratio - BAND_LO[active]) / (BAND_HI[active] - BAND_LO[active])));
 
-  const bandTop = typical.map((t) => [x(t.hour), y(Math.min(t.p75, maxY))] as [number, number]);
-  const bandBottom = typical.slice().reverse().map((t) => [x(t.hour), y(Math.min(t.p25, maxY))] as [number, number]);
-  const bandPath = typical.length ? smoothPath(bandTop) + "L" + smoothPath(bandBottom).slice(1) + "Z" : "";
-  const typicalPath = smoothPath(typical.map((t) => [x(t.hour), y(Math.min(t.p50, maxY))]));
-  const todayPts = today.map((p) => [x(p.hour), y(Math.min(p.min, maxY))] as [number, number]);
+  const bandPath = typical.length ? smoothBand(typical.map((t) => ({ x: x(t.hour), y0: y(t.p25), y1: y(t.p75) }))) : "";
+  const typicalPath = smoothPath(typical.map((t) => [x(t.hour), y(t.p50)]));
+  const todayPts = today.map((p) => [x(p.hour), y(p.min)] as [number, number]);
   const todayPath = smoothPath(todayPts);
   const last = todayPts[todayPts.length - 1];
   const weekday = new Date().toLocaleDateString("en-CA", { weekday: "long", timeZone: "America/Vancouver" });
@@ -61,8 +62,10 @@ export function PressureHero({
               <stop offset="0%" stopColor={SAGE.hot} stopOpacity={SAGE.todayFillTop} />
               <stop offset="100%" stopColor={SAGE.hot} stopOpacity={0} />
             </linearGradient>
+            {/* Catmull-Rom overshoots slightly past extreme points — keep it inside the plot. */}
+            <clipPath id="hero-plot"><rect x={padL} y={0} width={W - padL - padR} height={H - padB} /></clipPath>
           </defs>
-          {[60, 120, 180, 240].map((m) => (
+          {hourTicks(maxY).map((m) => (
             <g key={m}>
               <line x1={padL} y1={y(m)} x2={W - padR} y2={y(m)} stroke={SAGE.grid} />
               <text x={padL - 8} y={y(m) + 4} fontSize={11} fill={SAGE.tick} textAnchor="end" fontWeight={700}>{m / 60}h</text>
@@ -71,10 +74,12 @@ export function PressureHero({
           {[0, 6, 12, 18, 23].map((h) => (
             <text key={h} x={x(h)} y={H - 7} fontSize={11} fill={SAGE.tick} textAnchor="middle" fontWeight={700}>{hourLabel(h)}</text>
           ))}
-          {bandPath && <path d={bandPath} fill={SAGE.band} />}
-          {typical.length > 0 && <path d={typicalPath} fill="none" stroke={SAGE.primary} strokeWidth={2} strokeDasharray="1 7" strokeLinecap="round" opacity={0.9} />}
-          {last && <path d={`${todayPath} L ${last[0]} ${y(0)} L ${todayPts[0][0]} ${y(0)} Z`} fill="url(#todayFill)" />}
-          {todayPts.length > 0 && <path d={todayPath} fill="none" stroke={SAGE.hot} strokeWidth={3.5} strokeLinecap="round" />}
+          <g clipPath="url(#hero-plot)">
+            {bandPath && <path d={bandPath} fill={SAGE.band} />}
+            {typical.length > 0 && <path d={typicalPath} fill="none" stroke={SAGE.primary} strokeWidth={2} strokeDasharray="1 7" strokeLinecap="round" opacity={0.9} />}
+            {last && <path d={`${todayPath} L ${last[0]} ${y(0)} L ${todayPts[0][0]} ${y(0)} Z`} fill="url(#todayFill)" />}
+            {todayPts.length > 0 && <path d={todayPath} fill="none" stroke={SAGE.hot} strokeWidth={3.5} strokeLinecap="round" />}
+          </g>
           {last && (
             <>
               <circle cx={last[0]} cy={last[1]} r={5} fill={SAGE.hot} stroke={SAGE.surface} strokeWidth={2} />

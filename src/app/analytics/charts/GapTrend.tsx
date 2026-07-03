@@ -1,14 +1,16 @@
-import { SAGE, linear, smoothPath, fmtMin } from "./chart-theme";
+import { SAGE, linear, smoothPath, hourTicks, fmtMin } from "./chart-theme";
 
 type GapPoint = { day: string; ed: number | null; upcc: number | null };
 
 export function GapTrend({ gap }: { gap: GapPoint[] }) {
-  const W = 620, H = 240, padL = 40, padR = 14, padT = 14, padB = 26, maxY = 240;
+  const W = 620, H = 240, padL = 40, padR = 14, padT = 14, padB = 26;
+  // Data-driven ceiling (integer for hydration stability) — see PressureHero.
+  const maxY = Math.ceil((Math.max(180, ...gap.flatMap((g) => [g.ed ?? 0, g.upcc ?? 0])) * 1.06) / 30) * 30;
   const days = gap.length;
   const x = linear([0, Math.max(1, days - 1)], [padL, W - padR]);
   const y = linear([0, maxY], [H - padB, padT]);
-  const ed = gap.map((g, i) => [x(i), y(Math.min(g.ed ?? 0, maxY))] as [number, number]);
-  const upcc = gap.map((g, i) => [x(i), y(Math.min(g.upcc ?? 0, maxY))] as [number, number]);
+  const ed = gap.map((g, i) => [x(i), y(g.ed ?? 0)] as [number, number]);
+  const upcc = gap.map((g, i) => [x(i), y(g.upcc ?? 0)] as [number, number]);
   const li = days - 1;
   const gapNow = days ? Math.round((gap[li].ed ?? 0) - (gap[li].upcc ?? 0)) : 0;
   const tick = (i: number) => gap[i]?.day ? new Date(gap[i].day + "T00:00:00Z").toLocaleDateString("en-CA", { timeZone: "UTC", month: "short", day: "numeric" }) : "";
@@ -17,7 +19,7 @@ export function GapTrend({ gap }: { gap: GapPoint[] }) {
     <div className="card">
       <div className="card-mini-title">30-day trend <small>daily median wait</small></div>
       <svg id="gap-chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label="ED vs urgent-care daily median trend">
-        {[60, 120, 180].map((m) => (
+        {hourTicks(maxY).map((m) => (
           <g key={m}>
             <line x1={padL} y1={y(m)} x2={W - padR} y2={y(m)} stroke={SAGE.grid} />
             <text x={padL - 8} y={y(m) + 4} fontSize={11} fill={SAGE.tick} textAnchor="end" fontWeight={700}>{m / 60}h</text>

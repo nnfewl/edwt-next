@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { SAGE, linear, smoothPath, hourLabel } from "./chart-theme";
+import { SAGE, linear, smoothPath, smoothBand, hourTicks, hourLabel } from "./chart-theme";
 import { weekdayName, fmtMin } from "@/lib/analytics/format";
 
 type DayMedian = { dow: number; median: number | null };
@@ -45,17 +45,17 @@ export function WeekTiles({ week, typical, today, todayDow }: { week: DayMedian[
 }
 
 function WeekDetail({ sel, typical, today, todayDow }: { sel: number; typical: Band[]; today: Pt[]; todayDow: number }) {
-  const W = 980, H = 210, padL = 40, padR = 16, padT = 12, padB = 26, maxY = 300;
-  const x = linear([0, 23], [padL, W - padR]);
-  const y = linear([0, maxY], [H - padB, padT]);
+  const W = 980, H = 210, padL = 40, padR = 16, padT = 12, padB = 26;
   const curve = typical.filter((t) => t.dow === sel).sort((a, b) => a.hour - b.hour);
   const isToday = sel === todayDow;
+  // Data-driven ceiling (integer for hydration stability) — see PressureHero.
+  const maxY = Math.ceil((Math.max(240, ...curve.map((c) => c.p75), ...(isToday ? today.map((p) => p.min) : [])) * 1.06) / 30) * 30;
+  const x = linear([0, 23], [padL, W - padR]);
+  const y = linear([0, maxY], [H - padB, padT]);
 
-  const p50 = curve.map((c) => [x(c.hour), y(Math.min(c.p50, maxY))] as [number, number]);
-  const bandTop = curve.map((c) => [x(c.hour), y(Math.min(c.p75, maxY))] as [number, number]);
-  const bandBot = curve.slice().reverse().map((c) => [x(c.hour), y(Math.min(c.p25, maxY))] as [number, number]);
-  const bandPath = curve.length ? smoothPath(bandTop) + "L" + smoothPath(bandBot).slice(1) + "Z" : "";
-  const actual = isToday ? today.map((p) => [x(p.hour), y(Math.min(p.min, maxY))] as [number, number]) : [];
+  const p50 = curve.map((c) => [x(c.hour), y(c.p50)] as [number, number]);
+  const bandPath = curve.length ? smoothBand(curve.map((c) => ({ x: x(c.hour), y0: y(c.p25), y1: y(c.p75) }))) : "";
+  const actual = isToday ? today.map((p) => [x(p.hour), y(p.min)] as [number, number]) : [];
 
   const proj: [number, number][] = [];
   if (isToday && actual.length && curve.length) {
@@ -71,17 +71,22 @@ function WeekDetail({ sel, typical, today, todayDow }: { sel: number; typical: B
         <span className="week-detail-note">{isToday ? "— actual so far · ┄ projected · band = usual range" : `usual ${weekdayName(sel)} range`}</span>
       </div>
       <svg id="week-detail" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${weekdayName(sel)} wait curve`}>
-        {[60, 120, 180, 240].map((m) => (
+        <defs>
+          <clipPath id="week-plot"><rect x={padL} y={0} width={W - padL - padR} height={H - padB} /></clipPath>
+        </defs>
+        {hourTicks(maxY).map((m) => (
           <g key={m}>
             <line x1={padL} y1={y(m)} x2={W - padR} y2={y(m)} stroke={SAGE.grid} />
             <text x={padL - 8} y={y(m) + 4} fontSize={11} fill={SAGE.tick} textAnchor="end" fontWeight={700}>{m / 60}h</text>
           </g>
         ))}
         {[0, 6, 12, 18, 23].map((h) => <text key={h} x={x(h)} y={H - 7} fontSize={11} fill={SAGE.tick} textAnchor="middle" fontWeight={700}>{hourLabel(h)}</text>)}
-        {bandPath && <path d={bandPath} fill={SAGE.band} />}
-        {p50.length > 0 && <path d={smoothPath(p50)} fill="none" stroke={SAGE.primary} strokeWidth={isToday ? 2 : 3} strokeDasharray={isToday ? "1 7" : "none"} strokeLinecap="round" opacity={0.95} />}
-        {actual.length > 0 && <path d={smoothPath(actual)} fill="none" stroke={SAGE.hot} strokeWidth={3.5} strokeLinecap="round" strokeLinejoin="round" />}
-        {proj.length > 0 && <path d={smoothPath(proj)} fill="none" stroke={SAGE.hot} strokeWidth={2.5} strokeDasharray="4 6" strokeLinecap="round" opacity={0.75} />}
+        <g clipPath="url(#week-plot)">
+          {bandPath && <path d={bandPath} fill={SAGE.band} />}
+          {p50.length > 0 && <path d={smoothPath(p50)} fill="none" stroke={SAGE.primary} strokeWidth={isToday ? 2 : 3} strokeDasharray={isToday ? "1 7" : "none"} strokeLinecap="round" opacity={0.95} />}
+          {actual.length > 0 && <path d={smoothPath(actual)} fill="none" stroke={SAGE.hot} strokeWidth={3.5} strokeLinecap="round" strokeLinejoin="round" />}
+          {proj.length > 0 && <path d={smoothPath(proj)} fill="none" stroke={SAGE.hot} strokeWidth={2.5} strokeDasharray="4 6" strokeLinecap="round" opacity={0.75} />}
+        </g>
         {/* Hover layer: invisible hour columns feeding the shared HoverTip. */}
         {Array.from({ length: 24 }, (_, h) => {
           const c = curve.find((b) => b.hour === h);
