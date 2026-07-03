@@ -1,14 +1,13 @@
 import { HEAT, fmtMin } from "./chart-theme";
+import { heatCuts, heatBucket } from "@/lib/analytics/derive";
 
 type Day = { date: string; median: number | null };
 
-// Calendar-specific ramp thresholds (mockup renderCalendar `heat`).
-function calColor(v: number): string {
-  return HEAT[v >= 210 ? 5 : v >= 185 ? 4 : v >= 160 ? 3 : v >= 135 ? 2 : v >= 110 ? 1 : 0];
-}
-
 export function MonthCalendar({ days }: { days: Day[] }) {
   const todayIso = new Date().toLocaleDateString("en-CA", { timeZone: "America/Vancouver" });
+  // Color each day relative to this window's distribution (sextiles), matching the
+  // "calmer → rougher" legend and the p25-based calm-day count in the title.
+  const cuts = heatCuts(days.map((d) => d.median).filter((m): m is number => m != null));
   return (
     <div className="card">
       <div className="cal-wrap">
@@ -17,7 +16,7 @@ export function MonthCalendar({ days }: { days: Day[] }) {
           const label = new Date(d.date + "T00:00:00Z").toLocaleDateString("en-CA", { timeZone: "UTC", month: "short", day: "numeric" });
           return (
             <div key={d.date} className={`cal-day${d.date === todayIso ? " is-today" : ""}`}
-              style={{ background: d.median != null ? calColor(d.median) : "var(--track)" }}
+              style={{ background: d.median != null ? HEAT[heatBucket(d.median, cuts)] : "var(--track)" }}
               title={`${label} — median ${d.median != null ? fmtMin(d.median) : "no data"}`}>{dayNum}</div>
           );
         })}

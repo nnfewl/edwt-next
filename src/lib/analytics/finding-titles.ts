@@ -4,20 +4,23 @@ import { fmtMin, weekdayName } from "./format";
 
 const plural = (n: number, one: string, many = one + "s") => (n === 1 ? one : many);
 
+// Hero strings use **…** to mark the emphasized spans (the mockup's <b> styling);
+// PressureHero renders them as <b> elements.
 export function heroContext(i: { medianMin: number; ratio: number; weekday: string; partOfDay: string }): string {
   const pct = Math.round((i.ratio - 1) * 100);
   if (Math.abs(pct) <= 5) {
-    return `The median ER wait is ${fmtMin(i.medianMin)} — right about typical for a ${i.weekday} ${i.partOfDay}.`;
+    return `The median ER wait is **${fmtMin(i.medianMin)}** — right about typical for a ${i.weekday} ${i.partOfDay}.`;
   }
   const dir = pct > 0 ? "above" : "below";
-  return `The median ER wait is ${fmtMin(i.medianMin)} — about ${Math.abs(pct)}% ${dir} what's typical for a ${i.weekday} ${i.partOfDay}.`;
+  return `The median ER wait is **${fmtMin(i.medianMin)}** — about **${Math.abs(pct)}% ${dir}** what's typical for a ${i.weekday} ${i.partOfDay}.`;
 }
 
-export function heroDrivers(i: { drivers: { name: string; wait: number }[]; upccUnderHour: boolean }): string {
+export function heroDrivers(i: { drivers: { name: string; wait: number; delta: number }[]; upccUnderHour: boolean }): string {
   if (i.drivers.length < 2) return "No single facility stands out right now.";
   const [a, b] = i.drivers;
   const tail = i.upccUnderHour ? " UPCCs remain under an hour." : "";
-  return `Driving it: ${a.name} (${fmtMin(a.wait)}) and ${b.name} (${fmtMin(b.wait)}).${tail}`;
+  if (a.delta <= 0) return `Nothing is driving it — every ED is at or below its usual level.${tail}`;
+  return `Driving it: **${a.name} (${fmtMin(a.wait)})** and **${b.name} (${fmtMin(b.wait)})**.${tail}`;
 }
 
 export function section01(i: { top2Share: number; partOfDay: string }): string {

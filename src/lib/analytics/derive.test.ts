@@ -2,12 +2,32 @@ import { describe, expect, it } from "vitest";
 import {
   percentile, top2Share, peakWindow, dowExtremes, gapTrend,
   countCalmDays, steadyAndGamble, weeksAtTop, standingsMovers,
+  heatCuts, heatBucket,
 } from "./derive";
 
 describe("percentile", () => {
   it("linearly interpolates", () => {
     expect(percentile([1, 2, 3, 4], 0.5)).toBe(2.5);
     expect(percentile([], 0.5)).toBe(0);
+  });
+});
+
+describe("heatCuts / heatBucket", () => {
+  it("spreads a window across all six buckets", () => {
+    const values = Array.from({ length: 30 }, (_, i) => 150 + i * 4); // 150..266
+    const cuts = heatCuts(values);
+    expect(cuts).toHaveLength(5);
+    expect(heatBucket(150, cuts)).toBe(0); // calmest day → teal end
+    expect(heatBucket(266, cuts)).toBe(5); // roughest day → brick end
+    expect(new Set(values.map((v) => heatBucket(v, cuts))).size).toBe(6);
+  });
+  it("reads a flat window as neutral, not all-calm", () => {
+    const cuts = heatCuts([180, 180, 180]);
+    expect(heatBucket(180, cuts)).toBe(2);
+  });
+  it("handles an empty window", () => {
+    expect(heatCuts([])).toEqual([]);
+    expect(heatBucket(120, [])).toBe(2);
   });
 });
 

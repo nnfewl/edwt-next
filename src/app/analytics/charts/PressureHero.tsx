@@ -7,6 +7,11 @@ type Band = { hour: number; p25: number; p50: number; p75: number };
 const BAND_LO = [0, 0.8, 1.15, 1.6];
 const BAND_HI = [0.8, 1.15, 1.6, 2.2];
 
+/** Render a finding string's **…** emphasis spans as <b> (styled by .hero-context b / .hero-drivers b). */
+function Emph({ text }: { text: string }) {
+  return <>{text.split("**").map((seg, i) => (i % 2 ? <b key={i}>{seg}</b> : seg))}</>;
+}
+
 export function PressureHero({
   status, ratio, context, drivers, today, typical,
 }: { status: string; ratio: number; context: string; drivers: string; today: Pt[]; typical: Band[] }) {
@@ -24,13 +29,18 @@ export function PressureHero({
   const todayPath = smoothPath(todayPts);
   const last = todayPts[todayPts.length - 1];
   const weekday = new Date().toLocaleDateString("en-CA", { weekday: "long", timeZone: "America/Vancouver" });
+  // Only call the marker "now" if the curve actually reaches the current hour —
+  // on stale data, label it with the hour the readings stop at.
+  const curHour = Number(new Intl.DateTimeFormat("en-US", { timeZone: "America/Vancouver", hour: "2-digit", hour12: false }).format(new Date())) % 24;
+  const lastHour = today[today.length - 1]?.hour;
+  const markerLabel = lastHour === curHour ? "now" : hourLabel(lastHour ?? 0);
 
   return (
     <section className="hero">
       <div>
         <div className="hero-label">ER pressure right now</div>
         <div className="hero-status">{status}</div>
-        <p className="hero-context">{context}</p>
+        <p className="hero-context"><Emph text={context} /></p>
         <div className="gauge">
           {PRESSURE_STATUSES.map((_, i) => (
             <i key={i} className={i <= active ? `on-${i + 1}` : ""}>
@@ -41,7 +51,7 @@ export function PressureHero({
         <div className="gauge-labels">
           {PRESSURE_STATUSES.map((s, i) => <span key={s} className={i === active ? "active" : ""}>{s}</span>)}
         </div>
-        <p className="hero-drivers">{drivers}</p>
+        <p className="hero-drivers"><Emph text={drivers} /></p>
       </div>
       <div className="hero-chart-wrap">
         <div className="chart-title">Today, hour by hour <small>· dashed line = a typical {weekday} · band = usual range</small></div>
@@ -68,7 +78,7 @@ export function PressureHero({
           {last && (
             <>
               <circle cx={last[0]} cy={last[1]} r={5} fill={SAGE.hot} stroke={SAGE.surface} strokeWidth={2} />
-              <text x={last[0] - 10} y={last[1] - 13} fontSize={12.5} fontWeight={800} fill={SAGE.hot} textAnchor="end">now · {fmtMin(today[today.length - 1].min)}</text>
+              <text x={last[0] - 10} y={last[1] - 13} fontSize={12.5} fontWeight={800} fill={SAGE.hot} textAnchor="end">{`${markerLabel} · ${fmtMin(today[today.length - 1].min)}`}</text>
             </>
           )}
         </svg>

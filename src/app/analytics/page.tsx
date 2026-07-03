@@ -79,7 +79,7 @@ export default async function AnalyticsPage() {
             <div className="analytics-kicker"><span aria-hidden="true" /> Live wait-time analytics</div>
             <h1>Wait-time analytics</h1>
             <p>
-              A system-level view of current pressure, sustained risk, coverage quality, and care-type trends across tracked facilities.
+              The story of ER pressure across the region — what waits look like right now, when the calm windows come, and how the month has run.
             </p>
           </div>
           <aside className="analytics-window" aria-label="Data window">

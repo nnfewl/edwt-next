@@ -40,7 +40,7 @@ export function LeagueTable({ rows }: { rows: Row[] }) {
                 <td className="num">{fmtMin(r.median ?? 0)}</td>
                 <td>{r.eveningPeak != null ? fmtMin(r.eveningPeak) : "—"}</td>
                 <td><Spark values={r.spark} up={(r.trend7d ?? 0) > 0} /></td>
-                <td>{arrow(r.trend7d)} {r.trend7d != null && Math.abs(r.trend7d) >= 5 ? `${r.trend7d > 0 ? "+" : "−"}${fmtMin(Math.abs(r.trend7d))}` : "±"}</td>
+                <td>{r.trend7d == null ? "—" : <>{arrow(r.trend7d)} {Math.abs(r.trend7d) >= 5 ? `${r.trend7d > 0 ? "+" : "−"}${fmtMin(Math.abs(r.trend7d))}` : `±${fmtMin(Math.abs(r.trend7d))}`}</>}</td>
               </tr>
             ))}
           </tbody>

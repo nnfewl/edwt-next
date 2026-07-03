@@ -5,26 +5,30 @@ import {
 } from "./finding-titles";
 
 describe("heroContext", () => {
-  it("states the median and signed deviation", () => {
+  it("states the median and signed deviation with ** emphasis spans", () => {
     expect(heroContext({ medianMin: 160, ratio: 1.35, weekday: "Wednesday", partOfDay: "tonight" }))
-      .toBe("The median ER wait is 2h 40m — about 35% above what's typical for a Wednesday tonight.");
+      .toBe("The median ER wait is **2h 40m** — about **35% above** what's typical for a Wednesday tonight.");
     expect(heroContext({ medianMin: 90, ratio: 0.8, weekday: "Sunday", partOfDay: "this morning" }))
-      .toBe("The median ER wait is 1h 30m — about 20% below what's typical for a Sunday this morning.");
+      .toBe("The median ER wait is **1h 30m** — about **20% below** what's typical for a Sunday this morning.");
   });
   it("uses the neutral phrasing within ±5%", () => {
     expect(heroContext({ medianMin: 120, ratio: 1.03, weekday: "Monday", partOfDay: "this afternoon" }))
-      .toBe("The median ER wait is 2h 0m — right about typical for a Monday this afternoon.");
+      .toBe("The median ER wait is **2h 0m** — right about typical for a Monday this afternoon.");
   });
 });
 
 describe("heroDrivers", () => {
   it("names the top two drivers and the UPCC clause", () => {
-    expect(heroDrivers({ drivers: [{ name: "Surrey Memorial", wait: 300 }, { name: "Royal Columbian", wait: 260 }], upccUnderHour: true }))
-      .toBe("Driving it: Surrey Memorial (5h 0m) and Royal Columbian (4h 20m). UPCCs remain under an hour.");
+    expect(heroDrivers({ drivers: [{ name: "Surrey Memorial", wait: 300, delta: 62 }, { name: "Royal Columbian", wait: 260, delta: 48 }], upccUnderHour: true }))
+      .toBe("Driving it: **Surrey Memorial (5h 0m)** and **Royal Columbian (4h 20m)**. UPCCs remain under an hour.");
   });
   it("omits the UPCC clause when a UPCC is over an hour", () => {
-    expect(heroDrivers({ drivers: [{ name: "A", wait: 200 }, { name: "B", wait: 190 }], upccUnderHour: false }))
-      .toBe("Driving it: A (3h 20m) and B (3h 10m).");
+    expect(heroDrivers({ drivers: [{ name: "A", wait: 200, delta: 30 }, { name: "B", wait: 190, delta: 12 }], upccUnderHour: false }))
+      .toBe("Driving it: **A (3h 20m)** and **B (3h 10m)**.");
+  });
+  it("says nothing is driving when every ED is at or below usual", () => {
+    expect(heroDrivers({ drivers: [{ name: "A", wait: 96, delta: 0 }, { name: "B", wait: 167, delta: -39 }], upccUnderHour: false }))
+      .toBe("Nothing is driving it — every ED is at or below its usual level.");
   });
   it("falls back when there are no drivers", () => {
     expect(heroDrivers({ drivers: [], upccUnderHour: true })).toBe("No single facility stands out right now.");

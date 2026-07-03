@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fmtMin, partOfDay, weekdayName, pctDelta } from "./format";
+import { fmtMin, partOfDay, weekdayName, pctDelta, chartName } from "./format";
 
 describe("fmtMin", () => {
   it("formats sub-hour values as minutes", () => {
@@ -38,5 +38,17 @@ describe("pctDelta", () => {
     expect(pctDelta(1.35)).toBe(35);
     expect(pctDelta(0.8)).toBe(-20);
     expect(pctDelta(1.0)).toBe(0);
+  });
+});
+
+describe("chartName", () => {
+  it("drops the Hospital token wherever it sits", () => {
+    expect(chartName("Lions Gate Hospital")).toBe("Lions Gate");
+    expect(chartName("Surrey Memorial Hospital Adult")).toBe("Surrey Memorial Adult");
+    expect(chartName("St. Paul's Hospital")).toBe("St. Paul's");
+  });
+  it("leaves names without the token untouched", () => {
+    expect(chartName("Richmond East UPCC")).toBe("Richmond East UPCC");
+    expect(chartName("UBC Hospital")).toBe("UBC");
   });
 });

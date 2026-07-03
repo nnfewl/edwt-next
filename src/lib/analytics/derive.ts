@@ -53,6 +53,21 @@ export function gapTrend(gaps: number[]): { gapMin: number; trend: "widening" | 
   return { gapMin, trend };
 }
 
+/** Five interior sextile cut points for the relative calm→rough calendar ramp.
+    The month calendar colors each day against THIS window's distribution — with
+    absolute thresholds the teal "calmer" end never appears on real data, and the
+    legend/title (both relative) contradict the squares. */
+export function heatCuts(values: number[]): number[] {
+  if (values.length === 0) return [];
+  return [1, 2, 3, 4, 5].map((k) => percentile(values, k / 6));
+}
+
+/** Bucket a value into the 6-step HEAT ramp using heatCuts output. */
+export function heatBucket(v: number, cuts: number[]): number {
+  if (cuts.length === 0 || cuts[0] === cuts[cuts.length - 1]) return 2; // flat window — read neutral
+  return cuts.filter((c) => v > c).length;
+}
+
 export function countCalmDays(dailyMedians: number[]): number {
   if (dailyMedians.length === 0) return 0;
   const p25 = percentile(dailyMedians, 0.25);

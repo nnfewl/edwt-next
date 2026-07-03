@@ -19,11 +19,34 @@ export function SwingScatter({ points }: { points: Pt[] }) {
   );
   const hourTicks = [60, 120, 180, 240, 300, 360].filter((m) => m < maxX);
 
+  const dots = points.map((p) => ({
+    ...p,
+    cx: Math.round(x(Math.min(p.median, maxX))),
+    cy: Math.round(y(Math.min(p.stddev, maxY))),
+    r: Math.round((5 + Math.sqrt(p.readings) / 45) * 10) / 10,
+  }));
+  // Greedy label de-collision — live data clusters points mid-plot. Prefer the side
+  // facing away from the midline (upper-half → below), flip when that collides, then
+  // step downward. Deterministic (fixed iteration order), so SSR and client agree.
+  type Box = { x1: number; y1: number; x2: number; y2: number };
+  const placedBoxes: Box[] = [];
+  const labelYByName = new Map<string, number>();
+  const collides = (b: Box) => placedBoxes.some((o) => b.x1 < o.x2 && b.x2 > o.x1 && b.y1 < o.y2 && b.y2 > o.y1);
+  for (const d of [...dots].sort((a, b) => a.cy - b.cy || a.cx - b.cx)) {
+    const w = d.name.length * 5.4;
+    const boxAt = (ly: number): Box => ({ x1: d.cx - w / 2, y1: ly - 9, x2: d.cx + w / 2, y2: ly + 2 });
+    const preferred = d.cy < midCy ? d.cy + d.r + 11 : d.cy - d.r - 5;
+    const flipped = d.cy < midCy ? d.cy - d.r - 5 : d.cy + d.r + 11;
+    let ly = preferred;
+    if (collides(boxAt(ly)) && !collides(boxAt(flipped))) ly = flipped;
+    for (let tries = 0; collides(boxAt(ly)) && tries < 6; tries++) ly += 11;
+    placedBoxes.push(boxAt(ly));
+    labelYByName.set(d.name, ly);
+  }
+
   return (
     <div className="card">
-      {/* Data-dependent SVG: tooltip text can differ between render passes on live data;
-          the rendered chart is correct and self-heals, so silence the hydration warning. */}
-      <svg id="scatter-chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Median wait vs swing, per facility" suppressHydrationWarning>
+      <svg id="scatter-chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Median wait vs swing, per facility">
         <rect x={padL} y={padT} width={W - padL - padR} height={H - padT - padB} fill={SAGE.card2} rx={10} />
         <line x1={x(midX)} y1={padT} x2={x(midX)} y2={H - padB} stroke={SAGE.grid} strokeWidth={1.5} />
         <line x1={padL} y1={y(midY)} x2={W - padR} y2={y(midY)} stroke={SAGE.grid} strokeWidth={1.5} />
@@ -34,19 +57,15 @@ export function SwingScatter({ points }: { points: Pt[] }) {
         {hourTicks.map((m) => <text key={m} x={x(m)} y={H - padB + 15} fontSize={10.5} fill={SAGE.tick} textAnchor="middle" fontWeight={700}>{m / 60}h</text>)}
         <text x={(padL + W - padR) / 2} y={H - 7} fontSize={11} fill={SAGE.muted} textAnchor="middle" fontWeight={750}>median wait →</text>
         <text x={13} y={midCy} fontSize={11} fill={SAGE.muted} textAnchor="middle" fontWeight={750} transform={`rotate(-90 13 ${midCy})`}>typical swing →</text>
-        {points.map((p) => {
-          const cx = Math.round(x(Math.min(p.median, maxX))), cy = Math.round(y(Math.min(p.stddev, maxY)));
-          const r = Math.round((5 + Math.sqrt(p.readings) / 45) * 10) / 10;
-          const below = cy < midCy; // upper-half points get labels below to ease the top pileup
-          return (
-            <g key={p.name}>
-              <circle cx={cx} cy={cy} r={r} fill={severityColor(p.median)} opacity={0.82} stroke={SAGE.surface} strokeWidth={1.5}>
-                <title>{p.name} — median {fmtMin(p.median)}, swings ±{fmtMin(p.stddev)}</title>
-              </circle>
-              <text x={cx} y={below ? cy + r + 11 : cy - r - 5} fontSize={9.5} fontWeight={700} fill={SAGE.ink2} textAnchor="middle">{p.name}</text>
-            </g>
-          );
-        })}
+        {dots.map((p) => (
+          <g key={p.name}>
+            <circle cx={p.cx} cy={p.cy} r={p.r} fill={severityColor(p.median)} opacity={0.82} stroke={SAGE.surface} strokeWidth={1.5}>
+              {/* Single string child: multiple text nodes inside an SVG <title> break hydration. */}
+              <title>{`${p.name} — median ${fmtMin(p.median)}, swings ±${fmtMin(p.stddev)}`}</title>
+            </circle>
+            <text x={p.cx} y={labelYByName.get(p.name)} fontSize={9.5} fontWeight={700} fill={SAGE.ink2} textAnchor="middle">{p.name}</text>
+          </g>
+        ))}
       </svg>
     </div>
   );

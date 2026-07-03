@@ -27,3 +27,10 @@ export function weekdayName(index: number): string {
 export function pctDelta(ratio: number): number {
   return Math.round((ratio - 1) * 100);
 }
+
+/** Label-driven-chart name (scatter, bump): drop the "Hospital" token so labels fit
+    the mockup's geometry — "Lions Gate Hospital" → "Lions Gate",
+    "Surrey Memorial Hospital Adult" → "Surrey Memorial Adult". */
+export function chartName(name: string): string {
+  return name.replace(/\s+Hospital\b/i, "").replace(/\s+/g, " ").trim();
+}

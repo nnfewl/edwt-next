@@ -12,7 +12,7 @@ import {
   section09 as f09, section10 as f10,
 } from "@/lib/analytics/finding-titles";
 import { pressureStatus } from "@/lib/analytics/pressure-index";
-import { partOfDay, weekdayName, fmtMin } from "@/lib/analytics/format";
+import { partOfDay, weekdayName, fmtMin, chartName } from "@/lib/analytics/format";
 import { hourLabel } from "./charts/chart-theme";
 
 const TZ = VANCOUVER_TZ;
@@ -354,17 +354,28 @@ function shapeView(rows: Awaited<ReturnType<typeof runQueries>>): AnalyticsView 
   const calmDays = countCalmDays(dailyMedians);
 
   // weekly ranks: week 0 = this week … 3 = 4 weeks ago; rank 1 = longest median.
+  // Rank within the fixed cohort of facilities present in ALL weeks — per-week cohorts
+  // differ in size, and ranking against a shrinking cohort fabricates rank "climbs"
+  // (everyone ▲, no ▼, and the movers title contradicts the badges).
   const weeks = [3, 2, 1, 0];
-  const names = Array.from(new Set(weeklyRows.map((r) => r.name)));
-  const rankByWeek = weeks.map((wk) => {
-    const wkRows = weeklyRows.filter((r) => r.week === wk && r.median != null).sort((a, b) => (b.median as number) - (a.median as number));
-    return new Map(wkRows.map((r, i) => [r.name, i + 1] as const));
-  });
-  const bump: BumpRow[] = names
-    .map((name) => ({ name: shortName(name), ranks: rankByWeek.map((m) => m.get(name)).filter((r): r is number => r != null) }))
-    .filter((s) => s.ranks.length === 4)
+  const weekRows = weeks.map((wk) => weeklyRows.filter((r) => r.week === wk && r.median != null));
+  const cohort = weekRows
+    .map((rs) => new Set(rs.map((r) => r.name)))
+    .reduce((a, b) => new Set([...a].filter((n) => b.has(n))));
+  const rankByWeek = weekRows.map((rs) => new Map(
+    rs.filter((r) => cohort.has(r.name))
+      .sort((a, b) => (b.median as number) - (a.median as number))
+      .map((r, i) => [r.name, i + 1] as const),
+  ));
+  const bump: BumpRow[] = [...cohort]
+    .map((name) => ({ name: chartName(shortName(name)), ranks: rankByWeek.map((m) => m.get(name)).filter((r): r is number => r != null) }))
+    .filter((s) => s.ranks.length === weeks.length)
+    .sort((a, b) => a.ranks[a.ranks.length - 1] - b.ranks[b.ranks.length - 1])
     .slice(0, 8);
-  const leadersByWeek = rankByWeek.map((m) => [...m.entries()].find(([, r]) => r === 1)?.[0] ?? "").filter(Boolean);
+  // Leader for 08 comes from the full per-week field, not the bump cohort.
+  const leadersByWeek = weekRows
+    .map((rs) => (rs.length ? rs.reduce((a, b) => ((b.median as number) > (a.median as number) ? b : a)).name : ""))
+    .filter(Boolean);
   const wt = weeksAtTop(leadersByWeek);
   const mv = standingsMovers(bump);
 
@@ -374,10 +385,16 @@ function shapeView(rows: Awaited<ReturnType<typeof runQueries>>): AnalyticsView 
   }));
 
   const scatter: ScatterPoint[] = facRows.filter((r) => r.type === "ed" && r.median != null && r.stddev != null)
-    .map((r) => ({ name: shortName(r.name), median: Math.round(r.median as number), stddev: Math.round(r.stddev as number), readings: r.readings }))
+    .map((r) => ({ name: chartName(shortName(r.name)), median: Math.round(r.median as number), stddev: Math.round(r.stddev as number), readings: r.readings }))
     .sort((a, b) => a.name.localeCompare(b.name)); // deterministic render order (no hydration jitter)
 
   const calendar: CalendarDay[] = dailyRows.map((r) => ({ date: r.date, median: r.median }));
+
+  // Pin today's final curve point to the official live median (open EDs) so the
+  // chart's "now" marker matches the hero sentence — the partial-hour median drifts.
+  const heroToday = todayRows.map((r) => ({ hour: r.hour, min: Math.round(r.min) }));
+  const lastToday = heroToday[heroToday.length - 1];
+  if (lastToday && lastToday.hour === hour && openEds.length) lastToday.min = Math.round(regionalMedian);
 
   const record = recordRows[0] ?? null;
   const records = buildRecords(record, facRows, dailyRows, typicalRows.map((t) => ({ hour: t.hour, p50: t.p50 })));
@@ -389,8 +406,8 @@ function shapeView(rows: Awaited<ReturnType<typeof runQueries>>): AnalyticsView 
   return {
     status: pressureStatus(ratio), ratio, regionalMedian: Math.round(regionalMedian),
     heroContext: fHeroContext({ medianMin: Math.round(regionalMedian), ratio, weekday: weekdayName(dow), partOfDay: pod }),
-    heroDrivers: fHeroDrivers({ drivers: drivers.slice(0, 2).map((d) => ({ name: d.name, wait: d.wait })), upccUnderHour }),
-    heroToday: todayRows.map((r) => ({ hour: r.hour, min: Math.round(r.min) })),
+    heroDrivers: fHeroDrivers({ drivers: drivers.slice(0, 2), upccUnderHour }),
+    heroToday,
     heroTypical: typicalRows,
     shortest: shortest ? { name: shortName(shortest.name), min: shortest.wait as number } : null,
     longest: longest ? { name: shortName(longest.name), min: longest.wait as number } : null,
