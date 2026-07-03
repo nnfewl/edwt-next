@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist_Mono, Manrope } from "next/font/google";
+import { Fraunces, Geist_Mono, Manrope } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { AppTopBar } from "./app-topbar";
 import "./globals.css";
@@ -12,6 +12,12 @@ const manrope = Manrope({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+const fraunces = Fraunces({
+  variable: "--font-fraunces",
+  subsets: ["latin"],
+  weight: ["600", "700"],
 });
 
 const siteUrl = "https://edwt.ca";
@@ -66,7 +72,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${manrope.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${manrope.variable} ${geistMono.variable} ${fraunces.variable} h-full antialiased`}
     >
       <head>
         <link
