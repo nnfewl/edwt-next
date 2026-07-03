@@ -22,10 +22,17 @@ export type HourMedian = { hour: number; min: number };
 export function peakWindow(hourly: HourMedian[]): { peakStartHour: number; peakEndHour: number; morningDeltaMin: number } {
   if (hourly.length === 0) return { peakStartHour: 0, peakEndHour: 0, morningDeltaMin: 0 };
   const max = Math.max(...hourly.map((h) => h.min));
-  const peak = hourly.filter((h) => h.min >= max * 0.85).map((h) => h.hour);
+  const threshold = max * 0.85;
+  const byHour = new Map(hourly.map((h) => [h.hour, h.min] as const));
+  // Take the *contiguous* run around the busiest hour, so a lone off-peak spike
+  // that also clears 85% can't stretch the reported window into a false range.
+  const argmax = hourly.reduce((a, b) => (b.min > a.min ? b : a)).hour;
+  let start = argmax, end = argmax;
+  while ((byHour.get(start - 1) ?? -1) >= threshold) start--;
+  while ((byHour.get(end + 1) ?? -1) >= threshold) end++;
   const morning = hourly.filter((h) => h.hour >= 6 && h.hour <= 11).map((h) => h.min);
   const morningMin = morning.length ? Math.min(...morning) : max;
-  return { peakStartHour: Math.min(...peak), peakEndHour: Math.max(...peak), morningDeltaMin: Math.round(max - morningMin) };
+  return { peakStartHour: start, peakEndHour: end, morningDeltaMin: Math.round(max - morningMin) };
 }
 
 export type DowMedian = { dow: number; min: number };
