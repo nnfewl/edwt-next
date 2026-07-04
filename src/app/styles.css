@@ -2759,28 +2759,68 @@
   max-width: 100%;
 }
 
-/* Drawer closed/no-data: the Maps grammar, scaled up as the sheet's hero
-   line and left-aligned like the rest of the drawer. */
+/* Drawer closed/no-data: same slots as the has-data state — big word in the
+   number slot over a state wave (settle = known zero, hatched ghost =
+   unknown), one quiet label line, typical-day chart region below. */
 .er-now-root .drawer-panel .wait.is-closed,
 .er-now-root .drawer-panel .wait.is-no-data {
   align-items: flex-start;
   text-align: left;
-  gap: 8px;
+  gap: 6px;
   padding-bottom: 22px;
 }
-.er-now-root .drawer-panel .wait .status-line {
-  display: block;
-  font-size: 26px;
-  font-weight: 700;
+.er-now-root .drawer-panel .wait .wait-num.status-word {
+  font-size: 56px;
+  color: var(--ink-2);
+  position: relative;
 }
-.er-now-root .drawer-panel .wait .status-line .st-dot {
-  display: inline;
+.er-now-root .drawer-panel .wait .wait-label .st-open {
+  color: var(--green);
+  font-weight: 800;
 }
-.er-now-root .drawer-panel .wait .status-sub {
+.er-now-root .drawer-panel .wait .state-wave {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 14px;
+  width: 100%;
+  height: 84px;
+  pointer-events: none;
+}
+
+/* Closed: typical-day bars stay but go uniform + quiet. */
+.er-now-root .usual-wrap.usual-dimmed .usual-bar {
+  background: var(--line-2);
+  opacity: 1;
+}
+.er-now-root .usual-wrap.usual-dimmed .usual-note {
+  display: none;
+}
+
+/* No data: ghost chart frame with the message inside it. */
+.er-now-root .usual-wrap.usual-ghost .usual-bar {
+  background: var(--line);
+  opacity: 0.55;
+}
+.er-now-root .usual-wrap.usual-ghost .usual-row {
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.25));
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.25));
+}
+.er-now-root .usual-ghost-overlay {
+  position: absolute;
+  inset: 26px 0 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.er-now-root .usual-ghost-overlay strong {
   font-size: 13px;
-}
-.er-now-root .drawer-panel .wait .status-call {
-  font-size: 13.5px;
+  font-weight: 750;
+  color: var(--ink-2);
+  background: color-mix(in oklab, var(--surface) 88%, transparent);
+  border-radius: 8px;
+  padding: 1px 8px;
 }
 
 /* Card closed/no-data: Maps grammar is right-aligned text, not a centered
