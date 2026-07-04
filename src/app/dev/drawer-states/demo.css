@@ -131,6 +131,110 @@
   padding: 1px 8px;
 }
 
+.dds-caption {
+  margin: 8px 2px 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+.dds-eyebrow {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  color: var(--muted);
+  margin-bottom: -2px;
+}
+
+/* ── C3 · hours strip: today's open window as a timeline ── */
+.dds-strip-wrap { position: relative; margin: 4px 0 22px; padding-top: 8px; }
+.dds-strip {
+  position: relative;
+  height: 34px;
+  border-radius: 9px;
+  background: var(--bg-2);
+  overflow: visible;
+}
+.dds-strip-open {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  background: var(--teal-soft);
+  border: 1px solid color-mix(in oklab, var(--teal) 30%, transparent);
+  color: var(--teal-ink);
+  font-size: 11px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+.dds-strip-now {
+  position: absolute;
+  top: -8px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--ink-2);
+}
+.dds-strip-now i {
+  display: block;
+  width: 2px;
+  height: 46px;
+  border-radius: 2px;
+  background: var(--ink-2);
+  opacity: 0.55;
+}
+
+/* ── N2 · flatline: dashed "no signal" line in the chart frame ── */
+.dds-flatline {
+  position: relative;
+  height: 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.dds-flatline i {
+  display: block;
+  width: 100%;
+  border-top: 2px dashed var(--line-2);
+}
+.dds-flatline em {
+  font-style: normal;
+  font-size: 11.5px;
+  color: var(--muted);
+  background: var(--surface);
+  padding: 0 8px;
+  margin-top: -21px;
+}
+
+/* ── N3 · action-forward ── */
+.dds-actions { display: flex; flex-direction: column; gap: 8px; margin: 6px 0 20px; }
+.dds-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink-2);
+  font-size: 13.5px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.dds-action.primary {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #fff;
+}
+
 .dds-foot {
   margin-top: 36px;
   padding-top: 14px;
