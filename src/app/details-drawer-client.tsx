@@ -9,7 +9,6 @@ import {
   type ReactNode,
 } from "react";
 import type { TodayResponse } from "./api/facilities/[id]/today/route";
-import { ClosedIllustration } from "./closed-illustration";
 import {
   type Facility,
   type HistoryPoint,
@@ -403,16 +402,34 @@ export function DetailsDrawer({
                 </div>
               </>
             ) : (
-              <div className="no-data-state no-data-state-drawer">
-                <strong>No data</strong>
-                <span>No wait posted</span>
-              </div>
+              <>
+                <div className="status-line">
+                  <b className="st-open">Open</b>
+                  <span className="st-dot"> · </span>
+                  <span>no posted wait</span>
+                </div>
+                {f.phone ? (
+                  <a className="status-call" href={`tel:${f.phone}`}>
+                    <IconComponent name="phone" size={13} /> Call to check
+                  </a>
+                ) : (
+                  <div className="status-sub">Call to check current wait</div>
+                )}
+              </>
             )
           ) : (
-            <div className="closed-state closed-state-drawer">
-              <ClosedIllustration className="closed-illustration closed-drawer" />
-              <strong>Closed</strong>
-            </div>
+            <>
+              <div className="status-line">
+                <b className="st-closed">Closed</b>
+                {f.opensAt && (
+                  <>
+                    <span className="st-dot"> · </span>
+                    <span>Opens {f.opensAt}</span>
+                  </>
+                )}
+              </div>
+              {f.hours !== "Hours vary" && <div className="status-sub">{f.hours} daily</div>}
+            </>
           )}
         </div>
 
@@ -462,7 +479,11 @@ export function DetailsDrawer({
               <>This facility is open, but no wait time is currently posted.</>
             )
           ) : (
-            <>This facility is currently closed. It will reopen at the next scheduled time.</>
+            <>
+              This facility is currently closed
+              {/* opensAt often ends in "a.m."/"p.m." — no extra period after it. */}
+              {f.opensAt ? <> — it reopens at {f.opensAt}</> : <> and will reopen at the next scheduled time.</>}
+            </>
           )}
         </p>
 

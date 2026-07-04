@@ -2759,23 +2759,28 @@
   max-width: 100%;
 }
 
-.er-now-root .drawer-panel .wait.is-closed {
-  align-items: center;
-  min-height: 190px;
-  padding-bottom: 18px;
+/* Drawer closed/no-data: the Maps grammar, scaled up as the sheet's hero
+   line and left-aligned like the rest of the drawer. */
+.er-now-root .drawer-panel .wait.is-closed,
+.er-now-root .drawer-panel .wait.is-no-data {
+  align-items: flex-start;
+  text-align: left;
+  gap: 8px;
+  padding-bottom: 22px;
 }
-
-.er-now-root .drawer-panel .wait.is-closed .closed-drawer {
-  width: min(220px, 72vw);
-  height: min(220px, 72vw);
+.er-now-root .drawer-panel .wait .status-line {
+  display: block;
+  font-size: 26px;
+  font-weight: 700;
 }
-
-.er-now-root .drawer-panel .closed-state-drawer {
-  gap: 10px;
+.er-now-root .drawer-panel .wait .status-line .st-dot {
+  display: inline;
 }
-
-.er-now-root .drawer-panel .closed-state-drawer strong {
-  font-size: 24px;
+.er-now-root .drawer-panel .wait .status-sub {
+  font-size: 13px;
+}
+.er-now-root .drawer-panel .wait .status-call {
+  font-size: 13.5px;
 }
 
 /* Card closed/no-data: Maps grammar is right-aligned text, not a centered
