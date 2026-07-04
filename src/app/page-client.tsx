@@ -808,15 +808,70 @@ export function ERNowPageClient({
 
   useEffect(() => {
     if (!directionsFor) return;
+    // Capture phase + stopPropagation: when the chooser sits above the details
+    // drawer, one Escape should close only the chooser, not both dialogs.
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setDirectionsFor(null);
+      if (event.key === "Escape") {
+        event.stopPropagation();
+        setDirectionsFor(null);
+      }
     };
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keydown", onKeyDown, true);
     return () => {
       document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keydown", onKeyDown, true);
+    };
+  }, [directionsFor]);
+
+  // Swipe-down-to-dismiss for the chooser's mobile bottom sheet — same drag
+  // mechanics as the details drawer.
+  const dirSheetRef = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    const panel = dirSheetRef.current;
+    if (!directionsFor || !panel) return;
+
+    const drag = { startY: 0, currentY: 0, dragging: false };
+    const onTouchStart = (e: TouchEvent) => {
+      drag.startY = e.touches[0].clientY;
+      drag.currentY = drag.startY;
+      drag.dragging = false;
+    };
+    const onTouchMove = (e: TouchEvent) => {
+      const dy = e.touches[0].clientY - drag.startY;
+      if (dy < 0) return;
+      if (!drag.dragging && dy > 8) drag.dragging = true;
+      if (drag.dragging) {
+        e.preventDefault();
+        drag.currentY = e.touches[0].clientY;
+        panel.style.transform = `translateY(${dy}px)`;
+        panel.style.transition = "none";
+      }
+    };
+    const onTouchEnd = () => {
+      if (!drag.dragging) return;
+      const dy = drag.currentY - drag.startY;
+      if (dy > 90) {
+        panel.style.transition = "transform 180ms ease-out";
+        panel.style.transform = "translateY(110%)";
+        setTimeout(() => setDirectionsFor(null), 180);
+      } else {
+        panel.style.transition = "transform 180ms ease-out";
+        panel.style.transform = "";
+      }
+      drag.dragging = false;
+    };
+
+    panel.addEventListener("touchstart", onTouchStart, { passive: true });
+    panel.addEventListener("touchmove", onTouchMove, { passive: false });
+    panel.addEventListener("touchend", onTouchEnd);
+    return () => {
+      panel.removeEventListener("touchstart", onTouchStart);
+      panel.removeEventListener("touchmove", onTouchMove);
+      panel.removeEventListener("touchend", onTouchEnd);
+      panel.style.transform = "";
+      panel.style.transition = "";
     };
   }, [directionsFor]);
 
@@ -1230,6 +1285,7 @@ export function ERNowPageClient({
         {directionsFor && (
           <div className="dir-sheet-scrim" role="presentation" onClick={() => setDirectionsFor(null)}>
             <section
+              ref={dirSheetRef}
               className="dir-sheet"
               role="dialog"
               aria-modal="true"
@@ -1412,6 +1468,7 @@ export function ERNowPageClient({
           onClose={() => setSelected(null)}
           IconComponent={Icon}
           WaveBackgroundComponent={WaveBackground}
+          onDirections={setDirectionsFor}
         />
       )}
     </div>
