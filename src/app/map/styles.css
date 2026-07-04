@@ -263,23 +263,11 @@
   font-size: 13px;
 }
 
-/* Closed / no-data: the Maps status grammar replaces the jumbo numeral. */
-.selected-wait strong.selected-status-line {
-  font-size: 24px;
-  font-weight: 750;
-  line-height: 1.15;
-  letter-spacing: -0.01em;
-  color: var(--ink);
-}
-.selected-status-line .st-closed {
-  color: var(--red);
-}
-.selected-status-line .st-open {
-  color: var(--green);
-}
-.selected-status-line span {
-  color: var(--ink);
-  font-size: inherit;
+/* Closed / no-data: same skeleton as live data — a big word in the numeral
+   slot plus the single status line below. */
+.selected-wait strong.selected-status-word {
+  font-size: 38px;
+  color: var(--closed);
 }
 
 .selected-wait-status {
