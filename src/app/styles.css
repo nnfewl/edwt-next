@@ -2773,6 +2773,12 @@
   font-size: 56px;
   color: var(--ink-2);
   position: relative;
+  white-space: nowrap;
+}
+@media (max-width: 760px) {
+  .er-now-root .drawer-panel .wait .wait-num.status-word {
+    font-size: 38px;
+  }
 }
 .er-now-root .drawer-panel .wait .wait-label .st-open {
   color: var(--green);
