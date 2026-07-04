@@ -145,6 +145,24 @@
   margin-bottom: -2px;
 }
 
+/* Closed chart variants — same layout, different texture. */
+.dds-dimmed .usual-bar[data-state="off"] { opacity: 0.35; }
+.dds-banded .usual-bar[data-state="off"] { opacity: 0.55; }
+.dds-band {
+  position: absolute;
+  top: 24px;
+  height: 56px;
+  border-radius: 8px;
+  background: var(--teal-soft);
+  opacity: 0.65;
+}
+.dds-hollow .usual-bar { background: var(--line-2); }
+.dds-hollow .usual-bar[data-state="off"] {
+  background: transparent;
+  border: 1px solid var(--line-2);
+  border-bottom-width: 2px;
+}
+
 /* ── C3 · hours strip: today's open window as a timeline ── */
 .dds-strip-wrap { position: relative; margin: 4px 0 22px; padding-top: 8px; }
 .dds-strip {

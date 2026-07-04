@@ -58,20 +58,33 @@ function MiniWave({ tone, ghost = false }: { tone: string; ghost?: boolean }) {
   );
 }
 
+const CHART_CLASS: Record<string, string> = {
+  normal: "",
+  dimmed: " dds-dimmed",
+  band: " dds-dimmed dds-banded",
+  hollow: " dds-hollow",
+  ghost: " dds-ghost",
+};
+
 function Chart({
   mode,
   note,
 }: {
-  mode: "normal" | "dimmed" | "ghost" | "ghost-quiet";
+  mode: "normal" | "dimmed" | "band" | "hollow" | "ghost";
   note?: string;
 }) {
+  const offHours = (i: number) => i < OPEN_HOUR || i >= 20;
   return (
     <>
       <h4 className="drawer-section-label usual-label">Typical day</h4>
-      <div
-        className={`usual-wrap${mode === "dimmed" ? " dds-dimmed" : mode.startsWith("ghost") ? " dds-ghost" : ""}`}
-        data-sev={mode === "normal" ? "medium" : undefined}
-      >
+      <div className={`usual-wrap${CHART_CLASS[mode]}`} data-sev={mode === "normal" ? "medium" : undefined}>
+        {mode === "band" && (
+          <span
+            className="dds-band"
+            style={{ left: `${(OPEN_HOUR / 24) * 100}%`, width: `${((20 - OPEN_HOUR) / 24) * 100}%` }}
+            aria-hidden="true"
+          />
+        )}
         <div className="usual-row">
           {TYPICAL.map((h, i) => (
             <div key={i} className="usual-slot">
@@ -80,8 +93,8 @@ function Chart({
                 data-state={
                   mode === "normal"
                     ? (i < NOW_HOUR ? "past" : i === NOW_HOUR ? "now" : undefined)
-                    : mode === "dimmed"
-                      ? (i < OPEN_HOUR || i >= 20 ? "past" : undefined)
+                    : mode === "dimmed" || mode === "hollow"
+                      ? (offHours(i) ? "off" : undefined)
                       : undefined
                 }
                 style={{ height: `${h}%` }}
@@ -178,7 +191,7 @@ export default function DrawerStatesPage() {
 
         <h3 className="dds-state-head">Closed</h3>
         <div className="dds-trio">
-          <Panel tag="CLOSED" tone="derived" title="Edmonds UPCC" kind="upcc">
+          <Panel tag="C1 · MARKER LINE" tone="derived" title="Edmonds UPCC" kind="upcc">
             <div className="wait" data-sev="closed" style={waitBlock}>
               <MiniWave tone="oklch(0.55 0.02 180)" />
               <div className="wait-num dds-num dds-num-closed">Closed</div>
@@ -187,6 +200,28 @@ export default function DrawerStatesPage() {
               </div>
             </div>
             <Chart mode="dimmed" />
+          </Panel>
+
+          <Panel tag="C2 · OPEN-WINDOW BAND" tone="derived" title="Edmonds UPCC" kind="upcc">
+            <div className="wait" data-sev="closed" style={waitBlock}>
+              <MiniWave tone="oklch(0.55 0.02 180)" />
+              <div className="wait-num dds-num dds-num-closed">Closed</div>
+              <div className="wait-label">
+                <span>opens 2:00 p.m.</span>
+              </div>
+            </div>
+            <Chart mode="band" />
+          </Panel>
+
+          <Panel tag="C3 · HOLLOW OFF-HOURS" tone="derived" title="Edmonds UPCC" kind="upcc">
+            <div className="wait" data-sev="closed" style={waitBlock}>
+              <MiniWave tone="oklch(0.55 0.02 180)" />
+              <div className="wait-num dds-num dds-num-closed">Closed</div>
+              <div className="wait-label">
+                <span>opens 2:00 p.m.</span>
+              </div>
+            </div>
+            <Chart mode="hollow" />
           </Panel>
         </div>
 
