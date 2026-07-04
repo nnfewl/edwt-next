@@ -25,6 +25,7 @@ import {
   faList,
   faLocationCrosshairs,
   faLocationDot,
+  faMagnifyingGlass,
   faPhone,
   faStar,
   faStethoscope,
@@ -73,7 +74,8 @@ type IconName =
   | "chevronDown"
   | "gps"
   | "external"
-  | "globe";
+  | "globe"
+  | "search";
 
 const ICONS: Record<IconName, IconDefinition> = {
   pin: faLocationDot,
@@ -94,6 +96,7 @@ const ICONS: Record<IconName, IconDefinition> = {
   gps: faLocationCrosshairs,
   external: faArrowUpRightFromSquare,
   globe: faGlobe,
+  search: faMagnifyingGlass,
 };
 
 const Icon = ({
@@ -481,6 +484,12 @@ type SlidingIndicator = {
   animate: boolean;
 };
 
+function queryMatch(f: Facility, normalizedQuery: string): boolean {
+  if (!normalizedQuery) return true;
+  return [f.name, f.subtitle, f.address, f.addressCity ?? ""]
+    .some((field) => field.toLowerCase().includes(normalizedQuery));
+}
+
 function filterMatch(f: Facility, id: FilterId): boolean {
   switch (id) {
     case "all":
@@ -555,6 +564,8 @@ export function ERNowPageClient({
 }): ReactNode {
   const [filter, setFilter] = useState<FilterId>("all");
   const [sort, setSort] = useState<SortId>("wait");
+  const [query, setQuery] = useState("");
+  const normalizedQuery = query.trim().toLowerCase();
   const [sortSheetOpen, setSortSheetOpen] = useState(false);
   const [selected, setSelected] = useState<Facility | null>(null);
   const filterRowRef = useRef<HTMLDivElement | null>(null);
@@ -785,16 +796,18 @@ export function ERNowPageClient({
   }, [sortSheetOpen]);
 
   const filtered = useMemo(() => {
-    const matched = facilitiesWithDistance.filter((f) => filterMatch(f, filter));
+    const matched = facilitiesWithDistance.filter(
+      (f) => queryMatch(f, normalizedQuery) && filterMatch(f, filter),
+    );
     return sortFacilities(matched, sort);
-  }, [facilitiesWithDistance, filter, sort]);
+  }, [facilitiesWithDistance, filter, sort, normalizedQuery]);
 
   const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE);
   // Reset progressive rendering when the visible set changes. Adjusting state
   // during render (not in an effect) avoids painting a stale list first.
-  const [prevFilterSort, setPrevFilterSort] = useState<[FilterId, SortId]>([filter, sort]);
-  if (prevFilterSort[0] !== filter || prevFilterSort[1] !== sort) {
-    setPrevFilterSort([filter, sort]);
+  const [prevFilterSort, setPrevFilterSort] = useState<[FilterId, SortId, string]>([filter, sort, normalizedQuery]);
+  if (prevFilterSort[0] !== filter || prevFilterSort[1] !== sort || prevFilterSort[2] !== normalizedQuery) {
+    setPrevFilterSort([filter, sort, normalizedQuery]);
     setVisibleCount(INITIAL_VISIBLE);
   }
   useEffect(() => {
@@ -812,10 +825,12 @@ export function ERNowPageClient({
       open: 0,
     };
     for (const { id } of FILTERS) {
-      c[id] = facilitiesWithDistance.filter((f) => filterMatch(f, id)).length;
+      c[id] = facilitiesWithDistance.filter(
+        (f) => queryMatch(f, normalizedQuery) && filterMatch(f, id),
+      ).length;
     }
     return c;
-  }, [facilitiesWithDistance]);
+  }, [facilitiesWithDistance, normalizedQuery]);
 
   // All derived "open right now" values are nullable so a zero-open-facilities
   // state — overnight UPCC closure, regional outage, fresh empty DB — renders
@@ -1041,6 +1056,30 @@ export function ERNowPageClient({
 
         {/* Filter toolbar */}
         <div className="toolbar">
+          <label className="search-box">
+            <span className="search-icon" aria-hidden="true">
+              <Icon name="search" size={13} />
+            </span>
+            <input
+              type="text"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search facility or city"
+              aria-label="Search facilities by name, city, or address"
+              autoComplete="off"
+              enterKeyHint="search"
+            />
+            {query !== "" && (
+              <button
+                type="button"
+                className="search-clear"
+                aria-label="Clear search"
+                onClick={() => setQuery("")}
+              >
+                <Icon name="x" size={12} />
+              </button>
+            )}
+          </label>
           <div
             className={`chip-row${filterIndicator.ready ? " is-ready" : ""}`}
             role="group"
@@ -1173,8 +1212,17 @@ export function ERNowPageClient({
                 borderRadius: "var(--radius)",
               }}
             >
-              No facilities match this filter.
-              <button className="empty-reset" type="button" onClick={() => setFilter("all")}>
+              {normalizedQuery
+                ? <>No facilities match &ldquo;{query.trim()}&rdquo;.</>
+                : "No facilities match this filter."}
+              <button
+                className="empty-reset"
+                type="button"
+                onClick={() => {
+                  setFilter("all");
+                  setQuery("");
+                }}
+              >
                 Show all facilities
               </button>
             </div>
