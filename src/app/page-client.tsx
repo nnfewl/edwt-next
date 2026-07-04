@@ -1056,7 +1056,9 @@ export function ERNowPageClient({
 
         {/* Filter toolbar */}
         <div className="toolbar">
-          <label className="search-box">
+          {/* On mobile the box collapses to an icon circle; focus or a live
+              query expands it over the toolbar row (pure CSS + has-query). */}
+          <label className={`search-box${query !== "" ? " has-query" : ""}`}>
             <span className="search-icon" aria-hidden="true">
               <Icon name="search" size={13} />
             </span>
@@ -1142,10 +1144,11 @@ export function ERNowPageClient({
             type="button"
             aria-haspopup="dialog"
             aria-expanded={sortSheetOpen}
+            aria-label={`Sort facilities — currently ${activeSort.label}`}
             onClick={() => setSortSheetOpen(true)}
           >
             <span className="sort-trigger-icon"><Icon name={activeSort.icon} size={14} /></span>
-            <span>
+            <span className="sort-trigger-copy">
               <small>Sorted by</small>
               <strong>{activeSort.label}</strong>
             </span>
