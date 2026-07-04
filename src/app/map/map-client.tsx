@@ -1015,8 +1015,11 @@ export function MapClient({
               {selectedInTopPressure && (
                 <div className="pressure-note">This site is currently in the top pressure group.</div>
               )}
+              {/* One primary per group: Directions is the filled CTA; Open in
+                  Maps and Call are outlined secondaries; Center map is a ghost
+                  utility. */}
               <div className="selected-actions">
-                <button type="button" onClick={showDirections} disabled={routeLoading}>
+                <button type="button" className="act-primary" onClick={showDirections} disabled={routeLoading}>
                   <FontAwesomeIcon icon={faLocationArrow} aria-hidden="true" />
                   <span>{routeLoading ? "Routing..." : "Directions"}</span>
                 </button>
@@ -1024,6 +1027,7 @@ export function MapClient({
                     navigation — the universal Maps URL opens the installed app on
                     iOS/Android and the website elsewhere. */}
                 <a
+                  className="act-secondary"
                   href={`https://www.google.com/maps/dir/?api=1&destination=${selected.lat},${selected.lng}`}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -1032,16 +1036,16 @@ export function MapClient({
                   <FontAwesomeIcon icon={faArrowUpRightFromSquare} aria-hidden="true" />
                   <span>Open in Maps</span>
                 </a>
-                <button type="button" onClick={() => centerMapOn([selected.lng, selected.lat], 13.2, 650)}>
-                  <FontAwesomeIcon icon={faCrosshairs} aria-hidden="true" />
-                  <span>Center map</span>
-                </button>
                 {selected.phone && (
-                  <a href={"tel:" + selected.phone}>
+                  <a className="act-secondary" href={"tel:" + selected.phone}>
                     <FontAwesomeIcon icon={faPhone} aria-hidden="true" />
                     <span>Call</span>
                   </a>
                 )}
+                <button type="button" className="act-ghost" onClick={() => centerMapOn([selected.lng, selected.lat], 13.2, 650)}>
+                  <FontAwesomeIcon icon={faCrosshairs} aria-hidden="true" />
+                  <span>Center map</span>
+                </button>
               </div>
               {route && (
                 <div className="route-note">

@@ -312,6 +312,7 @@
   flex-wrap: wrap;
 }
 
+/* Tiered actions — one filled primary, outlined secondaries, ghost utility. */
 .selected-actions a,
 .selected-actions button {
   flex: 1 1 110px;
@@ -320,17 +321,47 @@
   justify-content: center;
   gap: 8px;
   min-width: 0;
-  padding: 10px 12px;
-  border: 0;
-  border-radius: 10px;
-  background: var(--ink);
-  color: white;
+  padding: 10px 14px;
+  border: 1px solid transparent;
+  border-radius: 999px;
   text-align: center;
   text-decoration: none;
   font-family: inherit;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 700;
   cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.selected-actions a:focus-visible,
+.selected-actions button:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 2px;
+}
+.selected-actions .act-primary {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: white;
+}
+.selected-actions .act-primary:hover:not(:disabled) {
+  background: color-mix(in oklab, var(--ink) 84%, white);
+  border-color: color-mix(in oklab, var(--ink) 84%, white);
+}
+.selected-actions .act-secondary {
+  background: var(--panel);
+  border-color: var(--line);
+  color: var(--ink);
+}
+.selected-actions .act-secondary:hover {
+  border-color: color-mix(in oklab, var(--ink) 35%, var(--line));
+  background: var(--bg);
+}
+.selected-actions .act-ghost {
+  background: transparent;
+  color: var(--muted);
+}
+.selected-actions .act-ghost:hover {
+  background: var(--bg);
+  color: var(--ink);
 }
 
 .selected-actions svg {
@@ -344,12 +375,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.selected-actions a {
-  border: 1px solid var(--line);
-  background: white;
-  color: var(--ink);
 }
 
 .selected-actions button:disabled {
