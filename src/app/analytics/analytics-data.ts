@@ -184,26 +184,33 @@ async function runQueries() {
       group by 1, 2 order by 2
     `,
     // [7] Median + stddev + evening peak (17-22) + 30d daily sparkline + 7d/14d, per facility, 30d. Feeds 06, 08.
+    // Sparklines come from one grouped pass over the window — a correlated
+    // subquery re-scans each facility's 30 days once per facility.
     sql<{ name: string; type: string; median: number | null; stddev: number | null; evening: number | null; readings: number; spark: number[]; recent7: number | null; prior7: number | null }[]>`
+      with spark as (
+        select location_id, array_agg(round(med)::int order by day) as spark
+        from (select w2.location_id, to_char(w2.observed_at at time zone ${TZ}, 'YYYY-MM-DD') as day,
+                     percentile_cont(0.5) within group (order by w2.wait_time_minutes) as med
+              from wait_time_readings w2 where w2.location_id in ${sql(lmIds)} and w2.has_wait_time
+                and w2.observed_at >= now() - interval '30 days'
+              group by 1, 2) s
+        group by location_id
+      )
       select l.name, l.type,
              percentile_cont(0.5) within group (order by w.wait_time_minutes)::float as median,
              round(stddev_samp(w.wait_time_minutes)::numeric, 1)::float as stddev,
              percentile_cont(0.5) within group (order by w.wait_time_minutes)
                filter (where extract(hour from w.observed_at at time zone ${TZ}) between 17 and 22)::float as evening,
              count(*)::int as readings,
-             (select coalesce(array_agg(round(med)::int order by day), '{}')
-                from (select to_char(w2.observed_at at time zone ${TZ}, 'YYYY-MM-DD') as day,
-                             percentile_cont(0.5) within group (order by w2.wait_time_minutes) as med
-                      from wait_time_readings w2 where w2.location_id = l.id and w2.has_wait_time
-                        and w2.observed_at >= now() - interval '30 days'
-                      group by 1 order by 1) s) as spark,
+             coalesce(s.spark, '{}') as spark,
              percentile_cont(0.5) within group (order by w.wait_time_minutes)
                filter (where w.observed_at >= now() - interval '7 days')::float as recent7,
              percentile_cont(0.5) within group (order by w.wait_time_minutes)
                filter (where w.observed_at >= now() - interval '14 days' and w.observed_at < now() - interval '7 days')::float as prior7
       from locations l join wait_time_readings w on w.location_id = l.id
+      left join spark s on s.location_id = l.id
       where l.id in ${sql(lmIds)} and w.has_wait_time = true and w.wait_time_minutes is not null and w.observed_at >= date_trunc('hour', now()) - interval '30 days'
-      group by l.id, l.name, l.type having count(*) >= 50
+      group by l.id, l.name, l.type, s.spark having count(*) >= 50
       order by median desc nulls last, l.name
     `,
     // [8] Regional daily median (ED), 30d. Feeds 07 calendar + 10 calmest/roughest.
