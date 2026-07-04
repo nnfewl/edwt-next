@@ -2299,6 +2299,119 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Directions chooser — hand off to the user's preferred navigation app.
+   Centered dialog on desktop, bottom sheet on phones; visual grammar mirrors
+   the sort sheet. */
+.er-now-root .dir-sheet-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 140;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(26, 29, 27, 0.4);
+}
+.er-now-root .dir-sheet {
+  width: min(400px, 100%);
+  padding: 8px 10px 12px;
+  border: 1px solid rgba(222, 215, 201, 0.86);
+  border-radius: 26px;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 28px 80px rgba(26, 29, 27, 0.24);
+}
+.er-now-root .dir-sheet-handle {
+  display: none;
+  width: 38px;
+  height: 4px;
+  margin: 4px auto 10px;
+  border-radius: 999px;
+  background: var(--line-2);
+}
+.er-now-root .dir-sheet-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px 6px;
+}
+.er-now-root .dir-sheet-head p {
+  margin: 0;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.er-now-root .dir-sheet-head h2 {
+  margin: 3px 0 0;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+.er-now-root .dir-sheet-close {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+}
+.er-now-root .dir-sheet-options {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 2px 0;
+}
+.er-now-root .dir-option {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) 16px;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 8px 12px;
+  border: 1px solid transparent;
+  border-radius: 16px;
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 14.5px;
+}
+.er-now-root .dir-option:hover {
+  background: var(--bg-2);
+}
+.er-now-root .dir-option-icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: var(--teal-soft);
+  color: var(--teal-ink);
+}
+
+@media (max-width: 760px) {
+  .er-now-root .dir-sheet-scrim {
+    align-items: flex-end;
+    padding: 0;
+  }
+  .er-now-root .dir-sheet {
+    width: 100%;
+    border-radius: 26px 26px 0 0;
+    border-bottom: 0;
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+  .er-now-root .dir-sheet-handle {
+    display: block;
+  }
+  .er-now-root .dir-option {
+    min-height: 60px;
+  }
+}
+
 /* Mobile sort bottom sheet */
 .er-now-root .sort-trigger,
 .er-now-root .sort-sheet-scrim {

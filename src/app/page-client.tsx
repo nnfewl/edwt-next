@@ -12,6 +12,7 @@ import {
   type ReactNode,
 } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faApple, faGoogle, faWaze } from "@fortawesome/free-brands-svg-icons";
 import {
   faArrowUpRightFromSquare,
   faGlobe,
@@ -25,6 +26,7 @@ import {
   faList,
   faLocationCrosshairs,
   faLocationDot,
+  faMapLocationDot,
   faPhone,
   faStar,
   faStethoscope,
@@ -73,7 +75,11 @@ type IconName =
   | "chevronDown"
   | "gps"
   | "external"
-  | "globe";
+  | "globe"
+  | "google"
+  | "apple"
+  | "waze"
+  | "mapView";
 
 const ICONS: Record<IconName, IconDefinition> = {
   pin: faLocationDot,
@@ -94,6 +100,10 @@ const ICONS: Record<IconName, IconDefinition> = {
   gps: faLocationCrosshairs,
   external: faArrowUpRightFromSquare,
   globe: faGlobe,
+  google: faGoogle,
+  apple: faApple,
+  waze: faWaze,
+  mapView: faMapLocationDot,
 };
 
 const Icon = ({
@@ -329,11 +339,13 @@ const WaveBackground = ({
 const FacilityCard = ({
   f,
   onSelect,
+  onDirections,
   nowMs,
   systemicStale,
 }: {
   f: Facility;
   onSelect: (f: Facility) => void;
+  onDirections: (f: Facility) => void;
   /** Client-side clock (null during SSR) so stale flags never mismatch on hydration. */
   nowMs: number | null;
   /** True when the whole feed is paused — the page banner carries the alarm,
@@ -388,15 +400,19 @@ const FacilityCard = ({
         </div>
 
         <div className="actions">
-          <a
+          <button
             className="action-btn primary"
-            href={mapFacilityUrl(f, true)}
+            type="button"
+            aria-haspopup="dialog"
             aria-label={`Directions to ${f.name}`}
             title="Directions"
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDirections(f);
+            }}
           >
             <Icon name="directions" size={14} /> <span className="action-label">Directions</span>
-          </a>
+          </button>
           {f.phone && (
             <a
               className="action-btn call-btn"
@@ -561,6 +577,8 @@ export function ERNowPageClient({
   const [sort, setSort] = useState<SortId>("wait");
   const [sortSheetOpen, setSortSheetOpen] = useState(false);
   const [selected, setSelected] = useState<Facility | null>(null);
+  // Facility whose Directions chooser (Google/Apple/Waze/EDWT map) is open.
+  const [directionsFor, setDirectionsFor] = useState<Facility | null>(null);
   const filterRowRef = useRef<HTMLDivElement | null>(null);
   const sortOptionsRef = useRef<HTMLDivElement | null>(null);
   const filterRefs = useRef<Record<FilterId, HTMLButtonElement | null>>({
@@ -787,6 +805,20 @@ export function ERNowPageClient({
       window.removeEventListener("keydown", onKeyDown);
     };
   }, [sortSheetOpen]);
+
+  useEffect(() => {
+    if (!directionsFor) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setDirectionsFor(null);
+    };
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [directionsFor]);
 
   const filtered = useMemo(() => {
     const matched = facilitiesWithDistance.filter((f) => filterMatch(f, filter));
@@ -1022,14 +1054,16 @@ export function ERNowPageClient({
                   </span>
                 </div>
                 <div className="actions" style={{ marginTop: 20 }}>
-                  <a
+                  <button
                     className="action-btn primary"
-                    href={mapFacilityUrl(shortest, true)}
+                    type="button"
+                    aria-haspopup="dialog"
                     aria-label={`Directions to ${shortest.name}`}
                     title="Directions"
+                    onClick={() => setDirectionsFor(shortest)}
                   >
                     <Icon name="directions" size={14} /> <span className="action-label">Directions</span>
-                  </a>
+                  </button>
                   <button
                     className="action-btn"
                     type="button"
@@ -1193,6 +1227,77 @@ export function ERNowPageClient({
           </div>
         )}
 
+        {directionsFor && (
+          <div className="dir-sheet-scrim" role="presentation" onClick={() => setDirectionsFor(null)}>
+            <section
+              className="dir-sheet"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="dir-sheet-title"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="dir-sheet-handle" aria-hidden="true" />
+              <div className="dir-sheet-head">
+                <div>
+                  <p>Directions to</p>
+                  <h2 id="dir-sheet-title">{directionsFor.name}</h2>
+                </div>
+                <button
+                  type="button"
+                  className="dir-sheet-close"
+                  aria-label="Close directions options"
+                  onClick={() => setDirectionsFor(null)}
+                >
+                  <Icon name="x" size={15} />
+                </button>
+              </div>
+              <div className="dir-sheet-options">
+                <a
+                  className="dir-option"
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${directionsFor.lat},${directionsFor.lng}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setDirectionsFor(null)}
+                >
+                  <span className="dir-option-icon"><Icon name="google" size={16} /></span>
+                  <strong>Google Maps</strong>
+                  <Icon name="external" size={12} />
+                </a>
+                <a
+                  className="dir-option"
+                  href={`https://maps.apple.com/?daddr=${directionsFor.lat},${directionsFor.lng}&dirflg=d`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setDirectionsFor(null)}
+                >
+                  <span className="dir-option-icon"><Icon name="apple" size={16} /></span>
+                  <strong>Apple Maps</strong>
+                  <Icon name="external" size={12} />
+                </a>
+                <a
+                  className="dir-option"
+                  href={`https://waze.com/ul?ll=${directionsFor.lat},${directionsFor.lng}&navigate=yes`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setDirectionsFor(null)}
+                >
+                  <span className="dir-option-icon"><Icon name="waze" size={16} /></span>
+                  <strong>Waze</strong>
+                  <Icon name="external" size={12} />
+                </a>
+                <a
+                  className="dir-option"
+                  href={mapFacilityUrl(directionsFor, true)}
+                  onClick={() => setDirectionsFor(null)}
+                >
+                  <span className="dir-option-icon"><Icon name="mapView" size={16} /></span>
+                  <strong>EDWT map</strong>
+                </a>
+              </div>
+            </section>
+          </div>
+        )}
+
         {/* List */}
         <div className="facility-list">
           {filtered.slice(0, visibleCount).map((f) => (
@@ -1200,6 +1305,7 @@ export function ERNowPageClient({
               key={f.id}
               f={f}
               onSelect={setSelected}
+              onDirections={setDirectionsFor}
               nowMs={now?.getTime() ?? null}
               systemicStale={systemicStale}
             />
