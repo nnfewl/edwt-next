@@ -40,7 +40,6 @@ import {
   isStaleReading,
   severityFor,
 } from "./data";
-import { ClosedIllustration } from "./closed-illustration";
 import type { DetailsDrawerProps } from "./details-drawer-client";
 import { withOriginDistances } from "./geo-distance";
 import { HeroMapBackdrop } from "./hero-map-backdrop";
@@ -440,16 +439,38 @@ const FacilityCard = ({
               <div className="updated">Updated {f.lastUpdated}</div>
             </>
           ) : (
-            <div className="no-data-state">
-              <strong>No data</strong>
-              <span>No wait posted</span>
-            </div>
+            <>
+              <div className="status-line">
+                <b className="st-open">Open</b>
+                <span className="st-dot"> · </span>
+                <span>no posted wait</span>
+              </div>
+              {f.phone ? (
+                <a
+                  className="status-call"
+                  href={`tel:${f.phone}`}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Icon name="phone" size={12} /> Call to check
+                </a>
+              ) : (
+                <div className="status-sub">Call to check current wait</div>
+              )}
+            </>
           )
         ) : (
-          <div className="closed-state">
-            <ClosedIllustration className="closed-illustration closed-hero" />
-            <strong>Closed</strong>
-          </div>
+          <>
+            <div className="status-line">
+              <b className="st-closed">Closed</b>
+              {f.opensAt && (
+                <>
+                  <span className="st-dot"> · </span>
+                  <span>Opens {f.opensAt}</span>
+                </>
+              )}
+            </div>
+            {f.hours !== "Hours vary" && <div className="status-sub">{f.hours} daily</div>}
+          </>
         )}
       </div>
     </article>
@@ -1063,9 +1084,14 @@ export function ERNowPageClient({
                     <div className="updated">Updated {shortest.lastUpdated}</div>
                   </>
                 ) : (
-                  <div className="closed-state">
-                    <ClosedIllustration className="closed-illustration closed-hero" />
-                    <strong>Closed</strong>
+                  <div className="status-line">
+                    <b className="st-closed">Closed</b>
+                    {shortest.opensAt && (
+                      <>
+                        <span className="st-dot"> · </span>
+                        <span>Opens {shortest.opensAt}</span>
+                      </>
+                    )}
                   </div>
                 )}
               </div>

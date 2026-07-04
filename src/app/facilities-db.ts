@@ -1,6 +1,6 @@
 import { client as sharedClient } from "../db/client";
 import { parseAddress } from "@/lib/address";
-import { hoursInfo } from "@/lib/hours";
+import { hoursInfo, nextOpeningLabel } from "@/lib/hours";
 import { parseWaitHistory } from "@/lib/wait-history";
 import { type Facility } from "./data";
 
@@ -87,6 +87,7 @@ function toFacility(row: DbFacilityRow): Facility | null {
     phone: row.phone ?? "",
     website: row.website || undefined,
     hours: hours.label,
+    opensAt: hours.open ? undefined : nextOpeningLabel(row) ?? undefined,
     lastUpdated: formatAge(row.reading_created_at ?? row.observed_at),
     observedAtMs: toEpochMs(row.reading_created_at ?? row.observed_at),
     lat: row.latitude,

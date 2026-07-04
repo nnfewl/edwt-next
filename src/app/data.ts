@@ -16,6 +16,8 @@ export type Facility = {
   phone: string;
   website?: string;
   hours: string;
+  /** "8:00 a.m." / "8:00 a.m. tomorrow" / "8:00 a.m. Mon" — set only while closed. */
+  opensAt?: string;
   lastUpdated: string;
   /** Epoch ms of the latest reading; null when the facility has never reported. */
   observedAtMs: number | null;

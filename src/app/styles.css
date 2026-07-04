@@ -1145,6 +1145,56 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Closed / no-data states — the Maps status grammar: one inline line with a
+   colored status word, plus a quiet secondary line. */
+.er-now-root .wait .status-line {
+  font-size: 16.5px;
+  font-weight: 650;
+  color: var(--ink-2);
+  letter-spacing: -0.005em;
+}
+.er-now-root .wait .status-line .st-closed {
+  color: var(--red);
+  font-weight: 800;
+}
+.er-now-root .wait .status-line .st-open {
+  color: var(--green);
+  font-weight: 800;
+}
+.er-now-root .wait .status-sub {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.er-now-root .wait .status-call {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--teal);
+  text-decoration: none;
+}
+.er-now-root .wait .status-call:hover {
+  text-decoration: underline;
+}
+@media (max-width: 760px) {
+  /* Stack the grammar into short right-aligned lines so long facility names
+     keep to two lines. */
+  .er-now-root .wait .status-line {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 1px;
+    font-size: 14.5px;
+  }
+  .er-now-root .wait .status-line .st-dot {
+    display: none;
+  }
+  .er-now-root .wait .status-sub {
+    font-size: 11.5px;
+  }
+}
+
 .er-now-root .distance-pill {
   display: inline-flex;
   align-items: center;
@@ -2728,25 +2778,23 @@
   font-size: 24px;
 }
 
-.er-now-root .facility .wait.is-closed {
+/* Card closed/no-data: Maps grammar is right-aligned text, not a centered
+   illustration — override the drawer-era centering. */
+.er-now-root .facility .wait.is-closed,
+.er-now-root .facility .wait.is-no-data,
+.er-now-root .best-pick .wait.is-closed {
   min-width: 150px;
   padding-left: 18px;
-}
-
-.er-now-root .facility .wait.is-closed .closed-hero {
-  width: 122px;
-  height: 122px;
+  align-items: flex-end;
+  justify-content: center;
+  text-align: right;
+  gap: 6px;
 }
 
 @media (max-width: 760px) {
   .er-now-root .facility .wait.is-closed {
     min-width: 92px;
     padding: 6px;
-  }
-
-  .er-now-root .facility .wait.is-closed .closed-hero {
-    width: 84px;
-    height: 84px;
   }
 
   .er-now-root .facility .closed-state strong {
