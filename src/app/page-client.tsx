@@ -440,36 +440,26 @@ const FacilityCard = ({
             </>
           ) : (
             <>
-              <div className="status-line">
-                <b className="st-open">Open</b>
-                <span className="st-dot"> · </span>
-                <span>no posted wait</span>
-              </div>
+              <div className="wait-num">No data</div>
               {f.phone ? (
                 <a
                   className="status-call"
                   href={`tel:${f.phone}`}
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <Icon name="phone" size={12} /> Call to check
+                  call to check
                 </a>
               ) : (
-                <div className="status-sub">Call to check current wait</div>
+                <div className="status-sub">no wait posted</div>
               )}
             </>
           )
         ) : (
           <>
-            <div className="status-line">
-              <b className="st-closed">Closed</b>
-              {f.opensAt && (
-                <>
-                  <span className="st-dot"> · </span>
-                  <span>Opens {f.opensAt}</span>
-                </>
-              )}
+            <div className="wait-num">Closed</div>
+            <div className="status-sub">
+              {f.opensAt ? `opens ${f.opensAt}` : f.hours !== "Hours vary" ? f.hours : "hours vary"}
             </div>
-            {f.hours !== "Hours vary" && <div className="status-sub">{f.hours} daily</div>}
           </>
         )}
       </div>
@@ -1084,15 +1074,10 @@ export function ERNowPageClient({
                     <div className="updated">Updated {shortest.lastUpdated}</div>
                   </>
                 ) : (
-                  <div className="status-line">
-                    <b className="st-closed">Closed</b>
-                    {shortest.opensAt && (
-                      <>
-                        <span className="st-dot"> · </span>
-                        <span>Opens {shortest.opensAt}</span>
-                      </>
-                    )}
-                  </div>
+                  <>
+                    <div className="wait-num">Closed</div>
+                    {shortest.opensAt && <div className="status-sub">opens {shortest.opensAt}</div>}
+                  </>
                 )}
               </div>
             </div>
