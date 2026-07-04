@@ -278,3 +278,15 @@
   .dds-wave { height: 60px; bottom: 12px; }
   .dds-page .wait-label { font-size: 12px; flex-wrap: wrap; }
 }
+
+/* C4 · stub: off-hours reduced to baseline ticks. */
+.dds-stub .usual-bar[data-state="off"] {
+  height: 4px !important;
+  opacity: 0.6;
+}
+/* C5 · all hollow: whole chart inactive while closed. */
+.dds-allhollow .usual-bar {
+  background: transparent;
+  border: 1px solid var(--line-2);
+  border-bottom-width: 2px;
+}
