@@ -28,32 +28,54 @@ function HourLabels() {
   );
 }
 
-function MiniWave({ tone, ghost = false }: { tone: string; ghost?: boolean }) {
+type WaveMode = "normal" | "grey" | "flat" | "fade" | "ghost";
+
+const WAVE_D = "M0 74 C 40 70, 70 58, 110 56 S 190 66, 230 58 S 320 34, 360 30 L 400 26";
+const WAVE_AREA = `${WAVE_D} L 400 90 L 0 90 Z`;
+// Flatline: the day's activity sits at zero while doors are shut.
+const FLAT_D = "M0 80 L 400 80";
+const FLAT_AREA = `${FLAT_D} L 400 90 L 0 90 Z`;
+
+function MiniWave({ tone, mode = "normal" }: { tone: string; mode?: WaveMode }) {
+  const flat = mode === "flat";
+  const line = flat ? FLAT_D : WAVE_D;
+  const area = flat ? FLAT_AREA : WAVE_AREA;
   return (
     <svg className="dds-wave" viewBox="0 0 400 90" preserveAspectRatio="none" aria-hidden="true">
-      {ghost && (
-        <defs>
-          {/* Diagonal hatch — the standard "no data here" fill. */}
+      <defs>
+        {mode === "ghost" && (
+          /* Diagonal hatch — the standard "no data here" fill. */
           <pattern id="dds-hatch" width="7" height="7" patternTransform="rotate(-45)" patternUnits="userSpaceOnUse">
             <rect width="7" height="7" fill="none" />
             <line x1="0" y1="0" x2="0" y2="7" stroke={tone} strokeWidth="1.6" opacity="0.22" />
           </pattern>
-        </defs>
-      )}
-      <path
-        d="M0 74 C 40 70, 70 58, 110 56 S 190 66, 230 58 S 320 34, 360 30 L 400 26 L 400 90 L 0 90 Z"
-        fill={ghost ? "url(#dds-hatch)" : tone}
-        opacity={ghost ? 1 : 0.16}
-      />
-      <path
-        d="M0 74 C 40 70, 70 58, 110 56 S 190 66, 230 58 S 320 34, 360 30 L 400 26"
-        fill="none"
-        stroke={tone}
-        strokeWidth="1.6"
-        strokeDasharray={ghost ? "4 6" : undefined}
-        strokeLinecap="round"
-        opacity={ghost ? 0.5 : 0.45}
-      />
+        )}
+        {mode === "fade" && (
+          /* Activity trailing off toward "now" — fades to nothing at the right. */
+          <linearGradient id="dds-fade" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="#fff" stopOpacity="1" />
+            <stop offset="78%" stopColor="#fff" stopOpacity="0.35" />
+            <stop offset="100%" stopColor="#fff" stopOpacity="0" />
+          </linearGradient>
+          )}
+        {mode === "fade" && <mask id="dds-fade-mask"><rect width="400" height="90" fill="url(#dds-fade)" /></mask>}
+      </defs>
+      <g mask={mode === "fade" ? "url(#dds-fade-mask)" : undefined}>
+        <path
+          d={area}
+          fill={mode === "ghost" ? "url(#dds-hatch)" : tone}
+          opacity={mode === "ghost" ? 1 : 0.16}
+        />
+        <path
+          d={line}
+          fill="none"
+          stroke={tone}
+          strokeWidth="1.6"
+          strokeDasharray={mode === "ghost" ? "4 6" : undefined}
+          strokeLinecap="round"
+          opacity={mode === "ghost" ? 0.5 : 0.45}
+        />
+      </g>
     </svg>
   );
 }
@@ -62,6 +84,7 @@ const CHART_CLASS: Record<string, string> = {
   normal: "",
   dimmed: " dds-dimmed",
   band: " dds-dimmed dds-banded",
+  plain: " dds-dimmed",
   hollow: " dds-hollow",
   ghost: " dds-ghost",
 };
@@ -70,7 +93,7 @@ function Chart({
   mode,
   note,
 }: {
-  mode: "normal" | "dimmed" | "band" | "hollow" | "ghost";
+  mode: "normal" | "plain" | "dimmed" | "band" | "hollow" | "ghost";
   note?: string;
 }) {
   const offHours = (i: number) => i < OPEN_HOUR || i >= 20;
@@ -189,11 +212,47 @@ export default function DrawerStatesPage() {
           </Panel>
         </div>
 
-        <h3 className="dds-state-head">Closed</h3>
+        <h3 className="dds-state-head">Closed — wave</h3>
+        <div className="dds-trio">
+          <Panel tag="W1 · GREY" tone="derived" title="Edmonds UPCC" kind="upcc">
+            <div className="wait" data-sev="closed" style={waitBlock}>
+              <MiniWave tone="oklch(0.55 0.02 180)" mode="grey" />
+              <div className="wait-num dds-num dds-num-closed">Closed</div>
+              <div className="wait-label">
+                <span>opens 2:00 p.m.</span>
+              </div>
+            </div>
+            <Chart mode="plain" />
+          </Panel>
+
+          <Panel tag="W2 · FLATLINE" tone="derived" title="Edmonds UPCC" kind="upcc">
+            <div className="wait" data-sev="closed" style={waitBlock}>
+              <MiniWave tone="oklch(0.55 0.02 180)" mode="flat" />
+              <div className="wait-num dds-num dds-num-closed">Closed</div>
+              <div className="wait-label">
+                <span>opens 2:00 p.m.</span>
+              </div>
+            </div>
+            <Chart mode="plain" />
+          </Panel>
+
+          <Panel tag="W3 · FADE-OUT" tone="derived" title="Edmonds UPCC" kind="upcc">
+            <div className="wait" data-sev="closed" style={waitBlock}>
+              <MiniWave tone="oklch(0.55 0.02 180)" mode="fade" />
+              <div className="wait-num dds-num dds-num-closed">Closed</div>
+              <div className="wait-label">
+                <span>opens 2:00 p.m.</span>
+              </div>
+            </div>
+            <Chart mode="plain" />
+          </Panel>
+        </div>
+
+        <h3 className="dds-state-head">Closed — chart</h3>
         <div className="dds-trio">
           <Panel tag="C1 · MARKER LINE" tone="derived" title="Edmonds UPCC" kind="upcc">
             <div className="wait" data-sev="closed" style={waitBlock}>
-              <MiniWave tone="oklch(0.55 0.02 180)" />
+              <MiniWave tone="oklch(0.55 0.02 180)" mode="grey" />
               <div className="wait-num dds-num dds-num-closed">Closed</div>
               <div className="wait-label">
                 <span>opens 2:00 p.m.</span>
@@ -204,7 +263,7 @@ export default function DrawerStatesPage() {
 
           <Panel tag="C2 · OPEN-WINDOW BAND" tone="derived" title="Edmonds UPCC" kind="upcc">
             <div className="wait" data-sev="closed" style={waitBlock}>
-              <MiniWave tone="oklch(0.55 0.02 180)" />
+              <MiniWave tone="oklch(0.55 0.02 180)" mode="grey" />
               <div className="wait-num dds-num dds-num-closed">Closed</div>
               <div className="wait-label">
                 <span>opens 2:00 p.m.</span>
@@ -215,7 +274,7 @@ export default function DrawerStatesPage() {
 
           <Panel tag="C3 · HOLLOW OFF-HOURS" tone="derived" title="Edmonds UPCC" kind="upcc">
             <div className="wait" data-sev="closed" style={waitBlock}>
-              <MiniWave tone="oklch(0.55 0.02 180)" />
+              <MiniWave tone="oklch(0.55 0.02 180)" mode="grey" />
               <div className="wait-num dds-num dds-num-closed">Closed</div>
               <div className="wait-label">
                 <span>opens 2:00 p.m.</span>
@@ -229,7 +288,7 @@ export default function DrawerStatesPage() {
         <div className="dds-trio">
           <Panel tag="NO DATA" tone="derived" title="Langley Memorial Hospital">
             <div className="wait" data-sev="closed" style={waitBlock}>
-              <MiniWave tone="oklch(0.55 0.02 180)" ghost />
+              <MiniWave tone="oklch(0.55 0.02 180)" mode="ghost" />
               <div className="wait-num dds-num dds-num-closed">No data</div>
               <NoDataLabel />
             </div>
