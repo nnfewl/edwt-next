@@ -1,0 +1,133 @@
+/* Dev-only styles for /dev/drawer-states. The drawer chrome + usual-* chart
+   come from production styles.css; this file only lays out the comparison
+   and adds the two proposed empty-state treatments. */
+
+.dds-page { padding-top: 34px; }
+.dds-title {
+  font-family: var(--font-fraunces), Fraunces, Georgia, serif;
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 0 0 8px;
+}
+.dds-sub { color: var(--muted); font-size: 14.5px; line-height: 1.55; max-width: 72ch; margin: 0 0 8px; }
+.dds-sub b { color: var(--ink-2); }
+.dds-state-head {
+  font-family: var(--font-fraunces), Fraunces, Georgia, serif;
+  font-size: 21px;
+  font-weight: 600;
+  margin: 40px 0 14px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+}
+.dds-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
+@media (max-width: 900px) { .dds-pair { grid-template-columns: 1fr; } }
+
+.dds-panel-tag {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.dds-panel-wrap.proposed .dds-panel-tag { color: var(--teal); }
+
+/* Render the drawer panel inline instead of as a fixed sheet. */
+.dds-page .drawer-panel {
+  height: auto;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: var(--shadow-md);
+  padding: 24px 26px 20px;
+}
+.dds-panel-wrap.proposed .drawer-panel {
+  border-color: color-mix(in oklab, var(--teal) 35%, var(--line));
+}
+
+.dds-void {
+  border: 1px dashed var(--line-2);
+  border-radius: 12px;
+  padding: 26px 16px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 12.5px;
+  margin-top: 10px;
+}
+
+/* ── proposed · closed: real typical-day shape, dimmed, reopen marker ── */
+.dds-dimmed { padding-top: 30px; }
+.dds-dimmed .usual-bar { background: var(--line-2); }
+.dds-dimmed .usual-bar[data-state="past"] { opacity: 0.35; }
+.dds-open-marker {
+  position: absolute;
+  top: 2px;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: var(--teal);
+  white-space: nowrap;
+}
+.dds-open-marker i {
+  display: block;
+  width: 2px;
+  height: 62px;
+  border-radius: 2px;
+  background: color-mix(in oklab, var(--teal) 55%, transparent);
+}
+
+/* ── proposed · no-data: ghost chart frame + message inside it ── */
+.dds-ghost .usual-bar {
+  background: var(--line);
+  opacity: 0.55;
+  border-radius: 3px 3px 1px 1px;
+}
+.dds-ghost .usual-row {
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.25));
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.25));
+}
+.dds-ghost-overlay {
+  position: absolute;
+  inset: 26px 0 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  text-align: center;
+}
+.dds-ghost-overlay strong {
+  font-size: 13px;
+  font-weight: 750;
+  color: var(--ink-2);
+  background: color-mix(in oklab, var(--surface) 88%, transparent);
+  border-radius: 8px;
+  padding: 1px 8px;
+}
+.dds-ghost-overlay span {
+  font-size: 11.5px;
+  color: var(--muted);
+  background: color-mix(in oklab, var(--surface) 88%, transparent);
+  border-radius: 8px;
+  padding: 1px 8px;
+}
+
+.dds-foot {
+  margin-top: 36px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 12.5px;
+  max-width: 80ch;
+}
+
+@media (max-width: 640px) {
+  .dds-page { padding-top: 22px; }
+  .dds-title { font-size: 24px; }
+  .dds-state-head { font-size: 18px; margin-top: 30px; }
+  .dds-page .drawer-panel { padding: 18px 16px 14px; }
+}
