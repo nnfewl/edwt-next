@@ -116,7 +116,7 @@ export default function DrawerStatesPage() {
           <Panel tag="NORMAL · HAS DATA (reference)" tone="ref" title="Squamish General Hospital">
             <div className="wait" data-sev="medium" style={waitBlock}>
               <MiniWave tone="oklch(0.65 0.14 70)" />
-              <div className="wait-num" style={{ fontSize: 58 }}>1h 12m</div>
+              <div className="wait-num dds-num">1h 12m</div>
               <div className="wait-label">
                 <span className="sev-dot" />
                 Moderate wait · updated 4 min ago
@@ -144,7 +144,7 @@ export default function DrawerStatesPage() {
           <Panel tag="CLOSED (derived)" tone="derived" title="Edmonds UPCC" kind="upcc">
             <div className="wait" data-sev="closed" style={waitBlock}>
               <MiniWave tone="oklch(0.55 0.02 180)" />
-              <div className="wait-num dds-num-closed" style={{ fontSize: 58 }}>2:00 p.m.</div>
+              <div className="wait-num dds-num dds-num-closed">2:00 p.m.</div>
               <div className="wait-label">
                 <b className="st-closed">Closed</b>
                 <span>&nbsp;· reopens 2:00 p.m. · daily 2–8 p.m.</span>
@@ -174,7 +174,7 @@ export default function DrawerStatesPage() {
           {/* ── NO DATA (derived) ── */}
           <Panel tag="NO DATA (derived)" tone="derived" title="Langley Memorial Hospital">
             <div className="wait" data-sev="closed" style={waitBlock}>
-              <div className="wait-num dds-num-ghost" style={{ fontSize: 58 }}>&mdash;&mdash;</div>
+              <div className="wait-num dds-num dds-num-ghost">&mdash;&mdash;</div>
               <div className="wait-label">
                 <b className="st-open">Open</b>
                 <span>&nbsp;· no posted wait ·&nbsp;</span>
@@ -202,7 +202,7 @@ export default function DrawerStatesPage() {
 
         <p className="dds-foot">
           Every panel keeps the same four slots — number, wave region, label, typical-day chart —
-          so switching facility states never changes the drawer&rsquo;s silhouette.
+          so switching facility states never changes the drawer&rsquo;s silhouette. Note: production currently hides the typical-day chart on phones — this page forces it visible so the treatments can be reviewed on mobile; on the real mobile drawer the states reduce to the number + label slots, which still match.
         </p>
       </main>
     </div>

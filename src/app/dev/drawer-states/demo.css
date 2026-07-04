@@ -43,6 +43,12 @@
   pointer-events: none;
 }
 
+/* Shared number-slot sizing (desktop 58px, mobile smaller + no wrap). */
+.dds-page .wait-num.dds-num {
+  font-size: 58px;
+  white-space: nowrap;
+}
+
 /* Derived number slots: reopen time in quiet ink, no-data as ghost dashes. */
 .dds-num-closed { color: var(--ink-2); }
 .dds-num-ghost { color: var(--line-2); letter-spacing: -0.04em; }
@@ -134,9 +140,19 @@
   max-width: 80ch;
 }
 
+@media (max-width: 760px) {
+  /* Production hides the typical-day chart on phones; the demo forces it
+     visible so the treatments can be reviewed from a mobile device. */
+  .er-now-root .dds-page .usual-wrap { display: block; }
+  .er-now-root .dds-page .usual-label { display: block; }
+}
+
 @media (max-width: 640px) {
   .dds-page { padding-top: 22px; }
   .dds-title { font-size: 24px; }
   .dds-state-head { font-size: 18px; margin-top: 30px; }
   .dds-page .drawer-panel { padding: 18px 16px 14px; }
+  .dds-page .wait-num.dds-num { font-size: 38px; }
+  .dds-wave { height: 60px; bottom: 12px; }
+  .dds-page .wait-label { font-size: 12px; flex-wrap: wrap; }
 }
