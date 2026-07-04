@@ -17,11 +17,25 @@ export type Facility = {
   website?: string;
   hours: string;
   lastUpdated: string;
+  /** Epoch ms of the latest reading; null when the facility has never reported. */
+  observedAtMs: number | null;
   lat: number;
   lng: number;
   open: boolean;
   history?: HistoryPoint[];
 };
+
+// A reading older than this renders as "stale" instead of live. Deliberately
+// looser than the ~minutely metro cadence: sparse rural EDs post roughly
+// hourly and can go silent for a while overnight (see GAP_SPLIT_MIN).
+export const STALE_READING_MS = 90 * 60_000;
+
+export function isStaleReading(
+  observedAtMs: number | null | undefined,
+  nowMs: number,
+): boolean {
+  return observedAtMs != null && nowMs - observedAtMs > STALE_READING_MS;
+}
 
 export type Severity = "short" | "medium" | "long" | "closed";
 

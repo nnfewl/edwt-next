@@ -1108,6 +1108,36 @@
   background: var(--muted);
 }
 
+/* Stale readings: keep the number but strip the "live" severity color so a
+   day-old wait can't masquerade as current. Applied client-side only, after
+   the reading passes STALE_READING_MS (data.ts). */
+.er-now-root .wait[data-stale] .wait-num {
+  color: var(--muted);
+}
+.er-now-root .wait[data-stale] .sev-dot {
+  background: var(--muted);
+}
+.er-now-root .wait[data-stale] .wait-label {
+  color: var(--muted);
+}
+.er-now-root .wait[data-stale] .updated {
+  color: var(--amber);
+  font-weight: 650;
+}
+/* Feed-wide pause: the page banner carries the alarm, so per-card
+   timestamps stay quiet. */
+.er-now-root .wait[data-stale="systemic"] .updated {
+  color: var(--muted);
+  font-weight: inherit;
+}
+
+.er-now-root .info-banner.stale-banner {
+  background: var(--amber-soft);
+  border-color: color-mix(in oklab, var(--amber) 25%, transparent);
+}
+.er-now-root .info-banner.stale-banner .ico {
+  background: var(--amber);
+}
 
 .er-now-root .updated {
   font-size: 11.5px;
@@ -1898,8 +1928,17 @@
     border-block: 1px solid var(--line);
     backdrop-filter: blur(10px);
   }
+  /* Single-row toolbar: [chip strip][compact sort pill]. */
+  .er-now-root .toolbar {
+    flex-wrap: nowrap;
+    gap: 8px;
+  }
+  .er-now-root .spacer-flex {
+    display: none;
+  }
   .er-now-root .chip-row {
-    width: 100%;
+    flex: 1 1 auto;
+    min-width: 0;
     overflow-x: auto;
     border-radius: 14px;
     scrollbar-width: none;
@@ -2278,20 +2317,24 @@
   .er-now-root .sort-control {
     display: none;
   }
+  /* Compact: icon tile + chevron only; the current sort is announced via
+     aria-label and visible inside the bottom sheet. */
   .er-now-root .sort-trigger {
-    width: 100%;
-    min-height: 52px;
-    display: grid;
-    grid-template-columns: 34px minmax(0, 1fr) 18px;
+    flex: 0 0 auto;
+    min-height: 42px;
+    display: inline-flex;
     align-items: center;
-    gap: 10px;
-    padding: 8px 12px;
+    gap: 6px;
+    padding: 3px 10px 3px 4px;
     border: 1px solid var(--line);
-    border-radius: 16px;
+    border-radius: 999px;
     background: rgba(255, 255, 255, 0.9);
     color: var(--ink);
     box-shadow: 0 8px 22px rgba(26, 29, 27, 0.06);
     text-align: left;
+  }
+  .er-now-root .sort-trigger .sort-trigger-copy {
+    display: none;
   }
   .er-now-root .sort-trigger-icon {
     width: 34px;
@@ -3088,13 +3131,13 @@
     transform: translateY(16px);
   }
 
-  /* ---- Filter / sort toolbar: scroll strip + compact sort below ---- */
+  /* ---- Filter / sort toolbar: ONE row — [search circle][chip strip][sort] ---- */
   .er-now-root .toolbar {
     position: sticky;
     top: calc(43px + env(safe-area-inset-top));
     z-index: 35;
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: center;
     gap: 8px;
     margin: 0 -16px 16px;
@@ -3110,7 +3153,8 @@
     display: none;
   }
   .er-now-root .toolbar .chip-row {
-    width: 100%;
+    flex: 1 1 auto;
+    min-width: 0;
     display: flex;
     flex-wrap: nowrap;
     overflow-x: auto;

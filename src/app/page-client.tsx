@@ -37,6 +37,7 @@ import {
   type Facility,
   type HistoryPoint,
   facilityWaitStatusLabel,
+  isStaleReading,
   severityFor,
 } from "./data";
 import { ClosedIllustration } from "./closed-illustration";
@@ -328,13 +329,21 @@ const WaveBackground = ({
 const FacilityCard = ({
   f,
   onSelect,
+  nowMs,
+  systemicStale,
 }: {
   f: Facility;
   onSelect: (f: Facility) => void;
+  /** Client-side clock (null during SSR) so stale flags never mismatch on hydration. */
+  nowMs: number | null;
+  /** True when the whole feed is paused — the page banner carries the alarm,
+      so cards calm down to "Last known wait" instead of 41× "Stale reading". */
+  systemicStale?: boolean;
 }) => {
   const sev = severityFor(f.waitMin);
   const sevLabel = facilityWaitStatusLabel(f);
   const hasWaitData = f.waitMin != null;
+  const stale = f.open && hasWaitData && nowMs != null && isStaleReading(f.observedAtMs, nowMs);
   const isEm = f.type === "Emergency";
 
   return (
@@ -417,6 +426,7 @@ const FacilityCard = ({
       <div
         className={"wait " + (!f.open ? "is-closed" : !hasWaitData ? "is-no-data" : "")}
         data-sev={sev}
+        data-stale={stale ? (systemicStale ? "systemic" : "isolated") : undefined}
         aria-label={!f.open ? f.name + " is closed" : !hasWaitData ? f.name + " has no posted wait data" : undefined}
       >
         {f.open ? (
@@ -425,7 +435,7 @@ const FacilityCard = ({
               <div className="wait-num">{f.waitText}</div>
               <div className="wait-label">
                 <span className="sev-dot" />
-                {sevLabel}
+                {stale ? (systemicStale ? "Last known wait" : "Stale reading") : sevLabel}
               </div>
               <div className="updated">Updated {f.lastUpdated}</div>
             </>
@@ -839,6 +849,20 @@ export function ERNowPageClient({
     return Math.round(total / openWaitFacilities.length);
   }, [openWaitFacilities]);
 
+  // Feed-wide pause detection: when (nearly) every reporting facility is
+  // stale, the problem is systemic — one banner explains it and the cards
+  // calm down to "Last known wait" instead of repeating "Stale reading".
+  const staleFeedAgeMin = useMemo(() => {
+    if (!now || openWaitFacilities.length < 3) return null;
+    const nowMs = now.getTime();
+    const staleCount = openWaitFacilities.filter((f) => isStaleReading(f.observedAtMs, nowMs)).length;
+    if (staleCount / openWaitFacilities.length < 0.8) return null;
+    const newest = Math.max(...openWaitFacilities.map((f) => f.observedAtMs ?? 0));
+    if (newest <= 0) return null;
+    return Math.round((nowMs - newest) / 60_000);
+  }, [openWaitFacilities, now]);
+  const systemicStale = staleFeedAgeMin != null;
+
   return (
     <div className="er-now-root">
       <main className="page">
@@ -900,6 +924,18 @@ export function ERNowPageClient({
             <a href="tel:811">8-1-1</a> to reach a registered nurse 24/7.
           </div>
         </div>
+
+        {/* Feed-wide staleness banner — carries the alarm once so the cards don't have to */}
+        {staleFeedAgeMin != null && (
+          <div className="info-banner stale-banner" role="status">
+            <span className="ico"><Icon name="clock" size={13} /></span>
+            <div className="b-body">
+              <strong>Live updates are paused.</strong>{" "}
+              No new readings have arrived for {fmtMins(staleFeedAgeMin)} — the times below
+              are the last known values, not current waits. Call ahead to confirm before you go.
+            </div>
+          </div>
+        )}
 
         {/* Stats — only meaningful when at least one facility is open */}
         {shortest && closestOpen && avgWait != null ? (
@@ -1005,13 +1041,24 @@ export function ERNowPageClient({
                   </button>
                 </div>
               </div>
-              <div className={"wait " + (!shortest.open ? "is-closed" : "")} data-sev={severityFor(shortest.waitMin)} aria-label={shortest.open ? undefined : shortest.name + " is closed"}>
+              <div
+                className={"wait " + (!shortest.open ? "is-closed" : "")}
+                data-sev={severityFor(shortest.waitMin)}
+                data-stale={
+                  now != null && isStaleReading(shortest.observedAtMs, now.getTime())
+                    ? (systemicStale ? "systemic" : "isolated")
+                    : undefined
+                }
+                aria-label={shortest.open ? undefined : shortest.name + " is closed"}
+              >
                 {shortest.open ? (
                   <>
                     <div className="wait-num">{shortest.waitText}</div>
                     <div className="wait-label">
                       <span className="sev-dot" />
-                      {facilityWaitStatusLabel(shortest)}
+                      {now != null && isStaleReading(shortest.observedAtMs, now.getTime())
+                        ? (systemicStale ? "Last known wait" : "Stale reading")
+                        : facilityWaitStatusLabel(shortest)}
                     </div>
                     <div className="updated">Updated {shortest.lastUpdated}</div>
                   </>
@@ -1090,10 +1137,11 @@ export function ERNowPageClient({
             type="button"
             aria-haspopup="dialog"
             aria-expanded={sortSheetOpen}
+            aria-label={`Sort facilities — currently ${activeSort.label}`}
             onClick={() => setSortSheetOpen(true)}
           >
             <span className="sort-trigger-icon"><Icon name={activeSort.icon} size={14} /></span>
-            <span>
+            <span className="sort-trigger-copy">
               <small>Sorted by</small>
               <strong>{activeSort.label}</strong>
             </span>
@@ -1148,7 +1196,13 @@ export function ERNowPageClient({
         {/* List */}
         <div className="facility-list">
           {filtered.slice(0, visibleCount).map((f) => (
-            <FacilityCard key={f.id} f={f} onSelect={setSelected} />
+            <FacilityCard
+              key={f.id}
+              f={f}
+              onSelect={setSelected}
+              nowMs={now?.getTime() ?? null}
+              systemicStale={systemicStale}
+            />
           ))}
           {filtered.length === 0 && (
             <div

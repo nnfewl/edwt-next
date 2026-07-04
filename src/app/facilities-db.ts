@@ -45,6 +45,14 @@ function formatWait(minutes: number | null, showWaitTimes: boolean | null, open:
   return Math.round(minutes) + "m";
 }
 
+// NOTE: despite DbFacilityRow's `Date` typing, postgres.js hands timestamp
+// columns over as strings — always coerce via `new Date(...)` before math.
+function toEpochMs(value: Date | null): number | null {
+  if (!value) return null;
+  const ms = new Date(value).getTime();
+  return Number.isFinite(ms) ? ms : null;
+}
+
 function formatAge(value: Date | null): string {
   if (!value) return "not available";
   const diffMs = Date.now() - new Date(value).getTime();
@@ -80,6 +88,7 @@ function toFacility(row: DbFacilityRow): Facility | null {
     website: row.website || undefined,
     hours: hours.label,
     lastUpdated: formatAge(row.reading_created_at ?? row.observed_at),
+    observedAtMs: toEpochMs(row.reading_created_at ?? row.observed_at),
     lat: row.latitude,
     lng: row.longitude,
     open: hours.open,

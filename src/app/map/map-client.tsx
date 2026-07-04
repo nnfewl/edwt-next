@@ -513,6 +513,9 @@ export function MapClient({
   const [routeLoading, setRouteLoading] = useState(false);
   const [locating, setLocating] = useState(false);
   const [mapUnavailable, setMapUnavailable] = useState<string | null>(null);
+  // Bumped by the fallback's Retry button; the init effect keys off it so a
+  // retry tears the old map down and rebuilds from scratch.
+  const [mapEpoch, setMapEpoch] = useState(0);
   const [routeError, setRouteError] = useState<string | null>(null);
   // Mobile: the card/rail overlay covers the top of the canvas, so the loading
   // pin must center in the visible region below it — same idea as mobileMapOffset.
@@ -583,6 +586,9 @@ export function MapClient({
   }, []);
 
   useEffect(() => {
+    // `mapEpoch` is the retry trigger: bumping it re-runs this effect (the
+    // cleanup below has already torn the previous map down).
+    void mapEpoch;
     if (!mapNode.current || map.current) return;
 
     try {
@@ -681,6 +687,9 @@ export function MapClient({
         });
         markerEventsBound = true;
         window.clearTimeout(readyTimeout);
+        // A slow load may already have tripped the watchdog; loading is not a
+        // one-way door — clear the fallback the moment the map is actually up.
+        setMapUnavailable(null);
         setMapReady(true);
       })();
     };
@@ -703,7 +712,7 @@ export function MapClient({
       map.current?.remove();
       map.current = null;
     };
-  }, []);
+  }, [mapEpoch]);
 
   useEffect(() => {
     const source = map.current?.getSource(FACILITY_SOURCE_ID) as GeoJSONSource | undefined;
@@ -1074,6 +1083,17 @@ export function MapClient({
             <div className="map-fallback" role="status">
               <strong>Map unavailable</strong>
               <span>{mapUnavailable}</span>
+              <button
+                type="button"
+                className="map-fallback-retry"
+                onClick={() => {
+                  setMapUnavailable(null);
+                  setMapReady(false);
+                  setMapEpoch((epoch) => epoch + 1);
+                }}
+              >
+                Retry loading the map
+              </button>
             </div>
           )}
         </div>

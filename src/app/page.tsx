@@ -63,7 +63,9 @@ export default function ERNowPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <AutoRefresh />
+      {/* eslint-disable-next-line react-hooks/purity -- deliberate: stamp the
+          server render time so the client can detect a stale prerender. */}
+      <AutoRefresh generatedAtMs={Date.now()} />
       {/* Suspense here (not a root loading.tsx) so the skeleton only ever
           shows for this route, never while navigating to /map or /analytics. */}
       <Suspense fallback={<HomeSkeleton />}>
