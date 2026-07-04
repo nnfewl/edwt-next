@@ -79,8 +79,8 @@ function Chart({
           ))}
         </div>
         {mode === "dimmed" && (
-          <span className="dds-open-marker" style={{ left: `${((OPEN_HOUR + 0.5) / 24) * 100}%` }}>
-            <i />opens 2 p.m.
+          <span className="dds-open-marker dds-open-marker-bare" style={{ left: `${((OPEN_HOUR + 0.5) / 24) * 100}%` }}>
+            <i />
           </span>
         )}
         {mode === "ghost" && (
@@ -138,13 +138,6 @@ const waitBlock: React.CSSProperties = {
   gap: 6,
 };
 
-const ClosedLabel = () => (
-  <div className="wait-label">
-    <b className="st-closed">Closed</b>
-    <span>&nbsp;· opens 2:00 p.m.</span>
-  </div>
-);
-
 const NoDataLabel = () => (
   <div className="wait-label">
     <b className="st-open">Open</b>
@@ -174,21 +167,13 @@ export default function DrawerStatesPage() {
 
         <h3 className="dds-state-head">Closed</h3>
         <div className="dds-trio">
-          <Panel tag="C1 · TIME" tone="derived" title="Edmonds UPCC" kind="upcc">
+          <Panel tag="CLOSED" tone="derived" title="Edmonds UPCC" kind="upcc">
             <div className="wait" data-sev="closed" style={waitBlock}>
               <MiniWave tone="oklch(0.55 0.02 180)" />
-              <div className="wait-num dds-num dds-num-closed">2:00 p.m.</div>
-              <ClosedLabel />
-            </div>
-            <Chart mode="dimmed" />
-          </Panel>
-
-          <Panel tag="C2 · COUNTDOWN" tone="derived" title="Edmonds UPCC" kind="upcc">
-            <div className="wait" data-sev="closed" style={waitBlock}>
-              <MiniWave tone="oklch(0.55 0.02 180)" />
-              <div className="dds-eyebrow">OPENS IN</div>
-              <div className="wait-num dds-num dds-num-closed">2h 18m</div>
-              <ClosedLabel />
+              <div className="wait-num dds-num dds-num-closed">Closed</div>
+              <div className="wait-label">
+                <span>opens 2:00 p.m.</span>
+              </div>
             </div>
             <Chart mode="dimmed" />
           </Panel>
@@ -196,20 +181,12 @@ export default function DrawerStatesPage() {
 
         <h3 className="dds-state-head">No data</h3>
         <div className="dds-trio">
-          <Panel tag="N1 · MESSAGE IN CHART" tone="derived" title="Langley Memorial Hospital">
+          <Panel tag="NO DATA" tone="derived" title="Langley Memorial Hospital">
             <div className="wait" data-sev="closed" style={waitBlock}>
               <div className="wait-num dds-num dds-num-ghost">&mdash;&mdash;</div>
               <NoDataLabel />
             </div>
             <Chart mode="ghost" />
-          </Panel>
-
-          <Panel tag="N2 · NOTE BELOW" tone="derived" title="Langley Memorial Hospital">
-            <div className="wait" data-sev="closed" style={waitBlock}>
-              <div className="wait-num dds-num dds-num-ghost">&mdash;&mdash;</div>
-              <NoDataLabel />
-            </div>
-            <Chart mode="ghost-quiet" note="This site doesn't publish wait times." />
           </Panel>
         </div>
       </main>
