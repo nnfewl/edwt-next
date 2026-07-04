@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCrosshairs, faLocationArrow, faLocationDot, faPhone } from "@fortawesome/free-solid-svg-icons";
+import { faArrowUpRightFromSquare, faCrosshairs, faLocationArrow, faLocationDot, faPhone } from "@fortawesome/free-solid-svg-icons";
 import { useSearchParams } from "next/navigation";
 import maplibregl, { type GeoJSONSource, type LngLatLike, type Map as MapLibreMap } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -1020,6 +1020,18 @@ export function MapClient({
                   <FontAwesomeIcon icon={faLocationArrow} aria-hidden="true" />
                   <span>{routeLoading ? "Routing..." : "Directions"}</span>
                 </button>
+                {/* Native handoff: someone heading to an ER wants real turn-by-turn
+                    navigation — the universal Maps URL opens the installed app on
+                    iOS/Android and the website elsewhere. */}
+                <a
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${selected.lat},${selected.lng}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`Open directions to ${selected.name} in your maps app`}
+                >
+                  <FontAwesomeIcon icon={faArrowUpRightFromSquare} aria-hidden="true" />
+                  <span>Open in Maps</span>
+                </a>
                 <button type="button" onClick={() => centerMapOn([selected.lng, selected.lat], 13.2, 650)}>
                   <FontAwesomeIcon icon={faCrosshairs} aria-hidden="true" />
                   <span>Center map</span>
