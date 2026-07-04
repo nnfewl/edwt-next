@@ -28,20 +28,31 @@ function HourLabels() {
   );
 }
 
-function MiniWave({ tone }: { tone: string }) {
+function MiniWave({ tone, ghost = false }: { tone: string; ghost?: boolean }) {
   return (
     <svg className="dds-wave" viewBox="0 0 400 90" preserveAspectRatio="none" aria-hidden="true">
+      {ghost && (
+        <defs>
+          {/* Diagonal hatch — the standard "no data here" fill. */}
+          <pattern id="dds-hatch" width="7" height="7" patternTransform="rotate(-45)" patternUnits="userSpaceOnUse">
+            <rect width="7" height="7" fill="none" />
+            <line x1="0" y1="0" x2="0" y2="7" stroke={tone} strokeWidth="1.6" opacity="0.22" />
+          </pattern>
+        </defs>
+      )}
       <path
         d="M0 74 C 40 70, 70 58, 110 56 S 190 66, 230 58 S 320 34, 360 30 L 400 26 L 400 90 L 0 90 Z"
-        fill={tone}
-        opacity="0.16"
+        fill={ghost ? "url(#dds-hatch)" : tone}
+        opacity={ghost ? 1 : 0.16}
       />
       <path
         d="M0 74 C 40 70, 70 58, 110 56 S 190 66, 230 58 S 320 34, 360 30 L 400 26"
         fill="none"
         stroke={tone}
         strokeWidth="1.6"
-        opacity="0.45"
+        strokeDasharray={ghost ? "4 6" : undefined}
+        strokeLinecap="round"
+        opacity={ghost ? 0.5 : 0.45}
       />
     </svg>
   );
@@ -183,7 +194,7 @@ export default function DrawerStatesPage() {
         <div className="dds-trio">
           <Panel tag="NO DATA" tone="derived" title="Langley Memorial Hospital">
             <div className="wait" data-sev="closed" style={waitBlock}>
-              <MiniWave tone="oklch(0.55 0.02 180)" />
+              <MiniWave tone="oklch(0.55 0.02 180)" ghost />
               <div className="wait-num dds-num dds-num-closed">No data</div>
               <NoDataLabel />
             </div>
