@@ -37,6 +37,7 @@ import {
   type Facility,
   type HistoryPoint,
   facilityWaitStatusLabel,
+  isStaleReading,
   severityFor,
 } from "./data";
 import { ClosedIllustration } from "./closed-illustration";
@@ -328,13 +329,17 @@ const WaveBackground = ({
 const FacilityCard = ({
   f,
   onSelect,
+  nowMs,
 }: {
   f: Facility;
   onSelect: (f: Facility) => void;
+  /** Client-side clock (null during SSR) so stale flags never mismatch on hydration. */
+  nowMs: number | null;
 }) => {
   const sev = severityFor(f.waitMin);
   const sevLabel = facilityWaitStatusLabel(f);
   const hasWaitData = f.waitMin != null;
+  const stale = f.open && hasWaitData && nowMs != null && isStaleReading(f.observedAtMs, nowMs);
   const isEm = f.type === "Emergency";
 
   return (
@@ -417,6 +422,7 @@ const FacilityCard = ({
       <div
         className={"wait " + (!f.open ? "is-closed" : !hasWaitData ? "is-no-data" : "")}
         data-sev={sev}
+        data-stale={stale || undefined}
         aria-label={!f.open ? f.name + " is closed" : !hasWaitData ? f.name + " has no posted wait data" : undefined}
       >
         {f.open ? (
@@ -425,7 +431,7 @@ const FacilityCard = ({
               <div className="wait-num">{f.waitText}</div>
               <div className="wait-label">
                 <span className="sev-dot" />
-                {sevLabel}
+                {stale ? "Stale reading" : sevLabel}
               </div>
               <div className="updated">Updated {f.lastUpdated}</div>
             </>
@@ -1005,13 +1011,20 @@ export function ERNowPageClient({
                   </button>
                 </div>
               </div>
-              <div className={"wait " + (!shortest.open ? "is-closed" : "")} data-sev={severityFor(shortest.waitMin)} aria-label={shortest.open ? undefined : shortest.name + " is closed"}>
+              <div
+                className={"wait " + (!shortest.open ? "is-closed" : "")}
+                data-sev={severityFor(shortest.waitMin)}
+                data-stale={(now != null && isStaleReading(shortest.observedAtMs, now.getTime())) || undefined}
+                aria-label={shortest.open ? undefined : shortest.name + " is closed"}
+              >
                 {shortest.open ? (
                   <>
                     <div className="wait-num">{shortest.waitText}</div>
                     <div className="wait-label">
                       <span className="sev-dot" />
-                      {facilityWaitStatusLabel(shortest)}
+                      {now != null && isStaleReading(shortest.observedAtMs, now.getTime())
+                        ? "Stale reading"
+                        : facilityWaitStatusLabel(shortest)}
                     </div>
                     <div className="updated">Updated {shortest.lastUpdated}</div>
                   </>
@@ -1148,7 +1161,7 @@ export function ERNowPageClient({
         {/* List */}
         <div className="facility-list">
           {filtered.slice(0, visibleCount).map((f) => (
-            <FacilityCard key={f.id} f={f} onSelect={setSelected} />
+            <FacilityCard key={f.id} f={f} onSelect={setSelected} nowMs={now?.getTime() ?? null} />
           ))}
           {filtered.length === 0 && (
             <div

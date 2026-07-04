@@ -1108,6 +1108,22 @@
   background: var(--muted);
 }
 
+/* Stale readings: keep the number but strip the "live" severity color so a
+   day-old wait can't masquerade as current. Applied client-side only, after
+   the reading passes STALE_READING_MS (data.ts). */
+.er-now-root .wait[data-stale] .wait-num {
+  color: var(--muted);
+}
+.er-now-root .wait[data-stale] .sev-dot {
+  background: var(--muted);
+}
+.er-now-root .wait[data-stale] .wait-label {
+  color: var(--muted);
+}
+.er-now-root .wait[data-stale] .updated {
+  color: var(--amber);
+  font-weight: 650;
+}
 
 .er-now-root .updated {
   font-size: 11.5px;

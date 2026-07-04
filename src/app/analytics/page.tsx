@@ -71,7 +71,9 @@ export default async function AnalyticsPage() {
 
   return (
     <div className="analytics-root">
-      <AutoRefresh intervalMs={300_000} />
+      {/* eslint-disable-next-line react-hooks/purity -- deliberate: stamp the
+          server render time so the client can detect a stale prerender. */}
+      <AutoRefresh intervalMs={300_000} generatedAtMs={Date.now()} staleAfterMs={180_000} />
       <main className="analytics-page">
         {/* Kept header: map-background hero (unchanged from the original page). */}
         <section className="analytics-hero">
