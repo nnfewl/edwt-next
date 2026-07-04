@@ -25,10 +25,14 @@ export const metadata: Metadata = {
   alternates: { canonical: "/analytics" },
 };
 
-// Fully dynamic: one render per request, so the SSR HTML and the hydration RSC
-// come from a single data snapshot (avoids ISR prerender/hydration mismatches).
-export const dynamic = "force-dynamic";
-export const maxDuration = 15;
+// ISR: each regeneration renders HTML + RSC from one data snapshot (getAnalytics
+// is request-cached), and the client charts are pure functions of their props, so
+// the prerendered page hydrates cleanly. On a data error the page throws, which
+// keeps serving the last good cached copy instead of baking an error page.
+// maxDuration must cover a cold query batch or background regeneration fails
+// silently and the page goes stale-forever (observed in prod at 25h stale).
+export const revalidate = 60;
+export const maxDuration = 60;
 
 const localFormatter = new Intl.DateTimeFormat("en-CA", {
   timeZone: "America/Vancouver", month: "short", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false,
