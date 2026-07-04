@@ -20,8 +20,8 @@
   padding-top: 24px;
   border-top: 1px solid var(--line);
 }
-.dds-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
-@media (max-width: 900px) { .dds-pair { grid-template-columns: 1fr; } }
+.dds-trio { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; align-items: start; margin-top: 22px; }
+@media (max-width: 1100px) { .dds-trio { grid-template-columns: 1fr; max-width: 520px; } }
 
 .dds-panel-tag {
   font-size: 11px;
@@ -30,7 +30,25 @@
   color: var(--muted);
   margin-bottom: 8px;
 }
-.dds-panel-wrap.proposed .dds-panel-tag { color: var(--teal); }
+.dds-panel-wrap.derived .dds-panel-tag { color: var(--teal); }
+
+/* Decorative stand-in for TodayWave behind the number. */
+.dds-wave {
+  position: absolute;
+  left: -26px;
+  right: -26px;
+  bottom: 14px;
+  width: calc(100% + 52px);
+  height: 78px;
+  pointer-events: none;
+}
+
+/* Derived number slots: reopen time in quiet ink, no-data as ghost dashes. */
+.dds-num-closed { color: var(--ink-2); }
+.dds-num-ghost { color: var(--line-2); letter-spacing: -0.04em; }
+.dds-call { color: var(--teal); font-weight: 700; text-decoration: none; }
+.dds-page .wait-label .st-closed { color: var(--red); font-weight: 800; }
+.dds-page .wait-label .st-open { color: var(--green); font-weight: 800; }
 
 /* Render the drawer panel inline instead of as a fixed sheet. */
 .dds-page .drawer-panel {
@@ -41,19 +59,10 @@
   box-shadow: var(--shadow-md);
   padding: 24px 26px 20px;
 }
-.dds-panel-wrap.proposed .drawer-panel {
+.dds-panel-wrap.derived .drawer-panel {
   border-color: color-mix(in oklab, var(--teal) 35%, var(--line));
 }
-
-.dds-void {
-  border: 1px dashed var(--line-2);
-  border-radius: 12px;
-  padding: 26px 16px;
-  text-align: center;
-  color: var(--muted);
-  font-size: 12.5px;
-  margin-top: 10px;
-}
+.dds-page .drawer-panel { overflow: hidden; }
 
 /* ── proposed · closed: real typical-day shape, dimmed, reopen marker ── */
 .dds-dimmed { padding-top: 30px; }

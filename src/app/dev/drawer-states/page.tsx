@@ -2,30 +2,27 @@ import type { Metadata } from "next";
 import "../../styles.css";
 import "./demo.css";
 
-// Dev-only design playground: what the details drawer shows BELOW the status
-// line when a facility is closed or doesn't post waits. Research basis:
-// - Google Maps "Popular times" persists when a place is closed (historical
-//   shape stays useful: "how busy will it be when it reopens?").
-// - Carbon/Cloudscape/PatternFly: chart empty states keep the chart's frame
-//   (skeleton bars + overlay message) so the layout never collapses.
+// Dev-only design playground for the drawer's closed/no-data states.
+// Method: render the NORMAL has-data drawer as the reference, then derive the
+// other states from it slot by slot — same big-number slot, same label line,
+// same typical-day chart region — swapping only what each state can't have.
 export const metadata: Metadata = {
   title: "DEV · Drawer states",
   robots: { index: false, follow: false },
 };
 
-// A believable UPCC day-shape (medians, % of max) — calm at open, lunch bump,
-// evening peak. Used by the "typical day stays" proposal.
+// A believable UPCC day-shape (medians, % of max).
 const TYPICAL = [
   18, 14, 12, 10, 9, 9, 11, 16, 30, 44, 52, 58,
   62, 60, 55, 50, 55, 64, 74, 82, 76, 60, 40, 26,
 ];
-// Flat-ish ghost silhouette for the no-data skeleton chart.
 const GHOST = [
   28, 34, 30, 38, 33, 29, 36, 42, 38, 34, 40, 46,
   42, 38, 44, 40, 36, 42, 48, 44, 40, 36, 32, 30,
 ];
 
-const OPEN_HOUR = 14; // Edmonds UPCC reopens 2:00 p.m.
+const NOW_HOUR = 11; // "now" for the normal reference
+const OPEN_HOUR = 14; // closed facility reopens 2:00 p.m.
 
 function HourLabels() {
   return (
@@ -37,52 +34,50 @@ function HourLabels() {
   );
 }
 
-function StatusClosed() {
+/** Soft decorative wave standing in for TodayWave behind the number. */
+function MiniWave({ tone }: { tone: string }) {
   return (
-    <>
-      <div className="status-line">
-        <b className="st-closed">Closed</b>
-        <span className="st-dot"> · </span>
-        <span>Opens 2:00 p.m.</span>
-      </div>
-      <div className="status-sub">2:00 p.m. - 8:00 p.m. daily</div>
-    </>
-  );
-}
-
-function StatusNoData() {
-  return (
-    <>
-      <div className="status-line">
-        <b className="st-open">Open</b>
-        <span className="st-dot"> · </span>
-        <span>no posted wait</span>
-      </div>
-      <div className="status-sub">Call to check current wait</div>
-    </>
+    <svg className="dds-wave" viewBox="0 0 400 90" preserveAspectRatio="none" aria-hidden="true">
+      <path
+        d="M0 74 C 40 70, 70 58, 110 56 S 190 66, 230 58 S 320 34, 360 30 L 400 26 L 400 90 L 0 90 Z"
+        fill={tone}
+        opacity="0.16"
+      />
+      <path
+        d="M0 74 C 40 70, 70 58, 110 56 S 190 66, 230 58 S 320 34, 360 30 L 400 26"
+        fill="none"
+        stroke={tone}
+        strokeWidth="1.6"
+        opacity="0.45"
+      />
+    </svg>
   );
 }
 
 function Panel({
+  tag,
+  tone,
   title,
-  variant,
-  status,
+  kind = "ed",
   children,
 }: {
+  tag: string;
+  tone: "ref" | "derived";
   title: string;
-  variant: "current" | "proposed";
-  status: React.ReactNode;
-  children?: React.ReactNode;
+  kind?: "ed" | "upcc";
+  children: React.ReactNode;
 }) {
   return (
-    <div className={`dds-panel-wrap ${variant}`}>
-      <div className="dds-panel-tag">{variant === "current" ? "CURRENT" : "PROPOSED"}</div>
+    <div className={`dds-panel-wrap ${tone}`}>
+      <div className="dds-panel-tag">{tag}</div>
       <section className="drawer-panel">
-        <span className="badge upcc"><span className="bdot" />UPCC</span>
-        <h2 className="drawer-title" style={{ fontSize: 28 }}>{title}</h2>
-        <div className="drawer-sub">Urgent &amp; Primary Care · All ages</div>
-        <div className="wait is-closed" data-sev="closed" style={{ position: "relative", alignItems: "flex-start", textAlign: "left", margin: "14px 0 8px", gap: 6, display: "flex", flexDirection: "column" }}>
-          {status}
+        <span className={`badge ${kind === "ed" ? "emergency" : "upcc"}`}>
+          <span className="bdot" />
+          {kind === "ed" ? "Emergency" : "UPCC"}
+        </span>
+        <h2 className="drawer-title" style={{ fontSize: 25 }}>{title}</h2>
+        <div className="drawer-sub">
+          {kind === "ed" ? "Emergency Department" : "Urgent & Primary Care"} · All ages
         </div>
         {children}
       </section>
@@ -90,26 +85,71 @@ function Panel({
   );
 }
 
+const waitBlock: React.CSSProperties = {
+  position: "relative",
+  alignItems: "flex-start",
+  textAlign: "left",
+  margin: "14px 0 18px",
+  paddingBottom: 18,
+  borderBottom: "1px solid var(--line)",
+  display: "flex",
+  flexDirection: "column",
+  gap: 6,
+};
+
 export default function DrawerStatesPage() {
   return (
     <div className="er-now-root">
       <main className="page dds-page">
-        <h1 className="dds-title">Drawer: closed &amp; no-data, without the void</h1>
+        <h1 className="dds-title">Drawer states, derived from the normal state</h1>
         <p className="dds-sub">
-          When a facility has data, the drawer shows a big number, a wave, and the typical-day
-          chart — then closed/no-data collapses to two lines of text. These proposals keep the
-          chart region alive: <b>closed keeps the real typical-day shape</b> (Google&nbsp;Maps keeps
-          &ldquo;Popular times&rdquo; for closed places), and <b>no-data keeps the chart frame as a ghost</b>
-          with the explanation inside it (Carbon/Cloudscape skeleton-chart pattern).
+          Left: the drawer as it renders <b>with data</b> — big number over the day&rsquo;s wave,
+          label line, typical-day chart. The other two keep every slot and swap only what the
+          state can&rsquo;t have: the number becomes the <b>reopen time</b> (closed) or a
+          <b> ghost dash</b> (no data); the label becomes the status grammar; the chart stays —
+          dimmed real shape when closed (Google keeps &ldquo;Popular times&rdquo; for closed places),
+          ghost frame with the message inside when no data (Carbon skeleton-chart pattern).
         </p>
 
-        <h3 className="dds-state-head">Closed facility</h3>
-        <div className="dds-pair">
-          <Panel title="Edmonds UPCC" variant="current" status={<StatusClosed />}>
-            <div className="dds-void">(nothing — the sheet just ends)</div>
+        <div className="dds-trio">
+          {/* ── NORMAL (reference) ── */}
+          <Panel tag="NORMAL · HAS DATA (reference)" tone="ref" title="Squamish General Hospital">
+            <div className="wait" data-sev="medium" style={waitBlock}>
+              <MiniWave tone="oklch(0.65 0.14 70)" />
+              <div className="wait-num" style={{ fontSize: 58 }}>1h 12m</div>
+              <div className="wait-label">
+                <span className="sev-dot" />
+                Moderate wait · updated 4 min ago
+              </div>
+            </div>
+            <h4 className="drawer-section-label usual-label">Typical day</h4>
+            <div className="usual-wrap" data-sev="medium">
+              <div className="usual-row">
+                {TYPICAL.map((h, i) => (
+                  <div key={i} className="usual-slot">
+                    <div
+                      className="usual-bar"
+                      data-state={i < NOW_HOUR ? "past" : i === NOW_HOUR ? "now" : undefined}
+                      style={{ height: `${h}%` }}
+                    />
+                  </div>
+                ))}
+              </div>
+              <HourLabels />
+              <div className="usual-note">Typical for this hour: about 1h 5m.</div>
+            </div>
           </Panel>
 
-          <Panel title="Edmonds UPCC" variant="proposed" status={<StatusClosed />}>
+          {/* ── CLOSED (derived) ── */}
+          <Panel tag="CLOSED (derived)" tone="derived" title="Edmonds UPCC" kind="upcc">
+            <div className="wait" data-sev="closed" style={waitBlock}>
+              <MiniWave tone="oklch(0.55 0.02 180)" />
+              <div className="wait-num dds-num-closed" style={{ fontSize: 58 }}>2:00 p.m.</div>
+              <div className="wait-label">
+                <b className="st-closed">Closed</b>
+                <span>&nbsp;· reopens 2:00 p.m. · daily 2–8 p.m.</span>
+              </div>
+            </div>
             <h4 className="drawer-section-label usual-label">Typical day</h4>
             <div className="usual-wrap dds-dimmed">
               <div className="usual-row">
@@ -127,18 +167,20 @@ export default function DrawerStatesPage() {
                 <i />opens 2 p.m.
               </span>
               <HourLabels />
-              <div className="usual-note">Typical waits for the hours it&rsquo;s open — plan for the 2 p.m. reopening.</div>
+              <div className="usual-note">Typical waits after the 2 p.m. reopening.</div>
             </div>
           </Panel>
-        </div>
 
-        <h3 className="dds-state-head">Open, but doesn&rsquo;t post waits</h3>
-        <div className="dds-pair">
-          <Panel title="Langley Memorial Hospital" variant="current" status={<StatusNoData />}>
-            <div className="dds-void">(nothing — the sheet just ends)</div>
-          </Panel>
-
-          <Panel title="Langley Memorial Hospital" variant="proposed" status={<StatusNoData />}>
+          {/* ── NO DATA (derived) ── */}
+          <Panel tag="NO DATA (derived)" tone="derived" title="Langley Memorial Hospital">
+            <div className="wait" data-sev="closed" style={waitBlock}>
+              <div className="wait-num dds-num-ghost" style={{ fontSize: 58 }}>&mdash;&mdash;</div>
+              <div className="wait-label">
+                <b className="st-open">Open</b>
+                <span>&nbsp;· no posted wait ·&nbsp;</span>
+                <a className="dds-call" href="#">call to check</a>
+              </div>
+            </div>
             <h4 className="drawer-section-label usual-label">Typical day</h4>
             <div className="usual-wrap dds-ghost">
               <div className="usual-row">
@@ -150,7 +192,7 @@ export default function DrawerStatesPage() {
               </div>
               <div className="dds-ghost-overlay">
                 <strong>No wait data for this site</strong>
-                <span>It doesn&rsquo;t publish wait times — call ahead to check.</span>
+                <span>It doesn&rsquo;t publish wait times — call ahead.</span>
               </div>
               <HourLabels />
               <div className="usual-note" style={{ visibility: "hidden" }}>&nbsp;</div>
@@ -159,9 +201,8 @@ export default function DrawerStatesPage() {
         </div>
 
         <p className="dds-foot">
-          Both proposals reuse the drawer&rsquo;s existing <code>usual-*</code> chart primitives (and the
-          skeleton style it already has for loading), so the drawer keeps one silhouette across
-          all four states: loading → data → closed → no-data.
+          Every panel keeps the same four slots — number, wave region, label, typical-day chart —
+          so switching facility states never changes the drawer&rsquo;s silhouette.
         </p>
       </main>
     </div>
