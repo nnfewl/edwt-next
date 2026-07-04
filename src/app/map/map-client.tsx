@@ -997,15 +997,21 @@ export function MapClient({
                       </span>
                     </>
                   ) : (
-                    <div className="no-data-state no-data-map-state">
-                      <strong>No data</strong>
-                      <span>No wait posted</span>
-                    </div>
+                    <>
+                      <strong className="selected-status-word">No data</strong>
+                      <span className="selected-wait-status">call to check</span>
+                    </>
                   )
                 ) : (
                   <>
-                    <strong>Closed</strong>
-                    <span className="selected-wait-status">Facility is closed</span>
+                    <strong className="selected-status-word">Closed</strong>
+                    <span className="selected-wait-status">
+                      {selected.opensAt
+                        ? `opens ${selected.opensAt}`
+                        : selected.hours !== "Hours vary"
+                          ? selected.hours
+                          : "hours vary"}
+                    </span>
                   </>
                 )}
               </div>

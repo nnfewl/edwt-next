@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatMinutes, hoursInfo, operatingMinutes } from "./hours";
+import { formatMinutes, hoursInfo, nextOpeningLabel, operatingMinutes } from "./hours";
 
 // Upstream encodes daily open/close as RFC 2822 strings anchored to 1970-01-01
 // GMT. 16:00 GMT on that date is 8:00 a.m. PST.
@@ -72,5 +72,33 @@ describe("hoursInfo", () => {
     days.days[6] = { open: null, close: null }; // Saturday
     const row = { open247: null, operating_hours: days, wait_time_minutes: 15 };
     expect(hoursInfo(row, at(12))).toEqual({ label: "Hours vary", open: false });
+  });
+});
+
+describe("nextOpeningLabel", () => {
+  const daily = (open = OPEN_8AM, close = CLOSE_10PM) =>
+    ({ open247: null, operating_hours: weeklyHours(open, close), wait_time_minutes: null });
+
+  it("returns null for 24/7 or unknown hours", () => {
+    expect(nextOpeningLabel({ open247: true, operating_hours: null, wait_time_minutes: null })).toBeNull();
+    expect(nextOpeningLabel({ open247: null, operating_hours: null, wait_time_minutes: null })).toBeNull();
+  });
+
+  it("labels later-today openings with the time only", () => {
+    // 6 a.m. Saturday, opens 8 a.m. today
+    expect(nextOpeningLabel(daily(), at(6))).toBe("8:00 a.m.");
+  });
+
+  it("labels next-day openings as tomorrow", () => {
+    // 11 p.m. Saturday, next opening Sunday 8 a.m.
+    expect(nextOpeningLabel(daily(), at(23))).toBe("8:00 a.m. tomorrow");
+  });
+
+  it("skips days without hours and names the weekday", () => {
+    const days = weeklyHours(OPEN_8AM, CLOSE_10PM);
+    days.days[0] = { open: null, close: null }; // Sunday closed all day
+    const row = { open247: null, operating_hours: days, wait_time_minutes: null };
+    // 11 p.m. Saturday → Sunday closed → Monday 8 a.m.
+    expect(nextOpeningLabel(row, at(23))).toBe("8:00 a.m. Mon");
   });
 });

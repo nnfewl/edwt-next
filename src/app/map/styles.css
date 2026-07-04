@@ -263,6 +263,13 @@
   font-size: 13px;
 }
 
+/* Closed / no-data: same skeleton as live data — a big word in the numeral
+   slot plus the single status line below. */
+.selected-wait strong.selected-status-word {
+  font-size: 38px;
+  color: var(--closed);
+}
+
 .selected-wait-status {
   display: inline-flex;
   align-items: center;
@@ -1222,56 +1229,4 @@
   min-height: 0;
 }
 
-.selected-wait.is-no-data {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 132px;
-  text-align: center;
-}
-
-.selected-wait.is-no-data .no-data-map-state {
-  display: flex;
-  width: 100%;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-}
-
-.selected-wait.is-no-data .no-data-map-state strong {
-  color: var(--ink);
-  font-size: 26px;
-  font-weight: 850;
-  line-height: 1;
-}
-
-.selected-wait.is-no-data .no-data-map-state span {
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 650;
-}
-
-@media (max-width: 760px) {
-  .selected-wait.is-no-data {
-    min-height: 0;
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    align-items: end;
-    gap: 8px 12px;
-    text-align: left;
-  }
-
-  .selected-wait.is-no-data .no-data-map-state {
-    display: contents;
-  }
-
-  .selected-wait.is-no-data .no-data-map-state strong {
-    font-size: 42px;
-    line-height: 0.95;
-  }
-
-  .selected-wait.is-no-data .no-data-map-state span {
-    padding-bottom: 3px;
-  }
-}
+/* No-data uses the same block layout as every other selected-wait state. */

@@ -1,0 +1,293 @@
+/* Dev-only styles for /dev/drawer-states. The drawer chrome + usual-* chart
+   come from production styles.css; this file only lays out the comparison
+   and adds the two proposed empty-state treatments. */
+
+.dds-page { padding-top: 34px; }
+.dds-title {
+  font-family: var(--font-fraunces), Fraunces, Georgia, serif;
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 0 0 8px;
+}
+.dds-sub { color: var(--muted); font-size: 14.5px; line-height: 1.55; max-width: 72ch; margin: 0 0 8px; }
+.dds-sub b { color: var(--ink-2); }
+.dds-state-head {
+  font-family: var(--font-fraunces), Fraunces, Georgia, serif;
+  font-size: 21px;
+  font-weight: 600;
+  margin: 40px 0 14px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+}
+.dds-trio { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; align-items: start; margin-top: 22px; }
+@media (max-width: 1100px) { .dds-trio { grid-template-columns: 1fr; max-width: 520px; } }
+
+.dds-panel-tag {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.dds-panel-wrap.derived .dds-panel-tag { color: var(--teal); }
+
+/* Decorative stand-in for TodayWave behind the number — stays inside the
+   panel padding like the real wave. */
+.dds-wave {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 14px;
+  width: 100%;
+  height: 78px;
+  pointer-events: none;
+}
+
+/* Shared number-slot sizing (desktop 58px, mobile smaller + no wrap). */
+.dds-page .wait-num.dds-num {
+  font-size: 58px;
+  white-space: nowrap;
+}
+
+/* Derived number slots: reopen time in quiet ink, no-data as ghost dashes. */
+.dds-num-closed { color: var(--ink-2); }
+.dds-num-ghost { color: var(--line-2); letter-spacing: -0.04em; }
+.dds-call { color: var(--teal); font-weight: 700; text-decoration: none; }
+.dds-page .wait-label .st-closed { color: var(--red); font-weight: 800; }
+.dds-page .wait-label .st-open { color: var(--green); font-weight: 800; }
+
+/* Render the drawer panel inline instead of as a fixed sheet. */
+.dds-page .drawer-panel {
+  height: auto;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: var(--shadow-md);
+  padding: 24px 26px 20px;
+}
+.dds-panel-wrap.derived .drawer-panel {
+  border-color: color-mix(in oklab, var(--teal) 35%, var(--line));
+}
+.dds-page .drawer-panel { overflow: hidden; }
+
+/* ── proposed · closed: real typical-day shape, dimmed, reopen marker ── */
+.dds-dimmed { padding-top: 30px; }
+.dds-dimmed .usual-bar { background: var(--line-2); }
+.dds-dimmed .usual-bar[data-state="past"] { opacity: 0.35; }
+.dds-open-marker {
+  position: absolute;
+  top: 2px;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: var(--teal);
+  white-space: nowrap;
+}
+.dds-open-marker i {
+  display: block;
+  width: 2px;
+  height: 62px;
+  border-radius: 2px;
+  background: color-mix(in oklab, var(--teal) 55%, transparent);
+}
+
+/* ── proposed · no-data: ghost chart frame + message inside it ── */
+.dds-ghost .usual-bar {
+  background: var(--line);
+  opacity: 0.55;
+  border-radius: 3px 3px 1px 1px;
+}
+.dds-ghost .usual-row {
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.25));
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.25));
+}
+.dds-ghost-overlay {
+  position: absolute;
+  inset: 26px 0 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  text-align: center;
+}
+.dds-ghost-overlay strong {
+  font-size: 13px;
+  font-weight: 750;
+  color: var(--ink-2);
+  background: color-mix(in oklab, var(--surface) 88%, transparent);
+  border-radius: 8px;
+  padding: 1px 8px;
+}
+.dds-ghost-overlay span {
+  font-size: 11.5px;
+  color: var(--muted);
+  background: color-mix(in oklab, var(--surface) 88%, transparent);
+  border-radius: 8px;
+  padding: 1px 8px;
+}
+
+.dds-caption {
+  margin: 8px 2px 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+.dds-eyebrow {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  color: var(--muted);
+  margin-bottom: -2px;
+}
+
+/* Closed chart variants — same layout, different texture. */
+.dds-dimmed .usual-bar[data-state="off"] { opacity: 0.35; }
+.dds-banded .usual-bar[data-state="off"] { opacity: 0.55; }
+.dds-band {
+  position: absolute;
+  top: 24px;
+  height: 56px;
+  border-radius: 8px;
+  background: var(--teal-soft);
+  opacity: 0.65;
+}
+.dds-hollow .usual-bar { background: var(--line-2); }
+.dds-hollow .usual-bar[data-state="off"] {
+  background: transparent;
+  border: 1px solid var(--line-2);
+  border-bottom-width: 2px;
+}
+
+/* ── C3 · hours strip: today's open window as a timeline ── */
+.dds-strip-wrap { position: relative; margin: 4px 0 22px; padding-top: 8px; }
+.dds-strip {
+  position: relative;
+  height: 34px;
+  border-radius: 9px;
+  background: var(--bg-2);
+  overflow: visible;
+}
+.dds-strip-open {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  background: var(--teal-soft);
+  border: 1px solid color-mix(in oklab, var(--teal) 30%, transparent);
+  color: var(--teal-ink);
+  font-size: 11px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+.dds-strip-now {
+  position: absolute;
+  top: -8px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--ink-2);
+}
+.dds-strip-now i {
+  display: block;
+  width: 2px;
+  height: 46px;
+  border-radius: 2px;
+  background: var(--ink-2);
+  opacity: 0.55;
+}
+
+/* ── N2 · flatline: dashed "no signal" line in the chart frame ── */
+.dds-flatline {
+  position: relative;
+  height: 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.dds-flatline i {
+  display: block;
+  width: 100%;
+  border-top: 2px dashed var(--line-2);
+}
+.dds-flatline em {
+  font-style: normal;
+  font-size: 11.5px;
+  color: var(--muted);
+  background: var(--surface);
+  padding: 0 8px;
+  margin-top: -21px;
+}
+
+/* ── N3 · action-forward ── */
+.dds-actions { display: flex; flex-direction: column; gap: 8px; margin: 6px 0 20px; }
+.dds-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink-2);
+  font-size: 13.5px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.dds-action.primary {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #fff;
+}
+
+.dds-foot {
+  margin-top: 36px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 12.5px;
+  max-width: 80ch;
+}
+
+@media (max-width: 760px) {
+  /* Production hides the typical-day chart on phones; the demo forces it
+     visible so the treatments can be reviewed from a mobile device. */
+  .er-now-root .dds-page .usual-wrap { display: block; }
+  .er-now-root .dds-page .usual-label { display: block; }
+}
+
+@media (max-width: 640px) {
+  .dds-page { padding-top: 22px; }
+  .dds-title { font-size: 24px; }
+  .dds-state-head { font-size: 18px; margin-top: 30px; }
+  .dds-page .drawer-panel { padding: 18px 16px 14px; }
+  .dds-page .wait-num.dds-num { font-size: 38px; }
+  .dds-wave { height: 60px; bottom: 12px; }
+  .dds-page .wait-label { font-size: 12px; flex-wrap: wrap; }
+}
+
+/* C4 · stub: off-hours reduced to baseline ticks. */
+.dds-stub .usual-bar[data-state="off"] {
+  height: 4px !important;
+  opacity: 0.6;
+}
+/* C5 · all hollow: whole chart inactive while closed. */
+.dds-allhollow .usual-bar {
+  background: transparent;
+  border: 1px solid var(--line-2);
+  border-bottom-width: 2px;
+}

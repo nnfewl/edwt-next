@@ -126,7 +126,9 @@ export default function CardStatesPage() {
         <h1 className="csd-title">Closed &amp; No-data — wait-column options</h1>
         <p className="csd-sub">
           The card is the real production card (same markup, same CSS). Only the right-hand
-          state section differs between options.
+          state section differs between options. <b>D</b> follows the researched pattern
+          (Google/Apple Maps status grammar; AHS explains missing data instead of alarming);
+          A–C are kept as earlier explorations.
         </p>
 
         <SectionHead tag="CURRENT" title="What's live today" note="Door illustration + big 'No data'." />
@@ -150,6 +152,42 @@ export default function CardStatesPage() {
                   <strong>No data</strong>
                   <span>No wait posted</span>
                 </div>
+              </div>
+            }
+          />
+        </div>
+
+        <SectionHead
+          tag="D · RESEARCH PICK"
+          title="Maps grammar"
+          note="The pattern Google & Apple Maps trained everyone on: one inline line — red 'Closed · Opens 8:00 a.m.' / green 'Open' — plus a quiet second line. No icons, no panels, instantly familiar."
+        />
+        <div className="facility-list">
+          <Card
+            f={closed}
+            wait={
+              <div className="wait is-closed csd-d" data-sev="closed">
+                <div className="csd-d-line">
+                  <b className="csd-d-closed">Closed</b>
+                  <span className="csd-d-dot"> · </span>
+                  <span>Opens 8:00 a.m.</span>
+                </div>
+                <span className="csd-d-sub">8:00 a.m. – 8:00 p.m. daily</span>
+              </div>
+            }
+          />
+          <Card
+            f={noData}
+            wait={
+              <div className="wait is-no-data csd-d" data-sev="closed">
+                <div className="csd-d-line">
+                  <b className="csd-d-open">Open</b>
+                  <span className="csd-d-dot"> · </span>
+                  <span>no posted wait</span>
+                </div>
+                <a className="csd-d-call" href="#">
+                  <FontAwesomeIcon icon={faPhone} width={12} height={12} aria-hidden="true" /> Call to check
+                </a>
               </div>
             }
           />

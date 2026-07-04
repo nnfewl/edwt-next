@@ -1,4 +1,4 @@
-import { VANCOUVER_TZ, localDayIndex, localHourMinute } from "./local-time";
+import { VANCOUVER_TZ, localDayIndex, localHourMinute, minutesSinceMidnight } from "./local-time";
 
 type HoursDay = {
   open?: string | null;
@@ -37,6 +37,34 @@ export function formatMinutes(value: number): string {
   const suffix = hour24 >= 12 ? "p.m." : "a.m.";
   const hour12 = hour24 % 12 || 12;
   return hour12 + ":" + String(minute).padStart(2, "0") + " " + suffix;
+}
+
+const DAY_ABBREV = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+/**
+ * Google-Maps-style reopen label for a facility that is closed right now:
+ * "8:00 a.m." (later today), "8:00 a.m. tomorrow", or "8:00 a.m. Mon".
+ * Null when hours are unknown or the site is 24/7 (never "closed").
+ */
+export function nextOpeningLabel(row: HoursSource, now: Date = new Date()): string | null {
+  if (row.open247 || !isOperatingHours(row.operating_hours)) return null;
+  const days = row.operating_hours.days ?? [];
+  const todayIdx = localDayIndex(now, VANCOUVER_TZ);
+  if (todayIdx < 0) return null;
+  const nowMin = minutesSinceMidnight(now, VANCOUVER_TZ);
+
+  for (let offset = 0; offset <= 7; offset++) {
+    const idx = (todayIdx + offset) % 7;
+    const openMin = operatingMinutes(days[idx]?.open);
+    if (openMin == null || operatingMinutes(days[idx]?.close) == null) continue;
+    // Today's opening already passed (we're inside or after hours) — look ahead.
+    if (offset === 0 && nowMin >= openMin) continue;
+    const time = formatMinutes(openMin);
+    if (offset === 0) return time;
+    if (offset === 1) return time + " tomorrow";
+    return time + " " + DAY_ABBREV[idx];
+  }
+  return null;
 }
 
 export function hoursInfo(row: HoursSource, now: Date = new Date()): { label: string; open: boolean } {

@@ -9,7 +9,6 @@ import {
   type ReactNode,
 } from "react";
 import type { TodayResponse } from "./api/facilities/[id]/today/route";
-import { ClosedIllustration } from "./closed-illustration";
 import {
   type Facility,
   type HistoryPoint,
@@ -208,14 +207,87 @@ const TodayWave = ({
   );
 };
 
+// W9 "settle": the day's activity winding down to a flat baseline — the honest
+// zero-line for a facility that is closed right now (zero, not missing).
+const SettleWave = () => (
+  <svg className="state-wave" viewBox="0 0 400 90" preserveAspectRatio="none" aria-hidden="true">
+    <path
+      d="M0 58 C 40 52, 70 66, 110 60 S 180 66, 220 74 C 250 79, 280 80, 400 80 L 400 90 L 0 90 Z"
+      fill="var(--line-2)"
+      opacity="0.35"
+    />
+    <path
+      d="M0 58 C 40 52, 70 66, 110 60 S 180 66, 220 74 C 250 79, 280 80, 400 80"
+      fill="none"
+      stroke="var(--muted)"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      opacity="0.4"
+    />
+  </svg>
+);
+
+// Hatched + dashed ghost: the "missing data" wave (unknown, not zero).
+const GhostWave = () => (
+  <svg className="state-wave" viewBox="0 0 400 90" preserveAspectRatio="none" aria-hidden="true">
+    <defs>
+      <pattern id="drawer-ghost-hatch" width="7" height="7" patternTransform="rotate(-45)" patternUnits="userSpaceOnUse">
+        <line x1="0" y1="0" x2="0" y2="7" stroke="var(--muted)" strokeWidth="1.6" opacity="0.22" />
+      </pattern>
+    </defs>
+    <path
+      d="M0 74 C 40 70, 70 58, 110 56 S 190 66, 230 58 S 320 34, 360 30 L 400 26 L 400 90 L 0 90 Z"
+      fill="url(#drawer-ghost-hatch)"
+    />
+    <path
+      d="M0 74 C 40 70, 70 58, 110 56 S 190 66, 230 58 S 320 34, 360 30 L 400 26"
+      fill="none"
+      stroke="var(--muted)"
+      strokeWidth="1.6"
+      strokeDasharray="4 6"
+      strokeLinecap="round"
+      opacity="0.5"
+    />
+  </svg>
+);
+
+// Ghost silhouette for the no-data typical-day frame.
+const GHOST_HEIGHTS = [
+  28, 34, 30, 38, 33, 29, 36, 42, 38, 34, 40, 46,
+  42, 38, 44, 40, 36, 42, 48, 44, 40, 36, 32, 30,
+];
+
+const GhostTypicalDay = () => (
+  <div className="usual-wrap usual-ghost">
+    <div className="usual-row" role="img" aria-label="No wait data for this facility">
+      {GHOST_HEIGHTS.map((h, i) => (
+        <div key={i} className="usual-slot">
+          <div className="usual-bar" style={{ height: `${h}%` }} />
+        </div>
+      ))}
+    </div>
+    <div className="usual-ghost-overlay">
+      <strong>No wait data</strong>
+    </div>
+    <div className="usual-labels" aria-hidden="true">
+      <span style={{ left: `${((6 + 0.5) / 24) * 100}%` }}>6 am</span>
+      <span style={{ left: `${((12 + 0.5) / 24) * 100}%` }}>noon</span>
+      <span style={{ left: `${((18 + 0.5) / 24) * 100}%` }}>6 pm</span>
+    </div>
+  </div>
+);
+
 const TypicalDayBars = ({
   usual,
   nowHour,
   sev,
+  dimmed = false,
 }: {
   usual: { hour: number; min: number }[];
   nowHour: number;
   sev: ReturnType<typeof severityFor>;
+  /** Closed facilities: uniform quiet bars, no now-highlight, no caption. */
+  dimmed?: boolean;
 }) => {
   const [hovered, setHovered] = useState<number | null>(null);
   const byHour = new Map(usual.map((u) => [u.hour, u.min]));
@@ -225,7 +297,7 @@ const TypicalDayBars = ({
   const hoveredMin = hovered != null ? byHour.get(hovered) : undefined;
 
   return (
-    <div className="usual-wrap" data-sev={sev}>
+    <div className={`usual-wrap${dimmed ? " usual-dimmed" : ""}`} data-sev={sev}>
       {hovered != null && (
         <div
           className="usual-tip"
@@ -403,18 +475,52 @@ export function DetailsDrawer({
                 </div>
               </>
             ) : (
-              <div className="no-data-state no-data-state-drawer">
-                <strong>No data</strong>
-                <span>No wait posted</span>
-              </div>
+              <>
+                <GhostWave />
+                <div className="wait-num status-word">No data</div>
+                <div className="wait-label">
+                  <b className="st-open">Open</b>
+                  <span>&nbsp;· no posted wait</span>
+                </div>
+              </>
             )
           ) : (
-            <div className="closed-state closed-state-drawer">
-              <ClosedIllustration className="closed-illustration closed-drawer" />
-              <strong>Closed</strong>
-            </div>
+            <>
+              <SettleWave />
+              <div className="wait-num status-word">Closed</div>
+              <div className="wait-label">
+                <span>
+                  {f.opensAt
+                    ? `opens ${f.opensAt}`
+                    : f.hours !== "Hours vary"
+                      ? `${f.hours} daily`
+                      : "hours vary"}
+                </span>
+              </div>
+            </>
           )}
         </div>
+
+        {/* Closed: the typical-day shape stays (history is real), quiet. */}
+        {!f.open && today != null && today.usual.length >= 6 && (
+          <>
+            <h4 className="drawer-section-label usual-label">Typical day</h4>
+            <TypicalDayBars
+              usual={today.usual}
+              nowHour={Math.floor(today.nowMin / 60)}
+              sev="closed"
+              dimmed
+            />
+          </>
+        )}
+
+        {/* No data: keep the chart frame as a ghost with the message inside. */}
+        {f.open && !hasWaitData && (
+          <>
+            <h4 className="drawer-section-label usual-label">Typical day</h4>
+            <GhostTypicalDay />
+          </>
+        )}
 
         {f.open && hasWaitData && (
           today != null && today.usual.length >= 6 ? (
@@ -462,7 +568,11 @@ export function DetailsDrawer({
               <>This facility is open, but no wait time is currently posted.</>
             )
           ) : (
-            <>This facility is currently closed. It will reopen at the next scheduled time.</>
+            <>
+              This facility is currently closed
+              {/* opensAt often ends in "a.m."/"p.m." — no extra period after it. */}
+              {f.opensAt ? <> — it reopens at {f.opensAt}</> : <> and will reopen at the next scheduled time.</>}
+            </>
           )}
         </p>
 

@@ -1145,6 +1145,30 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Closed / no-data states — same skeleton as live data: a big word in the
+   number slot plus exactly one quiet line. */
+.er-now-root .wait .status-sub {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.er-now-root .wait .status-call {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--teal);
+  text-decoration: none;
+}
+.er-now-root .wait .status-call:hover {
+  text-decoration: underline;
+}
+@media (max-width: 760px) {
+  .er-now-root .wait .status-sub {
+    font-size: 11.5px;
+  }
+}
+
 .er-now-root .distance-pill {
   display: inline-flex;
   align-items: center;
@@ -2709,44 +2733,93 @@
   max-width: 100%;
 }
 
-.er-now-root .drawer-panel .wait.is-closed {
+/* Drawer closed/no-data: same slots as the has-data state — big word in the
+   number slot over a state wave (settle = known zero, hatched ghost =
+   unknown), one quiet label line, typical-day chart region below. */
+.er-now-root .drawer-panel .wait.is-closed,
+.er-now-root .drawer-panel .wait.is-no-data {
+  align-items: flex-start;
+  text-align: left;
+  gap: 6px;
+  padding-bottom: 22px;
+}
+.er-now-root .drawer-panel .wait .wait-num.status-word {
+  font-size: 56px;
+  color: var(--ink-2);
+  position: relative;
+  white-space: nowrap;
+}
+@media (max-width: 760px) {
+  .er-now-root .drawer-panel .wait .wait-num.status-word {
+    font-size: 38px;
+  }
+}
+.er-now-root .drawer-panel .wait .wait-label .st-open {
+  color: var(--green);
+  font-weight: 800;
+}
+.er-now-root .drawer-panel .wait .state-wave {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 14px;
+  width: 100%;
+  height: 84px;
+  pointer-events: none;
+}
+
+/* Closed: typical-day bars stay but go uniform + quiet. */
+.er-now-root .usual-wrap.usual-dimmed .usual-bar {
+  background: var(--line-2);
+  opacity: 1;
+}
+.er-now-root .usual-wrap.usual-dimmed .usual-note {
+  display: none;
+}
+
+/* No data: ghost chart frame with the message inside it. */
+.er-now-root .usual-wrap.usual-ghost .usual-bar {
+  background: var(--line);
+  opacity: 0.55;
+}
+.er-now-root .usual-wrap.usual-ghost .usual-row {
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.25));
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.25));
+}
+.er-now-root .usual-ghost-overlay {
+  position: absolute;
+  inset: 26px 0 18px;
+  display: flex;
   align-items: center;
-  min-height: 190px;
-  padding-bottom: 18px;
+  justify-content: center;
+  pointer-events: none;
+}
+.er-now-root .usual-ghost-overlay strong {
+  font-size: 13px;
+  font-weight: 750;
+  color: var(--ink-2);
+  background: color-mix(in oklab, var(--surface) 88%, transparent);
+  border-radius: 8px;
+  padding: 1px 8px;
 }
 
-.er-now-root .drawer-panel .wait.is-closed .closed-drawer {
-  width: min(220px, 72vw);
-  height: min(220px, 72vw);
-}
-
-.er-now-root .drawer-panel .closed-state-drawer {
-  gap: 10px;
-}
-
-.er-now-root .drawer-panel .closed-state-drawer strong {
-  font-size: 24px;
-}
-
-.er-now-root .facility .wait.is-closed {
+/* Card closed/no-data: Maps grammar is right-aligned text, not a centered
+   illustration — override the drawer-era centering. */
+.er-now-root .facility .wait.is-closed,
+.er-now-root .facility .wait.is-no-data,
+.er-now-root .best-pick .wait.is-closed {
   min-width: 150px;
   padding-left: 18px;
-}
-
-.er-now-root .facility .wait.is-closed .closed-hero {
-  width: 122px;
-  height: 122px;
+  align-items: flex-end;
+  justify-content: center;
+  text-align: right;
+  gap: 6px;
 }
 
 @media (max-width: 760px) {
   .er-now-root .facility .wait.is-closed {
     min-width: 92px;
     padding: 6px;
-  }
-
-  .er-now-root .facility .wait.is-closed .closed-hero {
-    width: 84px;
-    height: 84px;
   }
 
   .er-now-root .facility .closed-state strong {

@@ -40,7 +40,6 @@ import {
   isStaleReading,
   severityFor,
 } from "./data";
-import { ClosedIllustration } from "./closed-illustration";
 import type { DetailsDrawerProps } from "./details-drawer-client";
 import { withOriginDistances } from "./geo-distance";
 import { HeroMapBackdrop } from "./hero-map-backdrop";
@@ -440,16 +439,28 @@ const FacilityCard = ({
               <div className="updated">Updated {f.lastUpdated}</div>
             </>
           ) : (
-            <div className="no-data-state">
-              <strong>No data</strong>
-              <span>No wait posted</span>
-            </div>
+            <>
+              <div className="wait-num">No data</div>
+              {f.phone ? (
+                <a
+                  className="status-call"
+                  href={`tel:${f.phone}`}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  call to check
+                </a>
+              ) : (
+                <div className="status-sub">no wait posted</div>
+              )}
+            </>
           )
         ) : (
-          <div className="closed-state">
-            <ClosedIllustration className="closed-illustration closed-hero" />
-            <strong>Closed</strong>
-          </div>
+          <>
+            <div className="wait-num">Closed</div>
+            <div className="status-sub">
+              {f.opensAt ? `opens ${f.opensAt}` : f.hours !== "Hours vary" ? f.hours : "hours vary"}
+            </div>
+          </>
         )}
       </div>
     </article>
@@ -1063,10 +1074,10 @@ export function ERNowPageClient({
                     <div className="updated">Updated {shortest.lastUpdated}</div>
                   </>
                 ) : (
-                  <div className="closed-state">
-                    <ClosedIllustration className="closed-illustration closed-hero" />
-                    <strong>Closed</strong>
-                  </div>
+                  <>
+                    <div className="wait-num">Closed</div>
+                    {shortest.opensAt && <div className="status-sub">opens {shortest.opensAt}</div>}
+                  </>
                 )}
               </div>
             </div>
