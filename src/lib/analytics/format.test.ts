@@ -14,6 +14,10 @@ describe("fmtMin", () => {
   it("rounds fractional minutes", () => {
     expect(fmtMin(64.6)).toBe("1h 5m");
   });
+  it("never yields a 60m remainder when rounding crosses an hour", () => {
+    expect(fmtMin(119.6)).toBe("2h 0m");
+    expect(fmtMin(59.6)).toBe("1h 0m");
+  });
 });
 
 describe("partOfDay", () => {

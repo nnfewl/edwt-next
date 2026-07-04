@@ -1,12 +1,11 @@
 // Pure formatters shared by the analytics finding-titles and SVG charts.
 
-/** Minutes → "Xm" or "Xh Ym" (mockup `fmtMin`). */
+/** Minutes → "Xm" or "Xh Ym" (mockup `fmtMin`). Rounds the total first so the
+    remainder stays 0–59 (119.6 → "2h 0m", never "1h 60m"). */
 export function fmtMin(v: number): string {
-  if (v >= 60) {
-    const m = Math.round(v % 60);
-    return `${Math.floor(v / 60)}h ${m}m`;
-  }
-  return `${Math.round(v)}m`;
+  const total = Math.round(v);
+  if (total >= 60) return `${Math.floor(total / 60)}h ${total % 60}m`;
+  return `${total}m`;
 }
 
 /** Natural-language window for a 24h clock hour (Vancouver local). */

@@ -28,7 +28,7 @@ export function WeekTiles({ week, typical, today, todayDow }: { week: DayMedian[
           return (
             <div key={dow} role="button" tabIndex={0} aria-label={`Show ${weekdayName(dow)} curve`}
               className={`day-cell${isToday ? " today" : ""}${dow === sel ? " selected" : ""}`}
-              onClick={() => setSel(dow)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setSel(dow); }}>
+              onClick={() => setSel(dow)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSel(dow); } }}>
               <div className="day-name">{SHORT[dow]}{isToday ? " ·" : ""}</div>
               <div className="day-val">{med != null ? fmtMin(med) : "—"}</div>
               <svg className="day-spark" viewBox={`0 0 ${W} ${H}`} width="100%" height={30} preserveAspectRatio="none">

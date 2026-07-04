@@ -223,6 +223,11 @@ async function runQueries() {
     // [8] Regional daily median (ED), 60d. Feeds the 07 calendar (which renders
     // up to 60 days, adaptively) + the 07 calm-day count. Section 10's records/moon
     // slice this back to the last 30 to keep their "last 30 days" copy accurate.
+    // Rollup caveat: the USE_HOURLY_ROLLUP branch returns a reported_count-weighted
+    // mean of hourly averages, not a true median (the rollup keeps no percentiles —
+    // see docs/plans/retention-rollup.md). Day-level values run ~10–25% above the
+    // raw median on right-skewed days; the field keeps the `median` name so both
+    // branches project into the same view shape.
     sql<{ date: string; median: number | null }[]>`
       ${useRollup
         ? sql`
