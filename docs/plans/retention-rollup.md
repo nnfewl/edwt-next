@@ -1,10 +1,15 @@
 # Retention + hourly rollup (Supabase)
 
-**Status:** reviewed & ready to apply — see runbook below. As of 2026-07-02 prod is at
-**295 MB / 500 MB** (618k readings spanning 37 days, growing ~7.2 MB/day → cap hit in
-~4 weeks). Code side is done and committed (`773f934`): `waitTimeHourly` schema,
-migration `drizzle/0001_stormy_shaman.sql`, and `USE_HOURLY_ROLLUP=1`-gated heatmap +
-coverage queries in `src/app/analytics/page.tsx`.
+**Status: partially applied 2026-07-03.** Done: migration `0001` (table created),
+full backfill (28,050 rows spanning 2026-05-26 → now), `rollup-hourly` cron scheduled
+at `:05` and active, `USE_HOURLY_ROLLUP=1` set for Vercel Preview (dev branch) and in
+`.env.prod`. **Still pending, each needs an explicit go:** (a) `prune-readings-daily`
+(the only destructive step — deliberately held; cap hit ~2026-07-30 without it),
+(b) `USE_HOURLY_ROLLUP=1` in Vercel Production, (c) the ingest cron
+`timeout_milliseconds := 10000` patch from step 3.
+
+Code side is committed (`773f934`): `waitTimeHourly` schema, migration
+`drizzle/0001_stormy_shaman.sql`, and `USE_HOURLY_ROLLUP=1`-gated queries.
 
 ## Apply runbook (verified against prod 2026-07-02)
 

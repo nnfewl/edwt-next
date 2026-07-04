@@ -1,0 +1,1012 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>EDWT · Analytics redesign mockup v3 — palette lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    /* tokens are injected by JS from the PALETTES object */
+    --ink: #171a18; --ink2: #3b403d; --muted: #71766f; --faint: #9aa098;
+    --line: #e5e9e4; --surface: #ffffff; --bg: #f4f6f2; --card2: #fafbf8;
+    --primary: #0f766e; --primary-soft: #e2efec;
+    --hot: #b5462d; --good: #15803d; --warnc: #d97706; --rose: #be123c;
+    --sev1: #7fb89b; --sev2: #d9a44a; --sev3: #cf7f43; --sev4: #b5462d;
+    --shadow-sm: 0 1px 2px rgba(23,26,24,0.04), 0 4px 16px rgba(23,26,24,0.05);
+    --shadow-md: 0 2px 4px rgba(23,26,24,0.05), 0 12px 40px rgba(23,26,24,0.09);
+    --wash1: rgba(15,118,110,0.07); --wash2: rgba(181,70,45,0.045);
+    --hero-grad-a: #c47b1a; --hero-grad-b: #b5462d;
+    --track: #eef1ec;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: Manrope, system-ui, sans-serif;
+    background:
+      radial-gradient(1200px 500px at 75% -100px, var(--wash1), transparent 60%),
+      radial-gradient(900px 420px at 8% 220px, var(--wash2), transparent 65%),
+      var(--bg);
+    color: var(--ink);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    transition: background 0.3s, color 0.3s;
+  }
+  .page { max-width: 1120px; margin: 0 auto; padding: 44px 24px 90px; }
+
+  /* palette switcher */
+  .swatchbar {
+    position: fixed; top: 14px; right: 16px; z-index: 50;
+    display: flex; gap: 6px; padding: 6px;
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 999px; box-shadow: var(--shadow-md);
+  }
+  .swatchbar button {
+    font: inherit; font-size: 12px; font-weight: 800; color: var(--muted);
+    border: none; background: transparent; border-radius: 999px;
+    padding: 6px 12px; cursor: pointer; display: flex; align-items: center; gap: 7px;
+  }
+  .swatchbar button.active { background: var(--ink); color: var(--surface); }
+  .swatchbar .dots { display: inline-flex; }
+  .swatchbar .dots i { width: 10px; height: 10px; border-radius: 50%; margin-left: -3px; border: 1.5px solid var(--surface); }
+
+  .masthead { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 30px; }
+  .kicker { display: inline-flex; align-items: center; gap: 8px; font-size: 11.5px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--primary); }
+  .kicker::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent); animation: pulse 2.2s infinite; }
+  @keyframes pulse { 50% { opacity: 0.4; } }
+  .masthead time { font-size: 12.5px; color: var(--muted); font-weight: 650; }
+
+  .hero {
+    position: relative;
+    background: linear-gradient(160deg, var(--surface) 55%, color-mix(in srgb, var(--primary) 4%, var(--surface)) 100%);
+    border: 1px solid var(--line); border-radius: 24px; box-shadow: var(--shadow-md);
+    padding: 38px 42px 30px;
+    display: grid; grid-template-columns: minmax(320px, 1fr) 1.35fr; gap: 44px; overflow: hidden;
+  }
+  .hero-label { font-size: 13px; font-weight: 700; color: var(--muted); }
+  .hero-status {
+    font-family: Fraunces, Georgia, serif; font-size: 74px; font-weight: 700;
+    letter-spacing: -0.015em; line-height: 1.0; margin: 6px 0 16px;
+    background: linear-gradient(115deg, var(--hero-grad-a), var(--hero-grad-b) 70%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .hero-context { font-size: 16.5px; color: var(--ink2); max-width: 36ch; }
+  .hero-context b { color: var(--ink); font-weight: 800; }
+  .gauge { display: flex; gap: 5px; margin: 20px 0 4px; max-width: 340px; }
+  .gauge i { height: 7px; flex: 1; border-radius: 4px; background: var(--track); position: relative; }
+  .gauge i.on-1 { background: var(--sev1); } .gauge i.on-2 { background: var(--sev2); }
+  .gauge i.on-3 { background: var(--sev3); } .gauge i.on-4 { background: var(--sev4); }
+  .gauge i .needle { position: absolute; top: -7px; left: 62%; width: 3px; height: 21px; border-radius: 2px; background: var(--ink); box-shadow: 0 0 0 2.5px var(--surface); }
+  .gauge-labels { display: flex; justify-content: space-between; max-width: 340px; font-size: 10.5px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); margin-bottom: 18px; }
+  .gauge-labels .active { color: var(--hot); }
+  .hero-drivers { padding-top: 16px; border-top: 1px solid var(--line); font-size: 14px; color: var(--ink2); }
+  .hero-drivers b { font-weight: 800; color: var(--hot); }
+  .hero-chart-wrap { display: flex; flex-direction: column; justify-content: flex-end; }
+  .chart-title { font-size: 13px; font-weight: 800; color: var(--ink2); margin-bottom: 8px; }
+  .chart-title small { font-weight: 650; color: var(--muted); }
+  svg text { font-family: Manrope, system-ui, sans-serif; }
+  /* SVG sizing: height="auto" is invalid on <svg>; drive height from the
+     viewBox ratio with CSS so charts never overflow their cards. */
+  #hero-chart, #gap-chart, #dist-chart, #week-detail { display: block; width: 100%; height: auto; }
+  #hero-chart { aspect-ratio: 660 / 235; }
+  #gap-chart { aspect-ratio: 620 / 240; }
+  #dist-chart { aspect-ratio: 340 / 150; }
+  #week-detail { aspect-ratio: 980 / 210; }
+  .scrollx { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  .strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 18px; }
+  .stat { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow-sm); padding: 16px 20px 14px; }
+  .stat .v { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .stat .v em { font-style: normal; font-size: 14px; color: var(--muted); font-weight: 700; }
+  .stat .k { font-size: 12px; font-weight: 700; color: var(--muted); margin-top: 2px; }
+  .stat .v.good { color: var(--good); } .stat .v.warn { color: var(--hot); }
+
+  section.block { margin-top: 58px; }
+  .sec-eyebrow { font-size: 11px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: var(--primary); margin-bottom: 8px; }
+  .sec-eyebrow span { color: var(--faint); margin-right: 10px; font-family: Fraunces, serif; }
+  .finding { font-family: Fraunces, Georgia, serif; font-size: 27px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.22; max-width: 58ch; }
+  .finding-sub { font-size: 14px; color: var(--muted); margin-top: 6px; max-width: 72ch; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; box-shadow: var(--shadow-sm); padding: 26px 28px; margin-top: 18px; }
+  .duo { display: grid; grid-template-columns: 1.55fr 1fr; gap: 18px; margin-top: 18px; }
+  .duo .card { margin-top: 0; min-width: 0; /* let grid items shrink; scrollx handles wide content */ }
+  .card-mini-title { font-size: 13px; font-weight: 800; color: var(--ink2); margin-bottom: 12px; }
+  .card-mini-title small { font-weight: 650; color: var(--muted); display: block; margin-top: 1px; }
+
+  /* pagination */
+  .pager { display: flex; gap: 6px; justify-content: center; margin-top: 16px; }
+  .pager .pg {
+    font: inherit; font-size: 12.5px; font-weight: 800; color: var(--muted);
+    min-width: 32px; height: 32px; border-radius: 10px; cursor: pointer;
+    border: 1px solid var(--line); background: var(--card2);
+    transition: transform 0.12s;
+  }
+  .pager .pg:hover { transform: translateY(-1px); }
+  .pager .pg.active { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+
+  /* health-authority badges — the same favicon-in-a-ring treatment as the map markers.
+     Integer sizes + a real border keep the ring and gaps perfectly symmetric
+     (percent-sized imgs land on fractional pixels and round unevenly, and an
+     offset drop-shadow reads as a thicker frame on one side). */
+  .ha {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 22px; height: 22px; border-radius: 50%; flex: none; overflow: hidden;
+    border: 1px solid var(--line);
+  }
+  .ha img { width: 14px; height: 14px; object-fit: contain; display: block; }
+  .ha-legend { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--track); font-size: 11.5px; font-weight: 700; color: var(--muted); align-items: center; }
+  .ha-legend .ha { width: 18px; height: 18px; margin-right: 6px; vertical-align: -4px; display: inline-flex; }
+  .ha-legend .ha img { width: 12px; height: 12px; }
+
+  /* entrance motion */
+  @keyframes rise { from { opacity: 0; transform: translateY(16px); } }
+  .hero, .stat, .card { animation: rise 0.55s cubic-bezier(0.2, 0.7, 0.3, 1) both; }
+  .stat:nth-child(1) { animation-delay: 0.05s; } .stat:nth-child(2) { animation-delay: 0.1s; }
+  .stat:nth-child(3) { animation-delay: 0.15s; } .stat:nth-child(4) { animation-delay: 0.2s; }
+  @keyframes grow { from { width: 0; } }
+  .rank-fill { animation: grow 0.9s cubic-bezier(0.2, 0.7, 0.3, 1) both; }
+  .rank-row:nth-child(odd) .rank-fill { animation-duration: 1.05s; }
+  @media (prefers-reduced-motion: reduce) { .hero, .stat, .card, .rank-fill { animation: none; } }
+
+  .rank-row { display: grid; grid-template-columns: 190px 1fr 148px; align-items: center; gap: 14px; padding: 5.5px 0; font-size: 13.5px; }
+  .rank-name { font-weight: 750; color: var(--ink2); text-align: right; display: flex; align-items: center; justify-content: flex-end; gap: 7px; min-width: 0; }
+  .rank-name .nm, .visit-name .nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .rank-tag { font-size: 10px; font-weight: 800; color: var(--faint); margin-left: 6px; letter-spacing: 0.04em; }
+  .rank-track { background: var(--track); border-radius: 7px; height: 22px; position: relative; overflow: hidden; }
+  .rank-fill { height: 100%; border-radius: 7px; }
+  .rank-end { display: flex; align-items: baseline; gap: 8px; }
+  .rank-val { font-weight: 800; font-variant-numeric: tabular-nums; min-width: 52px; }
+  .delta { font-size: 11px; font-weight: 800; padding: 1.5px 7px; border-radius: 999px; white-space: nowrap; }
+  .delta.up { background: color-mix(in srgb, var(--rose) 11%, transparent); color: var(--rose); }
+  .delta.down { background: color-mix(in srgb, var(--good) 12%, transparent); color: var(--good); }
+  .delta.flat { background: var(--track); color: var(--muted); }
+
+  .profile-bars { display: flex; align-items: flex-end; gap: 3.5px; height: 150px; margin-top: 4px; }
+  .pbar { flex: 1; border-radius: 5px 5px 2px 2px; min-width: 0; transition: transform 0.15s; }
+  .pbar:hover { transform: scaleY(1.03); transform-origin: bottom; }
+  .profile-axis { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--faint); font-weight: 700; margin-top: 8px; }
+  .best-window { margin-top: 14px; display: inline-flex; align-items: center; gap: 8px; background: var(--primary-soft); color: var(--primary); border-radius: 10px; font-size: 12.5px; font-weight: 800; padding: 7px 12px; }
+
+  .week-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; }
+  .day-cell {
+    text-align: center; padding: 10px 4px 8px; border-radius: 12px;
+    background: var(--card2); border: 1px solid var(--line);
+    cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .day-cell:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+  .day-cell.today { outline: 2px solid var(--hot); outline-offset: -2px; background: color-mix(in srgb, var(--hot) 5%, var(--surface)); }
+  .day-cell.today .day-name { color: var(--hot); }
+  .day-cell.selected { box-shadow: 0 0 0 2.5px var(--primary); background: color-mix(in srgb, var(--primary) 6%, var(--surface)); }
+  .day-cell.selected.today { box-shadow: 0 0 0 2.5px var(--primary); }
+  .week-detail-head { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin: 22px 0 6px; }
+  .week-detail-title { font-size: 13px; font-weight: 800; color: var(--ink2); }
+  .week-detail-note { font-size: 11.5px; font-weight: 700; color: var(--muted); }
+  .week-detail-note .proj-chip { background: var(--primary-soft); color: var(--primary); border-radius: 999px; padding: 2px 9px; font-weight: 800; }
+  .day-name { font-size: 10.5px; font-weight: 800; letter-spacing: 0.1em; color: var(--faint); text-transform: uppercase; }
+  .day-val { font-size: 15px; font-weight: 800; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .day-spark { height: 30px; margin-top: 4px; }
+
+  .heat-grid { display: grid; grid-template-columns: 146px repeat(24, 1fr); gap: 3px; font-size: 11px; align-items: center; }
+  .heat-name { font-weight: 750; color: var(--ink2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 8px; text-align: right; display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
+  .heat-name .ha { width: 18px; height: 18px; }
+  .heat-name .ha img { width: 12px; height: 12px; }
+  td .ha { vertical-align: -4px; margin-right: 8px; }
+  .heat-cell { aspect-ratio: 1/1; border-radius: 4px; min-width: 0; }
+  .heat-cell:hover { box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px var(--ink2); position: relative; z-index: 2; }
+  .heat-hour-label { text-align: center; color: var(--faint); font-weight: 750; }
+  .legend { display: flex; gap: 16px; margin-top: 16px; font-size: 12px; color: var(--muted); align-items: center; flex-wrap: wrap; font-weight: 650; }
+  .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3.5px; margin-right: 6px; vertical-align: -1.5px; }
+  .legend-ramp { display: inline-flex; border-radius: 4px; overflow: hidden; margin-right: 6px; vertical-align: -2px; }
+  .legend-ramp i { width: 14px; height: 12px; border-radius: 0; margin: 0; }
+
+  /* distribution card: flex column so the histogram sits flush at the bottom
+     instead of leaving a dead gap when the neighbouring card is taller */
+  .dist-card { display: flex; flex-direction: column; }
+  #dist-chart { margin-top: auto; padding-top: 20px; }
+  .dist-bar { display: flex; height: 46px; border-radius: 12px; overflow: hidden; margin-top: 6px; }
+  .dist-seg { display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; font-size: 13px; text-shadow: 0 1px 2px rgba(0,0,0,0.18); min-width: 0; }
+  .dist-labels { display: flex; margin-top: 8px; }
+  .dist-labels span { font-size: 11.5px; color: var(--muted); font-weight: 700; text-align: center; min-width: 0; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { text-align: left; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.09em; color: var(--faint); font-weight: 800; padding: 8px 12px; border-bottom: 1px solid var(--line); }
+  td { padding: 10px 12px; border-bottom: 1px solid var(--track); font-variant-numeric: tabular-nums; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--card2); }
+  td:first-child { font-weight: 750; color: var(--ink2); }
+  .num { font-weight: 800; }
+  .trend-up { color: var(--rose); font-weight: 800; } .trend-down { color: var(--good); font-weight: 800; } .trend-flat { color: var(--faint); font-weight: 800; }
+  .pill { font-size: 10.5px; font-weight: 800; padding: 2.5px 9px; border-radius: 999px; letter-spacing: 0.03em; }
+  .pill-ed { background: color-mix(in srgb, var(--hot) 11%, transparent); color: var(--hot); }
+  .pill-upcc { background: color-mix(in srgb, var(--primary) 11%, transparent); color: var(--primary); }
+
+  /* full-visit stacked bars */
+  .visit-row { display: grid; grid-template-columns: 190px 1fr 92px; align-items: center; gap: 14px; padding: 5.5px 0; font-size: 13.5px; }
+  .visit-name { font-weight: 750; color: var(--ink2); text-align: right; display: flex; align-items: center; justify-content: flex-end; gap: 7px; min-width: 0; }
+  .visit-track { background: var(--track); border-radius: 7px; height: 22px; display: flex; overflow: hidden; }
+  .visit-wait { height: 100%; }
+  .visit-elos { height: 100%; opacity: 0.38; }
+  .visit-total { font-weight: 800; font-variant-numeric: tabular-nums; }
+  .visit-total small { display: block; font-size: 10px; color: var(--faint); font-weight: 700; }
+
+  /* scatter */
+  #scatter-chart { display: block; width: 100%; height: auto; aspect-ratio: 720 / 340; }
+
+  /* month calendar */
+  .cal-wrap { display: grid; grid-template-columns: repeat(10, 1fr); gap: 6px; max-width: 560px; }
+  .cal-day { aspect-ratio: 1/1; border-radius: 7px; position: relative; display: flex; align-items: flex-start; justify-content: flex-end; padding: 4px 6px; font-size: 10px; font-weight: 800; color: rgba(0,0,0,0.35); }
+  .cal-day.is-today { outline: 2px solid var(--ink); outline-offset: -2px; }
+  body[data-dark] .cal-day { color: rgba(255,255,255,0.4); }
+
+  /* records board */
+  .rec-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .rec {
+    background: var(--card2); border: 1px solid var(--line); border-radius: 14px;
+    padding: 16px 18px 14px;
+  }
+  .rec .rec-emoji { font-size: 20px; line-height: 1; }
+  .rec .rec-title { font-size: 11px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint); margin-top: 8px; }
+  .rec .rec-value { font-size: 19px; font-weight: 800; letter-spacing: -0.01em; margin-top: 2px; }
+  .rec .rec-sub { font-size: 12px; color: var(--muted); font-weight: 650; margin-top: 2px; }
+  .rec-myth { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--track); font-size: 13px; color: var(--muted); font-weight: 650; }
+  .rec-myth b { color: var(--ink2); }
+
+  .about { margin-top: 64px; font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 20px; max-width: 78ch; }
+  .about b { color: var(--ink2); }
+
+  @media (max-width: 860px) {
+    .hero { grid-template-columns: 1fr; padding: 28px; gap: 26px; }
+    .hero-status { font-size: 56px; }
+    .strip { grid-template-columns: repeat(2, 1fr); }
+    .duo { grid-template-columns: 1fr; }
+    .week-grid { grid-template-columns: repeat(4, 1fr); }
+    .swatchbar { top: auto; bottom: 14px; right: 12px; }
+  }
+
+  @media (max-width: 640px) {
+    .page { padding: 24px 14px 110px; }
+    .masthead { margin-bottom: 22px; }
+    .finding { font-size: 21px; }
+    .finding-sub { margin-top: 8px; }
+    section.block { margin-top: 44px; }
+    .card { padding: 18px 16px; border-radius: 16px; }
+    .hero { padding: 22px 18px 20px; }
+    .hero-status { font-size: 46px; }
+    .hero-context { font-size: 15px; }
+    .gauge, .gauge-labels { max-width: 100%; }
+    .stat .v { font-size: 21px; }
+    .stat { padding: 12px 14px 11px; }
+    /* ranked bars: name + value on top, full-width bar below */
+    .rank-row {
+      grid-template-columns: 1fr auto;
+      grid-template-areas: "name end" "track track";
+      row-gap: 4px; padding: 8px 0;
+    }
+    .rank-name { grid-area: name; justify-content: flex-start; text-align: left; }
+    .rank-end { grid-area: end; }
+    .rank-track { grid-area: track; height: 16px; }
+    .delta { font-size: 10px; }
+    /* wide grids scroll sideways instead of crushing */
+    .heat-grid { min-width: 620px; grid-template-columns: 132px repeat(24, 1fr); }
+    .league-table { min-width: 640px; }
+    .week-grid { grid-template-columns: repeat(4, 1fr); gap: 7px; }
+    .day-val { font-size: 13px; }
+    #week-detail { aspect-ratio: 980 / 300; }
+    .profile-bars { height: 110px; }
+    .dist-seg { font-size: 11px; }
+    .about { font-size: 12.5px; }
+    .visit-row {
+      grid-template-columns: 1fr auto;
+      grid-template-areas: "name total" "track track";
+      row-gap: 4px; padding: 8px 0;
+    }
+    .visit-name { grid-area: name; justify-content: flex-start; text-align: left; }
+    .visit-total { grid-area: total; text-align: right; }
+    .visit-track { grid-area: track; height: 16px; }
+    #scatter-chart { aspect-ratio: 720 / 460; }
+    .cal-wrap { grid-template-columns: repeat(6, 1fr); max-width: 100%; }
+    #bump-chart { min-width: 640px; }
+    .rec-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="swatchbar" id="swatchbar"></div>
+
+<div class="page">
+  <div class="masthead">
+    <span class="kicker">Live wait-time analytics · Lower Mainland BC</span>
+    <time>Wednesday, July 2 · 6:12 pm PT</time>
+  </div>
+
+  <section class="hero">
+    <div>
+      <div class="hero-label">ER pressure right now</div>
+      <div class="hero-status">Elevated</div>
+      <p class="hero-context">The median ER wait is <b>2h 40m</b> — about <b>35% above</b> what's typical for a Wednesday evening.</p>
+      <div class="gauge"><i class="on-1"></i><i class="on-2"></i><i class="on-3"><span class="needle"></span></i><i></i></div>
+      <div class="gauge-labels"><span>Calm</span><span>Typical</span><span class="active">Elevated</span><span>Severe</span></div>
+      <p class="hero-drivers">Driving it: <b>Surrey Memorial (5h 0m)</b> and <b>Royal Columbian (4h 20m)</b>. UPCCs remain under an hour.</p>
+    </div>
+    <div class="hero-chart-wrap">
+      <div class="chart-title">Today, hour by hour <small>· dashed line = a typical Wednesday · band = usual range</small></div>
+      <svg id="hero-chart" viewBox="0 0 660 235"></svg>
+    </div>
+  </section>
+
+  <div class="strip">
+    <div class="stat"><div class="v good">25<em>m</em></div><div class="k">Shortest wait now · North Van UPCC</div></div>
+    <div class="stat"><div class="v warn">5<em>h</em> 0<em>m</em></div><div class="k">Longest wait now · Surrey Memorial</div></div>
+    <div class="stat"><div class="v">38 / 41</div><div class="k">Facilities reporting</div></div>
+    <div class="stat"><div class="v">9–11<em>am</em></div><div class="k">Usually the quietest window</div></div>
+  </div>
+
+  <section class="block">
+    <div class="sec-eyebrow"><span>01</span>Right now</div>
+    <h2 class="finding">Two hospitals are carrying most of tonight's pressure.</h2>
+    <p class="finding-sub">Latest posted wait at each facility, and how it compares to that facility's usual level for this hour.</p>
+    <div class="card" id="rank-card"></div>
+  </section>
+
+  <section class="block">
+    <div class="sec-eyebrow"><span>02</span>The rhythm</div>
+    <h2 class="finding">Waits peak from 5 to 10&#8202;pm; mornings run two hours lighter.</h2>
+    <p class="finding-sub">The region's daily cycle over the past 30 days — and each facility's own version of it.</p>
+    <div class="duo">
+      <div class="card">
+        <div class="card-mini-title">Average wait by hour, per facility <small>busiest first · hover for exact values</small></div>
+        <div class="scrollx"><div class="heat-grid" id="heat-grid"></div></div>
+        <div class="legend"><span><span class="legend-ramp" id="ramp-legend"></span>&lt;1h → 5h+</span></div>
+      </div>
+      <div class="card">
+        <div class="card-mini-title">The regional day curve <small>median wait by hour, all ERs</small></div>
+        <div class="profile-bars" id="profile-bars"></div>
+        <div class="profile-axis"><span>12am</span><span>6am</span><span>noon</span><span>6pm</span><span>11pm</span></div>
+        <div class="best-window">✓ Best time to go: 9–11 am, typically under 1h 30m</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="sec-eyebrow"><span>03</span>The week</div>
+    <h2 class="finding">Mondays are the roughest day — Saturdays run almost an hour lighter.</h2>
+    <p class="finding-sub">Median ER wait by day of week, past 30 days. Click a day to see its full curve — past days show what actually happened, future days show what history predicts.</p>
+    <div class="card">
+      <div class="week-grid" id="week-grid"></div>
+      <div class="week-detail-head">
+        <span class="week-detail-title" id="week-detail-title"></span>
+        <span class="week-detail-note" id="week-detail-note"></span>
+      </div>
+      <svg id="week-detail" viewBox="0 0 980 210"></svg>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="sec-eyebrow"><span>04</span>ER vs urgent care</div>
+    <h2 class="finding">An ER visit costs about two hours more than urgent care — and the gap is widening.</h2>
+    <p class="finding-sub">Median wait by care type, past 30 days. UPCCs treat non-life-threatening conditions walk-in.</p>
+    <div class="duo">
+      <div class="card">
+        <div class="card-mini-title">30-day trend <small>daily median wait</small></div>
+        <svg id="gap-chart" viewBox="0 0 620 240"></svg>
+        <div class="legend" id="gap-legend"></div>
+      </div>
+      <div class="card dist-card">
+        <div class="card-mini-title">What a visit looked like <small>share of posted ER waits, past 30 days</small></div>
+        <div class="dist-bar" id="dist-bar"></div>
+        <div class="dist-labels" id="dist-labels"></div>
+        <svg id="dist-chart" viewBox="0 0 340 150"></svg>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="sec-eyebrow"><span>05</span>The full visit</div>
+    <h2 class="finding">Waiting is only half the story — a full Surrey Memorial visit runs about nine hours.</h2>
+    <p class="finding-sub">Current wait plus the facility's own estimated length of stay (ELOS) — the closest thing to a door-to-discharge estimate.</p>
+    <div class="card" id="visit-card"></div>
+  </section>
+
+  <section class="block">
+    <div class="sec-eyebrow"><span>06</span>Steady or a gamble</div>
+    <h2 class="finding">Richmond runs long but steady — Eagle Ridge is a coin flip.</h2>
+    <p class="finding-sub">Each facility's 30-day median wait against how much it typically swings. Right = longer, up = less predictable.</p>
+    <div class="card">
+      <svg id="scatter-chart" viewBox="0 0 720 340"></svg>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="sec-eyebrow"><span>07</span>The month</div>
+    <h2 class="finding">Only four genuinely calm days in the last thirty.</h2>
+    <p class="finding-sub">Each square is one day, colored by the region's median ER wait. This view keeps growing as history accumulates.</p>
+    <div class="card">
+      <div class="cal-wrap" id="cal-grid"></div>
+      <div class="legend"><span><span class="legend-ramp" id="cal-ramp"></span>calmer → rougher</span></div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="sec-eyebrow"><span>08</span>The long game</div>
+    <h2 class="finding">Surrey Memorial has run the region's longest waits for three straight weeks.</h2>
+    <p class="finding-sub">30-day median per facility, its evening peak, the last 30 days as a sparkline, and whether the last week improved.</p>
+    <div class="card">
+      <div class="scrollx">
+        <table class="league-table">
+          <thead><tr><th>Facility</th><th>Type</th><th>30-day median</th><th>Evening peak</th><th>Last 30 days</th><th>7-day trend</th></tr></thead>
+          <tbody id="league-body"></tbody>
+        </table>
+      </div>
+      <div id="league-pager"></div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="sec-eyebrow"><span>09</span>The standings race</div>
+    <h2 class="finding">Burnaby has climbed two places in three weeks — Langley is sliding.</h2>
+    <p class="finding-sub">Weekly ranking by median wait, longest at the top. Like league standings, but you want to be at the bottom.</p>
+    <div class="card">
+      <div class="scrollx"><svg id="bump-chart" viewBox="0 0 860 320" style="display:block;width:100%;height:auto;aspect-ratio:860/320"></svg></div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="sec-eyebrow"><span>10</span>Records &amp; oddities</div>
+    <h2 class="finding">This month's records: an 8-hour wait, a golden Saturday morning, and one hospital that barely moved.</h2>
+    <p class="finding-sub">The superlatives of the last 30 days — the extremes hiding inside the averages.</p>
+    <div class="card">
+      <div class="rec-grid" id="rec-grid"></div>
+      <p class="rec-myth" id="rec-myth"></p>
+    </div>
+  </section>
+
+  <p class="about">
+    <b>About this data.</b> Wait times are the figures each facility posts publicly, collected
+    every minute from the official edwaittimes.ca feed and archived since May 2026. "Typical"
+    ranges are per-facility medians for the same hour and day-of-week over the past 28 days.
+    Posted waits are estimates made by the facilities themselves — sicker patients are always
+    seen first. Facilities that don't publish wait times are excluded from regional numbers,
+    not counted as zero.
+  </p>
+</div>
+
+<script>
+  /* ───────────────────────── palettes ───────────────────────── */
+  const PALETTES = {
+    sage: {
+      label: "Sage", dark: false,
+      css: {
+        ink: "#171a18", ink2: "#3b403d", muted: "#71766f", faint: "#9aa098",
+        line: "#e5e9e4", surface: "#ffffff", bg: "#f4f6f2", card2: "#fafbf8",
+        primary: "#0f766e", "primary-soft": "#e2efec",
+        hot: "#b5462d", good: "#15803d", warnc: "#d97706", rose: "#be123c",
+        sev1: "#7fb89b", sev2: "#d9a44a", sev3: "#cf7f43", sev4: "#b5462d",
+        wash1: "rgba(15,118,110,0.07)", wash2: "rgba(181,70,45,0.045)",
+        "hero-grad-a": "#c47b1a", "hero-grad-b": "#b5462d", track: "#eef1ec",
+        "shadow-sm": "0 1px 2px rgba(23,26,24,0.04), 0 4px 16px rgba(23,26,24,0.05)",
+        "shadow-md": "0 2px 4px rgba(23,26,24,0.05), 0 12px 40px rgba(23,26,24,0.09)",
+      },
+      grid: "#eef1ec", tick: "#9aa098",
+      heat: ["#e4f2ef", "#b8ddd4", "#e9c78d", "#e89b73", "#d66d5b", "#b94a45"],
+      // warm ramp, same family as the heatmap: green → honey → apricot → terracotta → coral → brick
+      sevScale: v => v >= 300 ? "#8f2a22" : v >= 240 ? "#b5462d" : v >= 180 ? "#cf6a3c" : v >= 120 ? "#dd8a4d" : v >= 60 ? "#d9a44a" : "#84a86a",
+      dist: ["#84a86a", "#d9a44a", "#dd8a4d", "#cf6a3c", "#b5462d"],
+      band: "rgba(15,118,110,0.09)", todayFillTop: 0.20,
+    },
+    paper: {
+      label: "Paper", dark: false,
+      css: {
+        ink: "#221d16", ink2: "#4a4238", muted: "#7d7365", faint: "#a89d8d",
+        line: "#e9e0d2", surface: "#fffdf8", bg: "#f6efe3", card2: "#fbf6ec",
+        primary: "#0f5499", "primary-soft": "#e7eef7",
+        hot: "#c0392b", good: "#3a7d44", warnc: "#c9862b", rose: "#ad2831",
+        sev1: "#8fae8b", sev2: "#d9b45a", sev3: "#cd7b40", sev4: "#c0392b",
+        wash1: "rgba(15,84,153,0.05)", wash2: "rgba(192,57,43,0.05)",
+        "hero-grad-a": "#c9862b", "hero-grad-b": "#c0392b", track: "#efe8da",
+        "shadow-sm": "0 1px 2px rgba(60,48,30,0.05), 0 4px 16px rgba(60,48,30,0.06)",
+        "shadow-md": "0 2px 4px rgba(60,48,30,0.06), 0 12px 40px rgba(60,48,30,0.10)",
+      },
+      grid: "#efe8da", tick: "#a89d8d",
+      heat: ["#f2ecdd", "#dfd3ae", "#e5c07b", "#dd9a5b", "#cf6d45", "#b23a2e"],
+      sevScale: v => v >= 300 ? "#8c2320" : v >= 240 ? "#c0392b" : v >= 180 ? "#cd7b40" : v >= 120 ? "#d59a4b" : v >= 60 ? "#d9b45a" : "#8fae6b",
+      dist: ["#8fae6b", "#d9b45a", "#d59a4b", "#cd7b40", "#c0392b"],
+      band: "rgba(15,84,153,0.08)", todayFillTop: 0.16,
+    },
+    midnight: {
+      label: "Midnight", dark: true,
+      css: {
+        ink: "#eef1ea", ink2: "#c8cec3", muted: "#8f978c", faint: "#6b7268",
+        line: "rgba(255,255,255,0.09)", surface: "#161d1a", bg: "#0d1210", card2: "#1b2320",
+        primary: "#4fd1c5", "primary-soft": "rgba(79,209,197,0.14)",
+        hot: "#ff8a5c", good: "#63d68f", warnc: "#ffc25e", rose: "#ff7b8a",
+        sev1: "#4d8f6f", sev2: "#c99b45", sev3: "#d97b4a", sev4: "#e05d43",
+        wash1: "rgba(79,209,197,0.06)", wash2: "rgba(255,138,92,0.05)",
+        "hero-grad-a": "#ffc25e", "hero-grad-b": "#ff8a5c", track: "#232b27",
+        "shadow-sm": "0 1px 2px rgba(0,0,0,0.3), 0 4px 16px rgba(0,0,0,0.35)",
+        "shadow-md": "0 2px 4px rgba(0,0,0,0.35), 0 16px 48px rgba(0,0,0,0.5)",
+      },
+      grid: "#222a26", tick: "#6b7268",
+      heat: ["#1c2723", "#24463c", "#585032", "#7a5030", "#9c4a30", "#c44536"],
+      sevScale: v => v >= 300 ? "#c43a2d" : v >= 240 ? "#e05d43" : v >= 180 ? "#e0703f" : v >= 120 ? "#e08a45" : v >= 60 ? "#c99b45" : "#5da76b",
+      dist: ["#5da76b", "#c99b45", "#e08a45", "#e0703f", "#e05d43"],
+      band: "rgba(79,209,197,0.10)", todayFillTop: 0.28,
+    },
+    boreal: {
+      label: "Boreal", dark: false,
+      css: {
+        ink: "#141824", ink2: "#3a4152", muted: "#6e7688", faint: "#9aa2b4",
+        line: "#e3e6ef", surface: "#ffffff", bg: "#f3f5fa", card2: "#f8f9fd",
+        primary: "#4353c8", "primary-soft": "#e7eafb",
+        hot: "#d64545", good: "#1e8e5a", warnc: "#d98324", rose: "#cc3363",
+        sev1: "#7e9cd8", sev2: "#d9a44a", sev3: "#d87d4a", sev4: "#d64545",
+        wash1: "rgba(67,83,200,0.06)", wash2: "rgba(204,51,99,0.04)",
+        "hero-grad-a": "#d98324", "hero-grad-b": "#cc3363", track: "#eceef5",
+        "shadow-sm": "0 1px 2px rgba(20,24,36,0.04), 0 4px 16px rgba(20,24,36,0.06)",
+        "shadow-md": "0 2px 4px rgba(20,24,36,0.05), 0 12px 40px rgba(20,24,36,0.10)",
+      },
+      grid: "#eceef5", tick: "#9aa2b4",
+      heat: ["#e9edf8", "#c5d2f0", "#f0d9a8", "#efb27e", "#e37f5c", "#cc4b44"],
+      sevScale: v => v >= 300 ? "#b03030" : v >= 240 ? "#d64545" : v >= 180 ? "#d87d4a" : v >= 120 ? "#e08a45" : v >= 60 ? "#d9a44a" : "#7aa15c",
+      dist: ["#7aa15c", "#d9a44a", "#e08a45", "#d87d4a", "#d64545"],
+      band: "rgba(67,83,200,0.08)", todayFillTop: 0.16,
+    },
+  };
+
+  const fmtMin = v => v >= 60 ? `${Math.floor(v/60)}h ${Math.round(v%60) ? Math.round(v%60)+"m" : "0m"}` : `${Math.round(v)}m`;
+  let P = PALETTES.sage;
+
+  /* health authorities — the same favicon assets the map markers use */
+  const HA = {
+    fh:   { icon: "health-authorities/fraserhealth.ico", bg: "#ffffff", name: "Fraser Health" },
+    vch:  { icon: "health-authorities/vch.png", bg: "#0078AE", name: "Vancouver Coastal Health" },
+    phc:  { icon: "health-authorities/providencehealthcare.ico", bg: "#ffffff", name: "Providence Health Care" },
+    bcch: { icon: "health-authorities/bcchildrens.png", bg: "#ffffff", name: "BC Children's" },
+  };
+  const FAC_HA = {
+    "Surrey Memorial": "fh", "Royal Columbian": "fh", "Burnaby": "fh",
+    "Abbotsford Regional": "fh", "Abbotsford": "fh", "Langley Memorial": "fh",
+    "Langley": "fh", "Eagle Ridge": "fh", "Delta": "fh", "Ridge Meadows": "fh",
+    "Peace Arch": "fh", "Chilliwack General": "fh", "Mission Memorial": "fh",
+    "Fraser Canyon": "fh", "Surrey Newton UPCC": "fh", "Cloverdale UPCC": "fh",
+    "Richmond": "vch", "Lions Gate": "vch", "City Centre UPCC": "vch",
+    "North Van UPCC": "vch", "Vancouver General": "vch", "UBC Urgent Care": "vch",
+    "Squamish General": "vch", "Whistler HCC": "vch", "St. Mary's Sechelt": "vch",
+    "REACH UPCC": "vch", "South Vancouver UPCC": "vch",
+    "St. Paul's": "phc", "Mount Saint Joseph": "phc", "BC Children's": "bcch",
+  };
+
+  /* master facility list — [name, type, current wait, delta vs usual] */
+  const FACILITIES = [
+    ["Surrey Memorial", "ED", 300, 62], ["Royal Columbian", "ED", 260, 48],
+    ["Burnaby", "ED", 225, 12], ["Abbotsford Regional", "ED", 205, 25],
+    ["Langley Memorial", "ED", 190, -8], ["Eagle Ridge", "ED", 170, 15],
+    ["Richmond", "ED", 155, -20], ["Lions Gate", "ED", 140, 5],
+    ["St. Paul's", "ED", 130, -14], ["Vancouver General", "ED", 128, 3],
+    ["Peace Arch", "ED", 120, 18], ["Chilliwack General", "ED", 110, -6],
+    ["Delta", "ED", 105, 2], ["Mount Saint Joseph", "ED", 100, -9],
+    ["Ridge Meadows", "ED", 95, -25], ["Mission Memorial", "ED", 85, 4],
+    ["BC Children's", "ED", 80, 6], ["Squamish General", "ED", 70, -3],
+    ["St. Mary's Sechelt", "ED", 60, 1], ["Fraser Canyon", "ED", 50, -2],
+    ["Whistler HCC", "ED", 45, 8], ["City Centre UPCC", "UPCC", 45, -5],
+    ["REACH UPCC", "UPCC", 40, 2], ["Surrey Newton UPCC", "UPCC", 35, -4],
+    ["UBC Urgent Care", "UPCC", 30, 0], ["Cloverdale UPCC", "UPCC", 30, 6],
+    ["South Vancouver UPCC", "UPCC", 28, -1], ["North Van UPCC", "UPCC", 25, 0],
+  ];
+
+  /* pagination */
+  const PAGE = { rank: 0, visit: 0, league: 0 };
+  const PAGE_SIZE = 10;
+  const pager = (key, total) => {
+    const pages = Math.ceil(total / PAGE_SIZE);
+    if (pages <= 1) return "";
+    return `<div class="pager">` + Array.from({ length: pages }, (_, p) =>
+      `<button class="pg${p === PAGE[key] ? " active" : ""}" data-pager="${key}" data-page="${p}" aria-label="Page ${p + 1}">${p + 1}</button>`).join("") + `</div>`;
+  };
+  document.addEventListener("click", e => {
+    const b = e.target.closest("[data-pager]");
+    if (!b) return;
+    PAGE[b.dataset.pager] = Number(b.dataset.page);
+    ({ rank: renderRank, visit: renderVisit, league: renderLeague })[b.dataset.pager]();
+  });
+  const haChip = (name, extra = "") => {
+    const k = FAC_HA[name]; if (!k) return "";
+    const a = HA[k];
+    return `<span class="ha ${extra}" style="background:${a.bg}" title="${a.name}"><img src="${a.icon}" alt="${a.name}"/></span>`;
+  };
+  const haLegend = () =>
+    `<div class="ha-legend">${Object.values(HA).map(a =>
+      `<span><span class="ha" style="background:${a.bg}"><img src="${a.icon}" alt=""/></span>${a.name}</span>`).join("")}</div>`;
+
+  /* ─────────────────────── renderers ────────────────────────── */
+  function renderHero() {
+    const svg = document.getElementById("hero-chart");
+    const W = 660, H = 235, padL = 40, padR = 16, padT = 16, padB = 26, maxY = 300;
+    const x = h => padL + (h / 23) * (W - padL - padR);
+    const y = m => padT + (1 - m / maxY) * (H - padT - padB);
+    const typical = [55,50,45,42,40,42,50,65,85,100,110,118,125,130,135,140,148,158,170,178,172,150,110,75];
+    const lo = typical.map(v => v * 0.72), hi = typical.map(v => v * 1.32);
+    const today = [70,64,58,55,54,58,70,92,120,138,152,165,178,190,205,222,238,252,260];
+    const smooth = (arr, xs) => {
+      let d = `M ${xs(0)} ${y(arr[0])}`;
+      for (let i = 0; i < arr.length - 1; i++) {
+        const x0 = xs(Math.max(0, i - 1)), x1 = xs(i), x2 = xs(i + 1), x3 = xs(Math.min(arr.length - 1, i + 2));
+        const y0 = y(arr[Math.max(0, i - 1)]), y1 = y(arr[i]), y2 = y(arr[i + 1]), y3 = y(arr[Math.min(arr.length - 1, i + 2)]);
+        d += ` C ${x1 + (x2 - x0) / 6} ${y1 + (y2 - y0) / 6}, ${x2 - (x3 - x1) / 6} ${y2 - (y3 - y1) / 6}, ${x2} ${y2}`;
+      }
+      return d;
+    };
+    let inner = `<defs><linearGradient id="todayFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="${P.css.hot}" stop-opacity="${P.todayFillTop}"/><stop offset="100%" stop-color="${P.css.hot}" stop-opacity="0"/>
+    </linearGradient></defs>`;
+    for (const m of [60, 120, 180, 240]) {
+      inner += `<line x1="${padL}" y1="${y(m)}" x2="${W - padR}" y2="${y(m)}" stroke="${P.grid}"/>`;
+      inner += `<text x="${padL - 8}" y="${y(m) + 4}" font-size="11" fill="${P.tick}" text-anchor="end" font-weight="700">${m / 60}h</text>`;
+    }
+    for (const h of [0, 6, 12, 18, 23]) {
+      inner += `<text x="${x(h)}" y="${H - 7}" font-size="11" fill="${P.tick}" text-anchor="middle" font-weight="700">${h === 0 ? "12am" : h === 12 ? "noon" : h === 23 ? "11pm" : h < 12 ? h + "am" : (h - 12) + "pm"}</text>`;
+    }
+    const bandPath = smooth(hi, x) + ` L ${x(23)} ${y(lo[23])} ` + smooth(lo.slice().reverse(), i => x(23 - i)).replace("M", "L") + " Z";
+    inner += `<path d="${bandPath}" fill="${P.band}"/>`;
+    inner += `<path d="${smooth(typical, x)}" fill="none" stroke="${P.css.primary}" stroke-width="2" stroke-dasharray="1 7" stroke-linecap="round" opacity="0.9"/>`;
+    const todayLine = smooth(today, x);
+    inner += `<path d="${todayLine} L ${x(today.length - 1)} ${y(0)} L ${x(0)} ${y(0)} Z" fill="url(#todayFill)"/>`;
+    inner += `<path d="${todayLine}" fill="none" stroke="${P.css.hot}" stroke-width="3.5" stroke-linecap="round"/>`;
+    const li = today.length - 1;
+    inner += `<circle cx="${x(li)}" cy="${y(today[li])}" r="10" fill="${P.css.hot}" opacity="0.22"><animate attributeName="r" values="7;13;7" dur="2.4s" repeatCount="indefinite"/></circle>`;
+    inner += `<circle cx="${x(li)}" cy="${y(today[li])}" r="5" fill="${P.css.hot}" stroke="${P.css.surface}" stroke-width="2"/>`;
+    inner += `<text x="${x(li) - 10}" y="${y(today[li]) - 13}" font-size="12.5" font-weight="800" fill="${P.css.hot}" text-anchor="end">now · 2h 40m</text>`;
+    inner += `<text x="${x(21.2)}" y="${y(typical[21]) + 22}" font-size="11.5" font-weight="750" fill="${P.css.primary}">typical</text>`;
+    svg.innerHTML = inner;
+  }
+
+  function renderRank() {
+    const max = 320;
+    const slice = FACILITIES.slice(PAGE.rank * PAGE_SIZE, (PAGE.rank + 1) * PAGE_SIZE);
+    document.getElementById("rank-card").innerHTML = slice.map(([name, tag, v, d]) => {
+      const cls = Math.abs(d) < 10 ? "flat" : d > 0 ? "up" : "down";
+      const dTxt = Math.abs(d) < 10 ? "≈ usual" : (d > 0 ? "+" : "−") + fmtMin(Math.abs(d)) + " vs usual";
+      return `<div class="rank-row">
+        <div class="rank-name">${haChip(name)}<span class="nm">${name}</span><span class="rank-tag">${tag}</span></div>
+        <div class="rank-track"><div class="rank-fill" style="width:${(v / max) * 100}%;background:${P.sevScale(v)}"></div></div>
+        <div class="rank-end"><span class="rank-val">${fmtMin(v)}</span><span class="delta ${cls}">${dTxt}</span></div>
+      </div>`;
+    }).join("") + pager("rank", FACILITIES.length) + haLegend();
+  }
+
+  function renderHeat() {
+    const facilities = ["Surrey Memorial", "Royal Columbian", "Burnaby", "Abbotsford", "Langley", "Eagle Ridge", "Richmond", "St. Paul's"];
+    const heat = v => P.heat[v >= 300 ? 5 : v >= 240 ? 4 : v >= 180 ? 3 : v >= 120 ? 2 : v >= 60 ? 1 : 0];
+    const base = [185, 168, 145, 133, 122, 112, 100, 92];
+    let html = `<div></div>` + Array.from({ length: 24 }, (_, h) =>
+      `<div class="heat-hour-label">${h % 6 === 0 ? (h === 0 ? "12a" : h === 12 ? "12p" : h < 12 ? h + "a" : (h - 12) + "p") : ""}</div>`).join("");
+    facilities.forEach((f, fi) => {
+      html += `<div class="heat-name">${haChip(f)}${f}</div>`;
+      for (let h = 0; h < 24; h++) {
+        const shape = 0.55 + 0.45 * Math.sin(((h - 9) / 24) * Math.PI * 2) + (h >= 17 && h <= 22 ? 0.35 : 0);
+        const v = Math.round(base[fi] * Math.max(0.3, shape) * 1.4);
+        html += `<div class="heat-cell" style="background:${heat(v)}" title="${f} · ${h}:00 — avg ${fmtMin(v)}"></div>`;
+      }
+    });
+    document.getElementById("heat-grid").innerHTML = html;
+    document.getElementById("ramp-legend").innerHTML = P.heat.map(c => `<i style="background:${c}"></i>`).join("");
+  }
+
+  function renderProfile() {
+    const vals = Array.from({ length: 24 }, (_, h) =>
+      Math.round(120 * Math.max(0.35, 0.55 + 0.45 * Math.sin(((h - 9) / 24) * Math.PI * 2) + (h >= 17 && h <= 22 ? 0.32 : 0)) * 1.35));
+    const max = Math.max(...vals);
+    document.getElementById("profile-bars").innerHTML = vals.map((v, h) => {
+      const isBest = h >= 9 && h <= 11;
+      return `<div class="pbar" style="height:${(v / max) * 100}%;background:${isBest ? P.css.primary : P.sevScale(v)};opacity:${isBest ? 1 : 0.85}" title="${h}:00 — median ${fmtMin(v)}"></div>`;
+    }).join("");
+  }
+
+  const WEEK_DAYS = [["Mon", "Monday", 185], ["Tue", "Tuesday", 172], ["Wed", "Wednesday", 168], ["Thu", "Thursday", 165], ["Fri", "Friday", 158], ["Sat", "Saturday", 132], ["Sun", "Sunday", 145]];
+  const TODAY_IDX = 2;
+  let selDay = TODAY_IDX;
+
+  const dayCurve = (v, seed) => Array.from({ length: 24 }, (_, h) => {
+    const s = 0.55 + 0.45 * Math.sin(((h - 9) / 24) * Math.PI * 2) + (h >= 17 && h <= 22 ? 0.3 : 0);
+    const wob = 1 + 0.06 * Math.sin(h * 1.7 + seed * 2.3);
+    return Math.round(v * Math.max(0.35, s) * 1.35 * wob);
+  });
+
+  function renderWeek() {
+    document.getElementById("week-grid").innerHTML = WEEK_DAYS.map(([name, , v], i) => {
+      const pts = dayCurve(v, i);
+      const maxP = 195; // fill the tile like v2 — shapes read at a glance
+      const W = 90, H = 30;
+      const path = "M " + pts.map((p, h) => `${(h / 23) * W},${H - Math.min(0.95, p / maxP) * H * 0.92}`).join(" L ");
+      const isT = i === TODAY_IDX;
+      const stroke = isT ? P.css.hot : P.css.primary;
+      return `<div class="day-cell${isT ? " today" : ""}${i === selDay ? " selected" : ""}" data-day="${i}" role="button" tabindex="0" aria-label="Show ${name} curve">
+        <div class="day-name">${name}${isT ? " ·" : ""}</div><div class="day-val">${fmtMin(v)}</div>
+        <svg class="day-spark" viewBox="0 0 ${W} ${H}" width="100%" height="30" preserveAspectRatio="none">
+          <path d="${path} L ${W},${H} L 0,${H} Z" fill="${stroke}" opacity="0.13"/>
+          <path d="${path}" fill="none" stroke="${stroke}" stroke-width="1.6"/>
+        </svg>
+      </div>`;
+    }).join("");
+    document.querySelectorAll(".day-cell").forEach(el =>
+      el.addEventListener("click", () => { selDay = Number(el.dataset.day); renderWeek(); }));
+    renderWeekDetail();
+  }
+
+  function renderWeekDetail() {
+    const [, full, v] = WEEK_DAYS[selDay];
+    const isToday = selDay === TODAY_IDX;
+    const isPast = selDay < TODAY_IDX;
+    const svg = document.getElementById("week-detail");
+    const W = 980, H = 210, padL = 40, padR = 16, padT = 12, padB = 26, maxY = 300;
+    const x = h => padL + (h / 23) * (W - padL - padR);
+    const y = m => padT + (1 - Math.min(m, maxY) / maxY) * (H - padT - padB);
+
+    const typical = dayCurve(v, selDay);                       // per-day historical median
+    const lo = typical.map(t => Math.round(t * 0.74)), hi = typical.map(t => Math.round(t * 1.3));
+    const actual = isPast ? dayCurve(v * 1.04, selDay + 10)     // what actually happened
+      : isToday ? dayCurve(v * 1.12, 12).slice(0, 19) : null;   // today: through 6 pm
+
+    const line = arr => arr.map((p, i) => `${x(i)},${y(p)}`).join(" ");
+    let inner = "";
+    for (const m of [60, 120, 180, 240]) {
+      inner += `<line x1="${padL}" y1="${y(m)}" x2="${W - padR}" y2="${y(m)}" stroke="${P.grid}"/>`;
+      inner += `<text x="${padL - 8}" y="${y(m) + 4}" font-size="11" fill="${P.tick}" text-anchor="end" font-weight="700">${m / 60}h</text>`;
+    }
+    for (const h of [0, 6, 12, 18, 23])
+      inner += `<text x="${x(h)}" y="${H - 7}" font-size="11" fill="${P.tick}" text-anchor="middle" font-weight="700">${h === 0 ? "12am" : h === 12 ? "noon" : h === 23 ? "11pm" : h < 12 ? h + "am" : (h - 12) + "pm"}</text>`;
+
+    // typical band + median (always)
+    inner += `<polygon points="${line(hi)} ${lo.slice().reverse().map((p, i) => `${x(23 - i)},${y(p)}`).join(" ")}" fill="${P.band}"/>`;
+    inner += `<polyline points="${line(typical)}" fill="none" stroke="${P.css.primary}" stroke-width="${actual ? 2 : 3}" stroke-dasharray="${actual ? "1 7" : "none"}" stroke-linecap="round" opacity="0.95"/>`;
+
+    if (actual) {
+      inner += `<polyline points="${line(actual)}" fill="none" stroke="${P.css.hot}" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>`;
+      if (isToday) {
+        const li = actual.length - 1;
+        // projection: decay from now toward typical
+        const proj = typical.map((t, i) => i < li ? null : Math.round(t + (actual[li] - typical[li]) * Math.exp(-(i - li) / 3)));
+        const projPts = proj.map((p, i) => p == null ? null : `${x(i)},${y(p)}`).filter(Boolean).join(" ");
+        inner += `<polyline points="${projPts}" fill="none" stroke="${P.css.hot}" stroke-width="2.5" stroke-dasharray="4 6" stroke-linecap="round" opacity="0.75"/>`;
+        inner += `<circle cx="${x(li)}" cy="${y(actual[li])}" r="5" fill="${P.css.hot}" stroke="${P.css.surface}" stroke-width="2"/>`;
+        inner += `<text x="${x(li)}" y="${y(actual[li]) - 12}" font-size="12" font-weight="800" fill="${P.css.hot}" text-anchor="middle">now</text>`;
+      }
+    }
+    svg.innerHTML = inner;
+
+    document.getElementById("week-detail-title").textContent =
+      isToday ? `${full} — today` : full;
+    document.getElementById("week-detail-note").innerHTML = isToday
+      ? `<span style="color:${P.css.hot}">— actual so far</span> &nbsp;· ┄ projected &nbsp;· band = usual range`
+      : isPast
+        ? `<span style="color:${P.css.hot}">— what happened (Jun ${28 + selDay})</span> &nbsp;· band = usual ${full} range`
+        : `<span class="proj-chip">projected</span> from the last four ${full}s`;
+  }
+
+  function renderGap() {
+    const svg = document.getElementById("gap-chart");
+    const W = 620, H = 240, padL = 40, padR = 14, padT = 14, padB = 26, days = 30, maxY = 240;
+    const x = d => padL + (d / (days - 1)) * (W - padL - padR);
+    const y = m => padT + (1 - m / maxY) * (H - padT - padB);
+    const ed = Array.from({ length: days }, (_, i) => 150 + 18 * Math.sin(i / 3.2) + i * 1.15 + (i % 7 === 5 ? 16 : 0));
+    const upcc = Array.from({ length: days }, (_, i) => 44 + 7 * Math.sin(i / 2.6) + i * 0.12);
+    const pts = arr => arr.map((v, i) => `${x(i)},${y(v)}`).join(" ");
+    let inner = "";
+    for (const m of [60, 120, 180]) {
+      inner += `<line x1="${padL}" y1="${y(m)}" x2="${W - padR}" y2="${y(m)}" stroke="${P.grid}"/>`;
+      inner += `<text x="${padL - 8}" y="${y(m) + 4}" font-size="11" fill="${P.tick}" text-anchor="end" font-weight="700">${m / 60}h</text>`;
+    }
+    for (const [d, label] of [[0, "Jun 2"], [10, "Jun 12"], [20, "Jun 22"], [29, "Jul 2"]])
+      inner += `<text x="${x(d)}" y="${H - 7}" font-size="11" fill="${P.tick}" text-anchor="middle" font-weight="700">${label}</text>`;
+    inner += `<polygon points="${pts(ed)} ${upcc.slice().reverse().map((v, i) => `${x(days - 1 - i)},${y(v)}`).join(" ")}" fill="${P.css.hot}" opacity="0.05"/>`;
+    inner += `<polyline points="${pts(ed)}" fill="none" stroke="${P.css.hot}" stroke-width="3" stroke-linejoin="round"/>`;
+    inner += `<polyline points="${pts(upcc)}" fill="none" stroke="${P.css.primary}" stroke-width="3" stroke-linejoin="round"/>`;
+    const gapNow = Math.round(ed[days - 1] - upcc[days - 1]);
+    inner += `<line x1="${x(29)}" y1="${y(ed[29])}" x2="${x(29)}" y2="${y(upcc[29])}" stroke="${P.css.hot}" stroke-width="1.5" stroke-dasharray="3 3"/>`;
+    inner += `<text x="${x(29) - 6}" y="${(y(ed[29]) + y(upcc[29])) / 2 + 4}" font-size="12.5" font-weight="800" fill="${P.css.hot}" text-anchor="end">gap: ${fmtMin(gapNow)}</text>`;
+    svg.innerHTML = inner;
+    document.getElementById("gap-legend").innerHTML =
+      `<span><i style="background:${P.css.hot}"></i>Emergency departments</span><span><i style="background:${P.css.primary}"></i>Urgent &amp; primary care</span>`;
+  }
+
+  function renderDist() {
+    const segs = [["< 1h", 18], ["1–2h", 34], ["2–3h", 24], ["3–4h", 14], ["4h +", 10]];
+    document.getElementById("dist-bar").innerHTML = segs.map(([l, p], i) =>
+      `<div class="dist-seg" style="flex:${p};background:${P.dist[i]}" title="${l}: ${p}% of readings">${p}%</div>`).join("");
+    document.getElementById("dist-labels").innerHTML = segs.map(([l, p]) => `<span style="flex:${p}">${l}</span>`).join("");
+    const svg = document.getElementById("dist-chart");
+    const W = 340, H = 150, padB = 22, padT = 18;
+    const bins = [4, 9, 16, 22, 19, 12, 8, 5, 3, 2];
+    const maxB = Math.max(...bins), bw = W / bins.length;
+    let inner = `<text x="0" y="11" font-size="11.5" font-weight="800" fill="${P.css.ink2}">Tonight's waits vs the usual evening spread</text>`;
+    bins.forEach((b, i) => {
+      const h = (b / maxB) * (H - padB - padT);
+      inner += `<rect x="${i * bw + 3}" y="${H - padB - h}" width="${bw - 6}" height="${h}" rx="4" fill="${P.css.primary}" opacity="0.30"/>`;
+    });
+    const tx = 5.4 * bw;
+    inner += `<line x1="${tx}" y1="${padT}" x2="${tx}" y2="${H - padB}" stroke="${P.css.hot}" stroke-width="2.5" stroke-dasharray="4 4"/>`;
+    inner += `<text x="${tx + 6}" y="${padT + 10}" font-size="11" font-weight="800" fill="${P.css.hot}">tonight</text>`;
+    inner += `<text x="0" y="${H - 6}" font-size="10.5" fill="${P.tick}" font-weight="700">0h</text>`;
+    inner += `<text x="${W - 4}" y="${H - 6}" font-size="10.5" fill="${P.tick}" font-weight="700" text-anchor="end">6h+</text>`;
+    svg.innerHTML = inner;
+  }
+
+  function renderLeague() {
+    const spark = (seed, up) => {
+      const W = 110, H = 26;
+      const pts = Array.from({ length: 30 }, (_, i) => {
+        const t = 0.5 + 0.28 * Math.sin(i / 4 + seed) + (up ? i / 90 : -i / 130) + ((i * 7 + seed * 13) % 5) * 0.02;
+        return `${(i / 29) * W},${H - Math.max(0.08, Math.min(0.95, t)) * H}`;
+      }).join(" ");
+      return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}"><polyline points="${pts}" fill="none" stroke="${up ? P.css.hot : P.css.primary}" stroke-width="1.8" stroke-linejoin="round" opacity="0.85"/></svg>`;
+    };
+    // derive 30-day league stats deterministically from the master list
+    const rows = FACILITIES.map(([name, tag, w, d], i) => {
+      const med = Math.round(w * 0.78 + ((i * 11) % 18));
+      const busy = Math.round(med * 1.3);
+      const tr = Math.abs(d) < 8 ? "flat" : d > 0 ? "up" : "down";
+      const delta = tr === "flat" ? `±${(i % 6) + 2}m` : (d > 0 ? "+" : "−") + fmtMin(Math.abs(Math.round(d * 0.4)));
+      return [name, tag, med, busy, d > 0, tr, delta];
+    });
+    const slice = rows.slice(PAGE.league * PAGE_SIZE, (PAGE.league + 1) * PAGE_SIZE);
+    const arrow = t => t === "up" ? `<span class="trend-up">▲</span>` : t === "down" ? `<span class="trend-down">▼</span>` : `<span class="trend-flat">→</span>`;
+    document.getElementById("league-body").innerHTML = slice.map(([n, t, med, busy, up, tr, delta], i) => `
+      <tr><td>${haChip(n)}${n}</td><td><span class="pill ${t === "ED" ? "pill-ed" : "pill-upcc"}">${t}</span></td>
+      <td class="num">${fmtMin(med)}</td><td>${fmtMin(busy)}</td><td>${spark(i + PAGE.league * PAGE_SIZE, up)}</td><td>${arrow(tr)} ${delta}</td></tr>`).join("");
+    document.getElementById("league-pager").innerHTML = pager("league", rows.length);
+  }
+
+  function renderVisit() {
+    // ELOS estimate derived deterministically from the master list for the mock
+    const rows = FACILITIES.map(([name, tag, w], i) => [name, w, Math.round(w * 0.75 + 35 + ((i * 17) % 25))]);
+    const max = Math.max(...rows.map(([, w, e]) => w + e)) * 1.02;
+    const slice = rows.slice(PAGE.visit * PAGE_SIZE, (PAGE.visit + 1) * PAGE_SIZE);
+    document.getElementById("visit-card").innerHTML = slice.map(([name, w, e]) => `
+      <div class="visit-row">
+        <div class="visit-name">${haChip(name)}<span class="nm">${name}</span></div>
+        <div class="visit-track">
+          <div class="visit-wait" style="width:${(w / max) * 100}%;background:${P.sevScale(w)}" title="waiting: ${fmtMin(w)}"></div>
+          <div class="visit-elos" style="width:${(e / max) * 100}%;background:${P.sevScale(w)}" title="treatment (est.): ${fmtMin(e)}"></div>
+        </div>
+        <div class="visit-total">${fmtMin(w + e)}<small>${fmtMin(w)} wait · ${fmtMin(e)} care</small></div>
+      </div>`).join("") +
+      pager("visit", rows.length) +
+      `<div class="legend" style="margin-top:14px"><span><i style="background:${P.sevScale(200)}"></i>time waiting</span><span><i style="background:${P.sevScale(200)};opacity:0.38"></i>estimated time in care (ELOS)</span></div>`;
+  }
+
+  function renderScatter() {
+    const svg = document.getElementById("scatter-chart");
+    const W = 720, H = 340, padL = 46, padR = 18, padT = 20, padB = 40;
+    const maxX = 250, maxY = 80; // median wait / typical swing
+    const x = m => padL + (m / maxX) * (W - padL - padR);
+    const y = s => padT + (1 - s / maxY) * (H - padT - padB);
+    // [name, median, swing, readings]
+    const pts = [
+      ["Surrey Memorial", 225, 52, 41000], ["Royal Columbian", 190, 44, 36000],
+      ["Abbotsford", 170, 30, 30000], ["Burnaby", 160, 38, 29000],
+      ["Langley", 145, 26, 26000], ["Eagle Ridge", 130, 64, 23000],
+      ["Richmond", 115, 14, 22000], ["Lions Gate", 108, 33, 20000],
+      ["St. Paul's", 105, 22, 25000], ["Delta", 90, 47, 12000],
+      ["Ridge Meadows", 82, 55, 9000], ["BC Children's", 75, 18, 15000],
+    ];
+    const midX = 140, midY = 36;
+    let inner = "";
+    // quadrant shading + labels
+    inner += `<rect x="${padL}" y="${padT}" width="${W - padL - padR}" height="${H - padT - padB}" fill="${P.css.card2}" rx="10"/>`;
+    inner += `<line x1="${x(midX)}" y1="${padT}" x2="${x(midX)}" y2="${H - padB}" stroke="${P.grid}" stroke-width="1.5"/>`;
+    inner += `<line x1="${padL}" y1="${y(midY)}" x2="${W - padR}" y2="${y(midY)}" stroke="${P.grid}" stroke-width="1.5"/>`;
+    const qlabel = (tx, ty, txt, anchor) =>
+      `<text x="${tx}" y="${ty}" font-size="10.5" font-weight="800" fill="${P.css.faint}" text-anchor="${anchor}" letter-spacing="0.08" style="text-transform:uppercase">${txt}</text>`;
+    inner += qlabel(padL + 10, padT + 16, "SHORT BUT JUMPY", "start");
+    inner += qlabel(W - padR - 10, padT + 16, "LONG & UNPREDICTABLE", "end");
+    inner += qlabel(padL + 10, H - padB - 8, "SHORT & STEADY", "start");
+    inner += qlabel(W - padR - 10, H - padB - 8, "LONG BUT STEADY", "end");
+    for (const m of [60, 120, 180, 240])
+      inner += `<text x="${x(m)}" y="${H - padB + 16}" font-size="10.5" fill="${P.tick}" text-anchor="middle" font-weight="700">${m / 60}h</text>`;
+    inner += `<text x="${(padL + W - padR) / 2}" y="${H - 6}" font-size="11" fill="${P.css.muted}" text-anchor="middle" font-weight="750">median wait →</text>`;
+    inner += `<text x="14" y="${(padT + H - padB) / 2}" font-size="11" fill="${P.css.muted}" text-anchor="middle" font-weight="750" transform="rotate(-90 14 ${(padT + H - padB) / 2})">typical swing →</text>`;
+    for (const [name, med, swing, n] of pts) {
+      const r = 6 + Math.sqrt(n) / 40;
+      inner += `<circle cx="${x(med)}" cy="${y(swing)}" r="${r}" fill="${P.sevScale(med)}" opacity="0.82" stroke="${P.css.surface}" stroke-width="1.5"><title>${name} — median ${fmtMin(med)}, swings ±${fmtMin(swing)}</title></circle>`;
+      inner += `<text x="${x(med)}" y="${y(swing) - r - 5}" font-size="10.5" font-weight="750" fill="${P.css.ink2}" text-anchor="middle">${name}</text>`;
+    }
+    svg.innerHTML = inner;
+  }
+
+  function renderCalendar() {
+    // last 30 days of regional daily medians, most recent last
+    const vals = Array.from({ length: 30 }, (_, i) => {
+      const dow = (i + 1) % 7; // pseudo weekday
+      const weekend = dow === 5 || dow === 6;
+      return Math.round(150 + 45 * Math.sin(i / 4.1) + (weekend ? -38 : 8) + ((i * 13) % 17));
+    });
+    const heat = v => P.heat[v >= 210 ? 5 : v >= 185 ? 4 : v >= 160 ? 3 : v >= 135 ? 2 : v >= 110 ? 1 : 0];
+    const start = new Date(2026, 5, 3); // Jun 3 → Jul 2
+    document.getElementById("cal-grid").innerHTML = vals.map((v, i) => {
+      const d = new Date(start); d.setDate(start.getDate() + i);
+      const label = d.toLocaleDateString("en-CA", { month: "short", day: "numeric" });
+      return `<div class="cal-day${i === 29 ? " is-today" : ""}" style="background:${heat(v)}" title="${label} — median ${fmtMin(v)}">${d.getDate()}</div>`;
+    }).join("");
+    document.getElementById("cal-ramp").innerHTML = P.heat.map(c => `<i style="background:${c}"></i>`).join("");
+  }
+
+  function renderBump() {
+    const svg = document.getElementById("bump-chart");
+    const W = 860, H = 320, padL = 150, padR = 150, padT = 26, padB = 20;
+    // weekly rank (1 = longest wait) per facility over 4 weeks
+    const series = [
+      ["Surrey Memorial", [1, 1, 1, 1], false],
+      ["Royal Columbian", [2, 2, 2, 2], false],
+      ["Abbotsford Regional", [3, 4, 4, 5], false],
+      ["Burnaby", [5, 3, 3, 3], true],   // the climber
+      ["Langley Memorial", [4, 5, 6, 6], true], // the slider
+      ["Eagle Ridge", [6, 6, 5, 4], false],
+      ["Richmond", [7, 7, 7, 7], false],
+      ["St. Paul's", [8, 8, 8, 8], false],
+    ];
+    const x = w => padL + (w / 3) * (W - padL - padR);
+    const y = r => padT + ((r - 1) / 7) * (H - padT - padB);
+    let inner = "";
+    ["4 wks ago", "3 wks ago", "2 wks ago", "this week"].forEach((label, w) => {
+      inner += `<text x="${x(w)}" y="14" font-size="10.5" fill="${P.tick}" text-anchor="middle" font-weight="750">${label}</text>`;
+      inner += `<line x1="${x(w)}" y1="${padT}" x2="${x(w)}" y2="${H - padB}" stroke="${P.grid}"/>`;
+    });
+    for (const [name, ranks, highlight] of series) {
+      const color = highlight ? (ranks[3] < ranks[0] ? P.css.hot : P.css.warnc) : P.css.faint;
+      const widthPx = highlight ? 3.5 : 2;
+      const pts = ranks.map((r, w) => `${x(w)},${y(r)}`).join(" ");
+      inner += `<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="${widthPx}" stroke-linejoin="round" opacity="${highlight ? 1 : 0.55}"/>`;
+      ranks.forEach((r, w) => {
+        inner += `<circle cx="${x(w)}" cy="${y(r)}" r="${highlight ? 5 : 3.5}" fill="${color}" stroke="${P.css.surface}" stroke-width="1.5"/>`;
+      });
+      inner += `<text x="${padL - 12}" y="${y(ranks[0]) + 4}" font-size="11.5" font-weight="${highlight ? 800 : 700}" fill="${highlight ? P.css.ink : P.css.muted}" text-anchor="end">${name}</text>`;
+      const delta = ranks[0] - ranks[3];
+      const badge = delta > 0 ? ` ▲${delta}` : delta < 0 ? ` ▼${-delta}` : "";
+      inner += `<text x="${W - padR + 12}" y="${y(ranks[3]) + 4}" font-size="11.5" font-weight="${highlight ? 800 : 700}" fill="${highlight ? P.css.ink : P.css.muted}">${name.split(" ")[0]}${badge}</text>`;
+    }
+    svg.innerHTML = inner;
+  }
+
+  function renderRecords() {
+    const recs = [
+      ["🏆", "Longest wait recorded", "8h 45m", "Surrey Memorial · Mon Jun 9, 7:41 pm"],
+      ["🌅", "The golden hour", "Sat 8–9 am", "52m median — the week's quietest window"],
+      ["📏", "The metronome", "Richmond", "swung just ±14m all month"],
+      ["🎢", "The rollercoaster", "Eagle Ridge", "±1h 4m — pack a book, or get lucky"],
+      ["😌", "Calmest day", "Sun Jun 22", "regional median 1h 38m"],
+      ["🔥", "Roughest day", "Mon Jun 9", "regional median 3h 52m — record day, record evening"],
+    ];
+    document.getElementById("rec-grid").innerHTML = recs.map(([e, t, v, s]) => `
+      <div class="rec"><div class="rec-emoji">${e}</div><div class="rec-title">${t}</div>
+      <div class="rec-value">${v}</div><div class="rec-sub">${s}</div></div>`).join("");
+    document.getElementById("rec-myth").innerHTML =
+      `<b>Full-moon check 🌕</b> — ER folklore says full moons bring chaos. June's full moon ran <b>+4 minutes</b> vs the monthly average. The myth survives another month, barely. <i>(This one gets better as history accumulates.)</i>`;
+  }
+
+  /* ─────────────────── palette switching ─────────────────────── */
+  function applyPalette(key) {
+    P = PALETTES[key];
+    const root = document.documentElement;
+    for (const [k, v] of Object.entries(P.css)) root.style.setProperty(`--${k}`, v);
+    if (P.dark) document.body.setAttribute("data-dark", ""); else document.body.removeAttribute("data-dark");
+    renderHero(); renderRank(); renderHeat(); renderProfile(); renderWeek(); renderGap(); renderDist(); renderVisit(); renderScatter(); renderCalendar(); renderLeague(); renderBump(); renderRecords();
+    document.querySelectorAll(".swatchbar button").forEach(b => b.classList.toggle("active", b.dataset.key === key));
+    try { localStorage.setItem("edwt-mock-palette", key); } catch {}
+  }
+
+  (function initSwitcher() {
+    const bar = document.getElementById("swatchbar");
+    bar.innerHTML = Object.entries(PALETTES).map(([key, p]) => {
+      const dots = [p.css.primary, p.css.hot, p.css.bg].map(c => `<i style="background:${c}"></i>`).join("");
+      return `<button data-key="${key}"><span class="dots">${dots}</span>${p.label}</button>`;
+    }).join("");
+    bar.addEventListener("click", e => {
+      const btn = e.target.closest("button");
+      if (btn) applyPalette(btn.dataset.key);
+    });
+    let saved = "sage";
+    try { saved = localStorage.getItem("edwt-mock-palette") || "sage"; } catch {}
+    applyPalette(PALETTES[saved] ? saved : "sage");
+  })();
+</script>
+</body>
+</html>
