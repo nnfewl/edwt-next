@@ -28,22 +28,28 @@ function HourLabels() {
   );
 }
 
-type WaveMode = "normal" | "grey" | "flat" | "fade" | "dotted" | "outline" | "echo" | "ghost";
+type WaveMode = "normal" | "grey" | "flat" | "fade" | "dotted" | "outline" | "echo" | "hatch" | "dashfill" | "settle" | "flatdot" | "squash" | "ghost";
 
 const WAVE_D = "M0 74 C 40 70, 70 58, 110 56 S 190 66, 230 58 S 320 34, 360 30 L 400 26";
 const WAVE_AREA = `${WAVE_D} L 400 90 L 0 90 Z`;
 // Flatline: the day's activity sits at zero while doors are shut.
 const FLAT_D = "M0 80 L 400 80";
 const FLAT_AREA = `${FLAT_D} L 400 90 L 0 90 Z`;
+// Settle: yesterday's activity winding down to zero — wave flattens rightward.
+const SETTLE_D = "M0 58 C 40 52, 70 66, 110 60 S 180 66, 220 74 C 250 79, 280 80, 400 80";
+const SETTLE_AREA = `${SETTLE_D} L 400 90 L 0 90 Z`;
 
 function MiniWave({ tone, mode = "normal" }: { tone: string; mode?: WaveMode }) {
-  const flat = mode === "flat";
-  const line = flat ? FLAT_D : WAVE_D;
-  const area = flat ? FLAT_AREA : WAVE_AREA;
+  const flat = mode === "flat" || mode === "flatdot";
+  const line = flat ? FLAT_D : mode === "settle" ? SETTLE_D : WAVE_D;
+  const area = flat ? FLAT_AREA : mode === "settle" ? SETTLE_AREA : WAVE_AREA;
+  const noFill = mode === "dotted" || mode === "outline" || mode === "flatdot";
+  const hatched = mode === "ghost" || mode === "hatch";
+  const dashed = mode === "ghost" ? "4 6" : mode === "dotted" || mode === "flatdot" ? "0.5 6" : mode === "dashfill" ? "4 6" : undefined;
   return (
     <svg className="dds-wave" viewBox="0 0 400 90" preserveAspectRatio="none" aria-hidden="true">
       <defs>
-        {mode === "ghost" && (
+        {hatched && (
           /* Diagonal hatch — the standard "no data here" fill. */
           <pattern id="dds-hatch" width="7" height="7" patternTransform="rotate(-45)" patternUnits="userSpaceOnUse">
             <rect width="7" height="7" fill="none" />
@@ -60,21 +66,25 @@ function MiniWave({ tone, mode = "normal" }: { tone: string; mode?: WaveMode }) 
           )}
         {mode === "fade" && <mask id="dds-fade-mask"><rect width="400" height="90" fill="url(#dds-fade)" /></mask>}
       </defs>
-      <g mask={mode === "fade" ? "url(#dds-fade-mask)" : undefined}>
-        {mode !== "dotted" && mode !== "outline" && (
+      <g
+        mask={mode === "fade" ? "url(#dds-fade-mask)" : undefined}
+        transform={mode === "squash" ? "translate(0, 61) scale(1, 0.32)" : undefined}
+      >
+        {!noFill && (
           <path
             d={area}
-            fill={mode === "ghost" ? "url(#dds-hatch)" : tone}
-            opacity={mode === "ghost" ? 1 : mode === "echo" ? 0.08 : 0.16}
+            fill={hatched ? "url(#dds-hatch)" : tone}
+            opacity={hatched ? 1 : mode === "echo" ? 0.08 : 0.16}
           />
         )}
         <path
           d={line}
           fill="none"
           stroke={tone}
-          strokeWidth={mode === "dotted" ? 2 : 1.6}
-          strokeDasharray={mode === "ghost" ? "4 6" : mode === "dotted" ? "0.5 6" : undefined}
+          strokeWidth={mode === "dotted" || mode === "flatdot" ? 2 : 1.6}
+          strokeDasharray={dashed}
           strokeLinecap="round"
+          vectorEffect="non-scaling-stroke"
           opacity={mode === "ghost" ? 0.5 : mode === "echo" ? 0.14 : mode === "outline" ? 0.55 : 0.45}
         />
       </g>
@@ -276,6 +286,61 @@ export default function DrawerStatesPage() {
           <Panel tag="W6 · ECHO" tone="derived" title="Edmonds UPCC" kind="upcc">
             <div className="wait" data-sev="closed" style={waitBlock}>
               <MiniWave tone="oklch(0.55 0.02 180)" mode="echo" />
+              <div className="wait-num dds-num dds-num-closed">Closed</div>
+              <div className="wait-label">
+                <span>opens 2:00 p.m.</span>
+              </div>
+            </div>
+            <Chart mode="plain" />
+          </Panel>
+
+          <Panel tag="W7 · HATCH" tone="derived" title="Edmonds UPCC" kind="upcc">
+            <div className="wait" data-sev="closed" style={waitBlock}>
+              <MiniWave tone="oklch(0.55 0.02 180)" mode="hatch" />
+              <div className="wait-num dds-num dds-num-closed">Closed</div>
+              <div className="wait-label">
+                <span>opens 2:00 p.m.</span>
+              </div>
+            </div>
+            <Chart mode="plain" />
+          </Panel>
+
+          <Panel tag="W8 · DASHED FILL" tone="derived" title="Edmonds UPCC" kind="upcc">
+            <div className="wait" data-sev="closed" style={waitBlock}>
+              <MiniWave tone="oklch(0.55 0.02 180)" mode="dashfill" />
+              <div className="wait-num dds-num dds-num-closed">Closed</div>
+              <div className="wait-label">
+                <span>opens 2:00 p.m.</span>
+              </div>
+            </div>
+            <Chart mode="plain" />
+          </Panel>
+
+          <Panel tag="W9 · SETTLE" tone="derived" title="Edmonds UPCC" kind="upcc">
+            <div className="wait" data-sev="closed" style={waitBlock}>
+              <MiniWave tone="oklch(0.55 0.02 180)" mode="settle" />
+              <div className="wait-num dds-num dds-num-closed">Closed</div>
+              <div className="wait-label">
+                <span>opens 2:00 p.m.</span>
+              </div>
+            </div>
+            <Chart mode="plain" />
+          </Panel>
+
+          <Panel tag="W10 · DOTTED FLAT" tone="derived" title="Edmonds UPCC" kind="upcc">
+            <div className="wait" data-sev="closed" style={waitBlock}>
+              <MiniWave tone="oklch(0.55 0.02 180)" mode="flatdot" />
+              <div className="wait-num dds-num dds-num-closed">Closed</div>
+              <div className="wait-label">
+                <span>opens 2:00 p.m.</span>
+              </div>
+            </div>
+            <Chart mode="plain" />
+          </Panel>
+
+          <Panel tag="W11 · SQUASHED" tone="derived" title="Edmonds UPCC" kind="upcc">
+            <div className="wait" data-sev="closed" style={waitBlock}>
+              <MiniWave tone="oklch(0.55 0.02 180)" mode="squash" />
               <div className="wait-num dds-num dds-num-closed">Closed</div>
               <div className="wait-label">
                 <span>opens 2:00 p.m.</span>
