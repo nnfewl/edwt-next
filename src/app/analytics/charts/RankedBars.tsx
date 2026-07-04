@@ -46,7 +46,7 @@ export function RankedBars({ rows }: { rows: Row[] }) {
       <Group title="Urgent &amp; primary care" rows={upccs} max={max} />
       <div className="ha-legend">
         {Object.values(HEALTH_AUTHORITIES).map((a) => (
-          <span key={a.name}>
+          <span key={a.name} className="ha-item">
             <span className="ha" style={{ background: a.badgeBackground }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={a.faviconPath} alt="" width={12} height={12} />

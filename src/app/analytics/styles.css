@@ -1037,7 +1037,8 @@
 }
 .analytics-redesign .ha img { width: 14px; height: 14px; object-fit: contain; display: block; }
 .analytics-redesign .ha-legend { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--track); font-size: 11.5px; font-weight: 700; color: var(--muted); align-items: center; }
-.analytics-redesign .ha-legend .ha { width: 18px; height: 18px; margin-right: 6px; vertical-align: -4px; display: inline-flex; }
+.analytics-redesign .ha-legend .ha-item { display: inline-flex; align-items: center; gap: 6px; }
+.analytics-redesign .ha-legend .ha { width: 18px; height: 18px; display: inline-flex; }
 .analytics-redesign .ha-legend .ha img { width: 12px; height: 12px; }
 
 /* Shared chart tooltip (HoverTip) — positioned imperatively, fixed to viewport. */
@@ -1127,7 +1128,7 @@
 .analytics-redesign tr:last-child td { border-bottom: none; }
 .analytics-redesign tr:hover td { background: var(--card2); }
 .analytics-redesign td:first-child { font-weight: 750; color: var(--ink2); }
-.analytics-redesign td .ha { vertical-align: -4px; margin-right: 8px; }
+.analytics-redesign .fac-cell { display: flex; align-items: center; gap: 8px; }
 .analytics-redesign .num { font-weight: 800; }
 .analytics-redesign .trend-up { color: var(--rose); font-weight: 800; } .analytics-redesign .trend-down { color: var(--good); font-weight: 800; } .analytics-redesign .trend-flat { color: var(--faint); font-weight: 800; }
 .analytics-redesign .pill { font-size: 10.5px; font-weight: 800; padding: 2.5px 9px; border-radius: 999px; letter-spacing: 0.03em; }

@@ -7,7 +7,7 @@
 
 export const HEALTH_AUTHORITIES = {
   bcchildrens: { name: "BC Children's Hospital", faviconPath: "/health-authorities/bcchildrens.png", badgeBackground: "#ffffff" },
-  bcwomens: { name: "BC Women's Hospital", faviconPath: "/health-authorities/bcwomens.ico", badgeBackground: "#ffffff" },
+  bcwomens: { name: "BC Women's Hospital", faviconPath: "/health-authorities/bcwomens.png", badgeBackground: "#ffffff" },
   fraserhealth: { name: "Fraser Health", faviconPath: "/health-authorities/fraserhealth.ico", badgeBackground: "#ffffff" },
   providencehealthcare: { name: "Providence Health Care", faviconPath: "/health-authorities/providencehealthcare.ico", badgeBackground: "#ffffff" },
   vch: { name: "Vancouver Coastal Health", faviconPath: "/health-authorities/vch.png", badgeBackground: "#0078AE" },

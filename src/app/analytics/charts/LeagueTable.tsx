@@ -35,7 +35,7 @@ export function LeagueTable({ rows }: { rows: Row[] }) {
           <tbody>
             {slice.map((r) => (
               <tr key={r.name}>
-                <td><HABadge name={r.name} size={18} />{r.name}</td>
+                <td><span className="fac-cell"><HABadge name={r.name} size={18} />{r.name}</span></td>
                 <td><span className={`pill ${r.type === "ed" ? "pill-ed" : "pill-upcc"}`}>{r.type === "ed" ? "ED" : "UPCC"}</span></td>
                 <td className="num">{fmtMin(r.median ?? 0)}</td>
                 <td>{r.eveningPeak != null ? fmtMin(r.eveningPeak) : "—"}</td>
