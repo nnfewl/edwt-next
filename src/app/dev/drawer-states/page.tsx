@@ -183,7 +183,8 @@ export default function DrawerStatesPage() {
         <div className="dds-trio">
           <Panel tag="NO DATA" tone="derived" title="Langley Memorial Hospital">
             <div className="wait" data-sev="closed" style={waitBlock}>
-              <div className="wait-num dds-num dds-num-ghost">&mdash;&mdash;</div>
+              <MiniWave tone="oklch(0.55 0.02 180)" />
+              <div className="wait-num dds-num dds-num-closed">No data</div>
               <NoDataLabel />
             </div>
             <Chart mode="ghost" />
