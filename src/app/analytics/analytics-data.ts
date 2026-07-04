@@ -220,21 +220,23 @@ async function runQueries() {
     `,
   ]);
   const b3 = await Promise.all([
-    // [8] Regional daily median (ED), 30d. Feeds 07 calendar + 10 calmest/roughest.
+    // [8] Regional daily median (ED), 60d. Feeds the 07 calendar (which renders
+    // up to 60 days, adaptively) + the 07 calm-day count. Section 10's records/moon
+    // slice this back to the last 30 to keep their "last 30 days" copy accurate.
     sql<{ date: string; median: number | null }[]>`
       ${useRollup
         ? sql`
           select to_char(bucket at time zone ${TZ}, 'YYYY-MM-DD') as date,
                  round((sum(avg_wait_minutes * reported_count) / nullif(sum(reported_count),0))::numeric,1)::float as median
           from wait_time_hourly h join locations l on l.id = h.location_id
-          where l.type = 'ed' and l.id in ${sql(lmIds)} and h.avg_wait_minutes is not null and bucket >= now() - interval '30 days'
+          where l.type = 'ed' and l.id in ${sql(lmIds)} and h.avg_wait_minutes is not null and bucket >= now() - interval '60 days'
           group by 1 order by 1`
         : sql`
           select to_char(observed_at at time zone ${TZ}, 'YYYY-MM-DD') as date,
                  percentile_cont(0.5) within group (order by wait_time_minutes)::float as median
           from wait_time_readings w join locations l on l.id = w.location_id
           where l.type = 'ed' and l.id in ${sql(lmIds)} and w.has_wait_time = true and w.wait_time_minutes is not null
-            and observed_at >= now() - interval '30 days'
+            and observed_at >= now() - interval '60 days'
           group by 1 order by 1`}
     `,
     // [9] Weekly per-facility median (ED), last 4 weeks. Feeds 08 weeks-at-top, 09 bump.
@@ -438,8 +440,10 @@ function shapeView(rows: Awaited<ReturnType<typeof runQueries>>): AnalyticsView 
   if (lastToday && lastToday.hour === hour && openEds.length) lastToday.min = Math.round(regionalMedian);
 
   const record = recordRows[0] ?? null;
-  const records = buildRecords(record, facRows, dailyRows, typicalRows.map((t) => ({ hour: t.hour, p50: t.p50 })));
-  const moonNote = buildMoonNote(dailyRows);
+  // dailyRows now spans 60 days (for the calendar); section 10 stays a 30-day story.
+  const daily30 = dailyRows.slice(-30);
+  const records = buildRecords(record, facRows, daily30, typicalRows.map((t) => ({ hour: t.hour, p50: t.p50 })));
+  const moonNote = buildMoonNote(daily30);
 
   const shortest = [...reportingEds].sort((a, b) => (a.wait as number) - (b.wait as number))[0] ?? null;
   const longest = [...reportingEds].sort((a, b) => (b.wait as number) - (a.wait as number))[0] ?? null;
