@@ -75,13 +75,11 @@ async function runQueries() {
 
   return Promise.all([
     // [0] Latest reading per facility + its own 28d hour+dow baseline median. Feeds hero, 01, 05.
+    // Latest is a per-location lateral top-1 (one backward probe of
+    // idx_readings_location_observed per facility) — a table-wide `distinct on`
+    // re-walks every historical row and gets slower as the table grows.
     sql<{ name: string; address: string | null; type: string; wait: number | null; elos: number | null; baseline: number | null; is_open: boolean }[]>`
-      with latest as (
-        select distinct on (location_id)
-          location_id, wait_time_minutes as wait, elos_minutes as elos, observed_at
-        from wait_time_readings
-        order by location_id, observed_at desc
-      ), baseline as (
+      with baseline as (
         select location_id,
                percentile_cont(0.5) within group (order by wait_time_minutes) as baseline
         from wait_time_readings
@@ -95,7 +93,13 @@ async function runQueries() {
       select l.name, l.address, l.type, latest.wait, latest.elos, baseline.baseline,
              coalesce(l.open247, true) as is_open
       from locations l
-      join latest on latest.location_id = l.id
+      join lateral (
+        select w.wait_time_minutes as wait, w.elos_minutes as elos
+        from wait_time_readings w
+        where w.location_id = l.id
+        order by w.observed_at desc
+        limit 1
+      ) latest on true
       left join baseline on baseline.location_id = l.id
       where l.status = 'published' and l.type in ('ed', 'upcc') and l.id in ${sql(lmIds)}
       order by latest.wait desc nulls last, l.name
