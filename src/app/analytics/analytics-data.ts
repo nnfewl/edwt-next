@@ -73,7 +73,10 @@ async function runQueries() {
   `;
   const lmIds = lm.map((r) => r.id);
 
-  return Promise.all([
+  // Chunks of ≤4: firing all 13 statements at once (pool max 10) thrashes the
+  // Nano instance's shared buffers — measured slower than running them
+  // sequentially — and starves the ingest writer while it lasts.
+  const b1 = await Promise.all([
     // [0] Latest reading per facility + its own 28d hour+dow baseline median. Feeds hero, 01, 05.
     // Latest is a per-location lateral top-1 (one backward probe of
     // idx_readings_location_observed per facility) — a table-wide `distinct on`
@@ -154,6 +157,8 @@ async function runQueries() {
       group by l.name, l.type, t.avg_w, 3
       order by t.avg_w desc, l.name, 3
     `,
+  ]);
+  const b2 = await Promise.all([
     // [4] Day-of-week regional medians, 30d, ED only. Feeds 03.
     sql<{ dow: number; median: number | null }[]>`
       select extract(dow from observed_at at time zone ${TZ})::int as dow,
@@ -213,6 +218,8 @@ async function runQueries() {
       group by l.id, l.name, l.type, s.spark having count(*) >= 50
       order by median desc nulls last, l.name
     `,
+  ]);
+  const b3 = await Promise.all([
     // [8] Regional daily median (ED), 30d. Feeds 07 calendar + 10 calmest/roughest.
     sql<{ date: string; median: number | null }[]>`
       ${useRollup
@@ -269,6 +276,8 @@ async function runQueries() {
       from day_hour
       group by 1, 2 order by 1, 2
     `,
+  ]);
+  const b4 = await Promise.all([
     // [12] Observed range (all facilities) — feeds the kept header's data-window aside.
     sql<{ first_observed: Date | null; last_observed: Date | null; last_reading: Date | null }[]>`
       select min(observed_at) as first_observed, max(observed_at) as last_observed,
@@ -276,6 +285,7 @@ async function runQueries() {
       from wait_time_readings
     `,
   ]);
+  return [...b1, ...b2, ...b3, ...b4] as const;
 }
 
 // 2026 full-moon dates (America/Vancouver) — verify against an ephemeris before shipping.
