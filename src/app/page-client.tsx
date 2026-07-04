@@ -25,7 +25,6 @@ import {
   faList,
   faLocationCrosshairs,
   faLocationDot,
-  faMagnifyingGlass,
   faPhone,
   faStar,
   faStethoscope,
@@ -74,8 +73,7 @@ type IconName =
   | "chevronDown"
   | "gps"
   | "external"
-  | "globe"
-  | "search";
+  | "globe";
 
 const ICONS: Record<IconName, IconDefinition> = {
   pin: faLocationDot,
@@ -96,7 +94,6 @@ const ICONS: Record<IconName, IconDefinition> = {
   gps: faLocationCrosshairs,
   external: faArrowUpRightFromSquare,
   globe: faGlobe,
-  search: faMagnifyingGlass,
 };
 
 const Icon = ({
@@ -333,11 +330,15 @@ const FacilityCard = ({
   f,
   onSelect,
   nowMs,
+  systemicStale,
 }: {
   f: Facility;
   onSelect: (f: Facility) => void;
   /** Client-side clock (null during SSR) so stale flags never mismatch on hydration. */
   nowMs: number | null;
+  /** True when the whole feed is paused — the page banner carries the alarm,
+      so cards calm down to "Last known wait" instead of 41× "Stale reading". */
+  systemicStale?: boolean;
 }) => {
   const sev = severityFor(f.waitMin);
   const sevLabel = facilityWaitStatusLabel(f);
@@ -425,7 +426,7 @@ const FacilityCard = ({
       <div
         className={"wait " + (!f.open ? "is-closed" : !hasWaitData ? "is-no-data" : "")}
         data-sev={sev}
-        data-stale={stale || undefined}
+        data-stale={stale ? (systemicStale ? "systemic" : "isolated") : undefined}
         aria-label={!f.open ? f.name + " is closed" : !hasWaitData ? f.name + " has no posted wait data" : undefined}
       >
         {f.open ? (
@@ -434,7 +435,7 @@ const FacilityCard = ({
               <div className="wait-num">{f.waitText}</div>
               <div className="wait-label">
                 <span className="sev-dot" />
-                {stale ? "Stale reading" : sevLabel}
+                {stale ? (systemicStale ? "Last known wait" : "Stale reading") : sevLabel}
               </div>
               <div className="updated">Updated {f.lastUpdated}</div>
             </>
@@ -483,12 +484,6 @@ type SlidingIndicator = {
   ready: boolean;
   animate: boolean;
 };
-
-function queryMatch(f: Facility, normalizedQuery: string): boolean {
-  if (!normalizedQuery) return true;
-  return [f.name, f.subtitle, f.address, f.addressCity ?? ""]
-    .some((field) => field.toLowerCase().includes(normalizedQuery));
-}
 
 function filterMatch(f: Facility, id: FilterId): boolean {
   switch (id) {
@@ -564,8 +559,6 @@ export function ERNowPageClient({
 }): ReactNode {
   const [filter, setFilter] = useState<FilterId>("all");
   const [sort, setSort] = useState<SortId>("wait");
-  const [query, setQuery] = useState("");
-  const normalizedQuery = query.trim().toLowerCase();
   const [sortSheetOpen, setSortSheetOpen] = useState(false);
   const [selected, setSelected] = useState<Facility | null>(null);
   const filterRowRef = useRef<HTMLDivElement | null>(null);
@@ -796,18 +789,16 @@ export function ERNowPageClient({
   }, [sortSheetOpen]);
 
   const filtered = useMemo(() => {
-    const matched = facilitiesWithDistance.filter(
-      (f) => queryMatch(f, normalizedQuery) && filterMatch(f, filter),
-    );
+    const matched = facilitiesWithDistance.filter((f) => filterMatch(f, filter));
     return sortFacilities(matched, sort);
-  }, [facilitiesWithDistance, filter, sort, normalizedQuery]);
+  }, [facilitiesWithDistance, filter, sort]);
 
   const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE);
   // Reset progressive rendering when the visible set changes. Adjusting state
   // during render (not in an effect) avoids painting a stale list first.
-  const [prevFilterSort, setPrevFilterSort] = useState<[FilterId, SortId, string]>([filter, sort, normalizedQuery]);
-  if (prevFilterSort[0] !== filter || prevFilterSort[1] !== sort || prevFilterSort[2] !== normalizedQuery) {
-    setPrevFilterSort([filter, sort, normalizedQuery]);
+  const [prevFilterSort, setPrevFilterSort] = useState<[FilterId, SortId]>([filter, sort]);
+  if (prevFilterSort[0] !== filter || prevFilterSort[1] !== sort) {
+    setPrevFilterSort([filter, sort]);
     setVisibleCount(INITIAL_VISIBLE);
   }
   useEffect(() => {
@@ -825,12 +816,10 @@ export function ERNowPageClient({
       open: 0,
     };
     for (const { id } of FILTERS) {
-      c[id] = facilitiesWithDistance.filter(
-        (f) => queryMatch(f, normalizedQuery) && filterMatch(f, id),
-      ).length;
+      c[id] = facilitiesWithDistance.filter((f) => filterMatch(f, id)).length;
     }
     return c;
-  }, [facilitiesWithDistance, normalizedQuery]);
+  }, [facilitiesWithDistance]);
 
   // All derived "open right now" values are nullable so a zero-open-facilities
   // state — overnight UPCC closure, regional outage, fresh empty DB — renders
@@ -859,6 +848,20 @@ export function ERNowPageClient({
     const total = openWaitFacilities.reduce((s, f) => s + (f.waitMin ?? 0), 0);
     return Math.round(total / openWaitFacilities.length);
   }, [openWaitFacilities]);
+
+  // Feed-wide pause detection: when (nearly) every reporting facility is
+  // stale, the problem is systemic — one banner explains it and the cards
+  // calm down to "Last known wait" instead of repeating "Stale reading".
+  const staleFeedAgeMin = useMemo(() => {
+    if (!now || openWaitFacilities.length < 3) return null;
+    const nowMs = now.getTime();
+    const staleCount = openWaitFacilities.filter((f) => isStaleReading(f.observedAtMs, nowMs)).length;
+    if (staleCount / openWaitFacilities.length < 0.8) return null;
+    const newest = Math.max(...openWaitFacilities.map((f) => f.observedAtMs ?? 0));
+    if (newest <= 0) return null;
+    return Math.round((nowMs - newest) / 60_000);
+  }, [openWaitFacilities, now]);
+  const systemicStale = staleFeedAgeMin != null;
 
   return (
     <div className="er-now-root">
@@ -921,6 +924,18 @@ export function ERNowPageClient({
             <a href="tel:811">8-1-1</a> to reach a registered nurse 24/7.
           </div>
         </div>
+
+        {/* Feed-wide staleness banner — carries the alarm once so the cards don't have to */}
+        {staleFeedAgeMin != null && (
+          <div className="info-banner stale-banner" role="status">
+            <span className="ico"><Icon name="clock" size={13} /></span>
+            <div className="b-body">
+              <strong>Live updates are paused.</strong>{" "}
+              No new readings have arrived for {fmtMins(staleFeedAgeMin)} — the times below
+              are the last known values, not current waits. Call ahead to confirm before you go.
+            </div>
+          </div>
+        )}
 
         {/* Stats — only meaningful when at least one facility is open */}
         {shortest && closestOpen && avgWait != null ? (
@@ -1029,7 +1044,11 @@ export function ERNowPageClient({
               <div
                 className={"wait " + (!shortest.open ? "is-closed" : "")}
                 data-sev={severityFor(shortest.waitMin)}
-                data-stale={(now != null && isStaleReading(shortest.observedAtMs, now.getTime())) || undefined}
+                data-stale={
+                  now != null && isStaleReading(shortest.observedAtMs, now.getTime())
+                    ? (systemicStale ? "systemic" : "isolated")
+                    : undefined
+                }
                 aria-label={shortest.open ? undefined : shortest.name + " is closed"}
               >
                 {shortest.open ? (
@@ -1038,7 +1057,7 @@ export function ERNowPageClient({
                     <div className="wait-label">
                       <span className="sev-dot" />
                       {now != null && isStaleReading(shortest.observedAtMs, now.getTime())
-                        ? "Stale reading"
+                        ? (systemicStale ? "Last known wait" : "Stale reading")
                         : facilityWaitStatusLabel(shortest)}
                     </div>
                     <div className="updated">Updated {shortest.lastUpdated}</div>
@@ -1056,32 +1075,6 @@ export function ERNowPageClient({
 
         {/* Filter toolbar */}
         <div className="toolbar">
-          {/* On mobile the box collapses to an icon circle; focus or a live
-              query expands it over the toolbar row (pure CSS + has-query). */}
-          <label className={`search-box${query !== "" ? " has-query" : ""}`}>
-            <span className="search-icon" aria-hidden="true">
-              <Icon name="search" size={13} />
-            </span>
-            <input
-              type="text"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search facility or city"
-              aria-label="Search facilities by name, city, or address"
-              autoComplete="off"
-              enterKeyHint="search"
-            />
-            {query !== "" && (
-              <button
-                type="button"
-                className="search-clear"
-                aria-label="Clear search"
-                onClick={() => setQuery("")}
-              >
-                <Icon name="x" size={12} />
-              </button>
-            )}
-          </label>
           <div
             className={`chip-row${filterIndicator.ready ? " is-ready" : ""}`}
             role="group"
@@ -1203,7 +1196,13 @@ export function ERNowPageClient({
         {/* List */}
         <div className="facility-list">
           {filtered.slice(0, visibleCount).map((f) => (
-            <FacilityCard key={f.id} f={f} onSelect={setSelected} nowMs={now?.getTime() ?? null} />
+            <FacilityCard
+              key={f.id}
+              f={f}
+              onSelect={setSelected}
+              nowMs={now?.getTime() ?? null}
+              systemicStale={systemicStale}
+            />
           ))}
           {filtered.length === 0 && (
             <div
@@ -1215,17 +1214,8 @@ export function ERNowPageClient({
                 borderRadius: "var(--radius)",
               }}
             >
-              {normalizedQuery
-                ? <>No facilities match &ldquo;{query.trim()}&rdquo;.</>
-                : "No facilities match this filter."}
-              <button
-                className="empty-reset"
-                type="button"
-                onClick={() => {
-                  setFilter("all");
-                  setQuery("");
-                }}
-              >
+              No facilities match this filter.
+              <button className="empty-reset" type="button" onClick={() => setFilter("all")}>
                 Show all facilities
               </button>
             </div>

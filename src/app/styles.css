@@ -475,54 +475,6 @@
   margin-bottom: 22px;
   flex-wrap: wrap;
 }
-.er-now-root .search-box {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 0 8px 0 14px;
-  height: 44px;
-  color: var(--muted);
-  transition: border-color 0.15s ease;
-}
-.er-now-root .search-box:focus-within {
-  border-color: var(--ink-2);
-}
-.er-now-root .search-box .search-icon {
-  display: inline-flex;
-  flex: 0 0 auto;
-}
-.er-now-root .search-box input {
-  border: 0;
-  outline: 0;
-  background: transparent;
-  font: inherit;
-  font-size: 13.5px;
-  color: var(--ink);
-  width: 170px;
-}
-.er-now-root .search-box input::placeholder {
-  color: var(--muted);
-}
-.er-now-root .search-clear {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  border: 0;
-  border-radius: 50%;
-  background: transparent;
-  color: var(--muted);
-  cursor: pointer;
-}
-.er-now-root .search-clear:hover {
-  background: var(--line);
-  color: var(--ink);
-}
-
 .er-now-root .chip-row {
   position: relative;
   display: inline-flex;
@@ -1171,6 +1123,20 @@
 .er-now-root .wait[data-stale] .updated {
   color: var(--amber);
   font-weight: 650;
+}
+/* Feed-wide pause: the page banner carries the alarm, so per-card
+   timestamps stay quiet. */
+.er-now-root .wait[data-stale="systemic"] .updated {
+  color: var(--muted);
+  font-weight: inherit;
+}
+
+.er-now-root .info-banner.stale-banner {
+  background: var(--amber-soft);
+  border-color: color-mix(in oklab, var(--amber) 25%, transparent);
+}
+.er-now-root .info-banner.stale-banner .ico {
+  background: var(--amber);
 }
 
 .er-now-root .updated {
@@ -1962,57 +1928,13 @@
     border-block: 1px solid var(--line);
     backdrop-filter: blur(10px);
   }
-  /* Single-row toolbar: [search circle][chips scroll][sort pill]. The search
-     collapses to an icon; focus or a live query expands it OVER the row so
-     the chips never reflow. */
+  /* Single-row toolbar: [chip strip][compact sort pill]. */
   .er-now-root .toolbar {
     flex-wrap: nowrap;
     gap: 8px;
   }
   .er-now-root .spacer-flex {
     display: none;
-  }
-  .er-now-root .search-box {
-    flex: 0 0 42px;
-    width: 42px;
-    height: 42px;
-    padding: 0;
-    justify-content: center;
-    border-radius: 50%;
-  }
-  .er-now-root .search-box input {
-    width: 0;
-    flex: 0 0 0px;
-    padding: 0;
-    opacity: 0;
-  }
-  .er-now-root .search-box .search-clear {
-    display: none;
-  }
-  .er-now-root .search-box:focus-within,
-  .er-now-root .search-box.has-query {
-    position: absolute;
-    left: max(14px, env(safe-area-inset-left));
-    right: max(14px, env(safe-area-inset-right));
-    top: 50%;
-    transform: translateY(-50%);
-    z-index: 3;
-    width: auto;
-    border-radius: 14px;
-    padding: 0 8px 0 14px;
-    justify-content: flex-start;
-    background: var(--surface);
-    box-shadow: var(--shadow-md);
-  }
-  .er-now-root .search-box:focus-within input,
-  .er-now-root .search-box.has-query input {
-    width: auto;
-    flex: 1;
-    opacity: 1;
-  }
-  .er-now-root .search-box:focus-within .search-clear,
-  .er-now-root .search-box.has-query .search-clear {
-    display: inline-flex;
   }
   .er-now-root .chip-row {
     flex: 1 1 auto;
