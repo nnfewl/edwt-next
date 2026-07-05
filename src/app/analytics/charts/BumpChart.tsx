@@ -3,18 +3,22 @@ import { SAGE, linear } from "./chart-theme";
 type Row = { name: string; ranks: number[] };
 
 // Muted sage-adjacent hues so parallel lines stay separable where they cross,
-// without competing with the highlighted movers.
+// without competing with the highlighted movers. Keyed to a hash of the name
+// (not the row index) so a facility keeps its hue when standings reorder.
 const NEUTRALS = ["#7c9188", "#8a8273", "#7e8a99", "#84937b", "#94818d", "#948a7c"];
 
-// Trailing tokens that carry no identity on the right edge ("Mount Saint
-// Joseph Hospital" → "Mount Saint Joseph").
-const GENERIC_SUFFIX = /\s+(hospital|upcc|health care centre|health centre)$/i;
+function neutralFor(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) | 0;
+  return NEUTRALS[Math.abs(hash) % NEUTRALS.length];
+}
 
+// Names arrive pre-shortened (analytics-data runs chartName/shortName), so the
+// right edge only needs to fit the label into the gutter.
 function endLabelFor(name: string): string {
-  const trimmed = name.replace(GENERIC_SUFFIX, "");
-  if (trimmed.length <= 18) return trimmed;
-  const words = trimmed.split(" ");
-  let label = words[0];
+  if (name.length <= 18) return name;
+  const words = name.split(" ");
+  let label = words[0].length > 18 ? `${words[0].slice(0, 17)}…` : words[0];
   for (const word of words.slice(1)) {
     if (`${label} ${word}`.length > 18) break;
     label = `${label} ${word}`;
@@ -51,10 +55,10 @@ export function BumpChart({ rows, climber, slider }: { rows: Row[]; climber: str
             </g>
           );
         })}
-        {rows.map((r, i) => {
+        {rows.map((r) => {
           const isClimber = r.name === climber, isSlider = r.name === slider;
           const highlight = isClimber || isSlider;
-          const color = isClimber ? SAGE.hot : isSlider ? "#d97706" : NEUTRALS[i % NEUTRALS.length];
+          const color = isClimber ? SAGE.hot : isSlider ? "#d97706" : neutralFor(r.name);
           const pts = r.ranks.map((rank, w) => `${x(w)},${y(rank)}`).join(" ");
           const delta = r.ranks[0] - r.ranks[r.ranks.length - 1];
           // Rank #1 = longest wait, so climbing the table is bad news.
