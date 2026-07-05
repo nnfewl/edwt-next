@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { AutoRefresh } from "../auto-refresh";
 import { HeroMapBackdrop } from "../hero-map-backdrop";
+import { SiteFooter } from "../site-footer";
 import { getAnalytics } from "./analytics-data";
 import { PressureHero } from "./charts/PressureHero";
 import { StatStrip } from "./charts/StatStrip";
@@ -187,6 +188,8 @@ export default async function AnalyticsPage() {
             <b>About this data.</b> Wait times are the figures each facility posts publicly, collected every minute from the official edwaittimes.ca feed. &ldquo;Typical&rdquo; ranges are per-facility medians for the same hour and day-of-week over the past 28 days. Posted waits are estimates made by the facilities themselves — sicker patients are always seen first. Facilities that don&apos;t publish wait times are excluded from regional numbers, not counted as zero.
           </p>
         </div>
+
+        <SiteFooter />
       </main>
     </div>
   );
