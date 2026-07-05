@@ -36,6 +36,8 @@ export type DetailsDrawerProps = {
   onClose: () => void;
   IconComponent: ComponentType<{ name: DrawerIconName; size?: number }>;
   WaveBackgroundComponent: ComponentType<WaveBackgroundProps>;
+  /** Opens the page-level navigation-app chooser (it overlays the drawer). */
+  onDirections?: (f: Facility) => void;
 };
 
 function mapFacilityUrl(f: Facility, route = false): string {
@@ -349,6 +351,7 @@ export function DetailsDrawer({
   onClose,
   IconComponent,
   WaveBackgroundComponent,
+  onDirections,
 }: DetailsDrawerProps): ReactNode {
   const panelRef = useRef<HTMLElement>(null);
   const dragState = useRef<{ startY: number; currentY: number; dragging: boolean }>({ startY: 0, currentY: 0, dragging: false });
@@ -586,15 +589,29 @@ export function DetailsDrawer({
 
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <div style={{ display: "flex", gap: 8 }}>
-            <a
-              className="action-btn primary"
-              href={mapFacilityUrl(f, true)}
-              style={{ flex: 1, justifyContent: "center" }}
-              aria-label={`Directions to ${f.name}`}
-              title="Directions"
-            >
-              <IconComponent name="directions" size={14} /> <span className="action-label">Directions</span>
-            </a>
+            {onDirections ? (
+              <button
+                className="action-btn primary"
+                type="button"
+                style={{ flex: 1, justifyContent: "center" }}
+                aria-haspopup="dialog"
+                aria-label={`Directions to ${f.name}`}
+                title="Directions"
+                onClick={() => onDirections(f)}
+              >
+                <IconComponent name="directions" size={14} /> <span className="action-label">Directions</span>
+              </button>
+            ) : (
+              <a
+                className="action-btn primary"
+                href={mapFacilityUrl(f, true)}
+                style={{ flex: 1, justifyContent: "center" }}
+                aria-label={`Directions to ${f.name}`}
+                title="Directions"
+              >
+                <IconComponent name="directions" size={14} /> <span className="action-label">Directions</span>
+              </a>
+            )}
             {f.phone && (
               <a
                 className="action-btn"
